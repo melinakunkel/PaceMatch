@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
@@ -31,8 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordCtrl.text,
       );
       if (mounted) context.go('/');
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Anmeldung fehlgeschlagen. Bitte prüfe deine Daten.');
+      setState(() => _error = 'Anmeldung fehlgeschlagen: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
