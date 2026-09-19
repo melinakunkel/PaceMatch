@@ -82,8 +82,13 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       context.pushReplacement('/matches/${activity.id}');
     } catch (e) {
       if (!mounted) return;
+      final session = SupabaseService.auth.currentSession;
+      final debug = 'uid=${SupabaseService.currentUserId} '
+          'hasSession=${session != null} '
+          'expired=${session?.isExpired} '
+          'tokenLen=${session?.accessToken.length}';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
+        SnackBar(content: Text('Speichern fehlgeschlagen: $e\n$debug')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
