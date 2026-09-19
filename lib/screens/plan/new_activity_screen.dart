@@ -73,7 +73,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Speichern fehlgeschlagen. Bitte erneut versuchen.')),
+        SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

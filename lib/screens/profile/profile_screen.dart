@@ -24,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<UserSport> _sports = [];
   List<bool> _last7Days = List.filled(7, false);
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -32,19 +33,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _load() async {
-    final userId = SupabaseService.currentUserId!;
-    final results = await Future.wait([
-      _profileService.getProfile(userId),
-      _profileService.getUserSports(userId),
-      _profileService.getActivityLast7Days(userId),
-    ]);
-    if (!mounted) return;
     setState(() {
-      _profile = results[0] as Profile;
-      _sports = results[1] as List<UserSport>;
-      _last7Days = results[2] as List<bool>;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    final userId = SupabaseService.currentUserId!;
+    try {
+      final results = await Future.wait([
+        _profileService.getProfile(userId),
+        _profileService.getUserSports(userId),
+        _profileService.getActivityLast7Days(userId),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _profile = results[0] as Profile;
+        _sports = results[1] as List<UserSport>;
+        _last7Days = results[2] as List<bool>;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _editSport([UserSport? existing]) async {
@@ -72,9 +85,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ],
-      body: _loading || _profile == null
+      body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+                        const SizedBox(height: 12),
+                        Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.danger)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _load,
+                          child: const Text('Erneut versuchen'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _profile == null
+                  ? const SizedBox.shrink()
+                  : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
