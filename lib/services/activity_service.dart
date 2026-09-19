@@ -1,0 +1,76 @@
+import 'package:flutter/material.dart';
+
+import '../models/activity.dart';
+import '../models/sport_type.dart';
+import 'supabase_service.dart';
+
+class ActivityService {
+  final _client = SupabaseService.client;
+
+  Future<List<Activity>> getMyActivities(String userId) async {
+    final rows = await _client
+        .from('activities')
+        .select()
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('day_of_week')
+        .order('start_time');
+    return rows.map((m) => Activity.fromMap(m)).toList();
+  }
+
+  /// All other users' active activities for a sport, used for matching.
+  Future<List<Activity>> getActivitiesForSport({
+    required SportType sport,
+    required String excludeUserId,
+  }) async {
+    final rows = await _client
+        .from('activities')
+        .select()
+        .eq('sport', sport.name)
+        .eq('is_active', true)
+        .neq('user_id', excludeUserId);
+    return rows.map((m) => Activity.fromMap(m)).toList();
+  }
+
+  Future<Activity> createActivity({
+    required String userId,
+    required SportType sport,
+    required int dayOfWeek,
+    required TimeOfDay startTime,
+    required TimeOfDay endTime,
+    String? locationName,
+    double radiusKm = 3,
+    double? distanceMinKm,
+    double? distanceMaxKm,
+    double? paceMin,
+    double? paceMax,
+  }) async {
+    final map = await _client
+        .from('activities')
+        .insert({
+          'user_id': userId,
+          'sport': sport.name,
+          'day_of_week': dayOfWeek,
+          'start_time': Activity.formatTime(startTime),
+          'end_time': Activity.formatTime(endTime),
+          'location_name': locationName,
+          'radius_km': radiusKm,
+          'distance_min_km': distanceMinKm,
+          'distance_max_km': distanceMaxKm,
+          'pace_min': paceMin,
+          'pace_max': paceMax,
+        })
+        .select()
+        .single();
+    return Activity.fromMap(map);
+  }
+
+  Future<Activity> getActivityById(String id) async {
+    final map = await _client.from('activities').select().eq('id', id).single();
+    return Activity.fromMap(map);
+  }
+
+  Future<void> deleteActivity(String id) async {
+    await _client.from('activities').delete().eq('id', id);
+  }
+}
