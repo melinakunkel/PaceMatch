@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/profile_service.dart';
+import '../../widgets/pace_picker_field.dart';
 
 class EditSportSheet extends StatefulWidget {
   const EditSportSheet({super.key, required this.userId, this.existing});
@@ -18,25 +19,11 @@ class _EditSportSheetState extends State<EditSportSheet> {
   final _profileService = ProfileService();
   late SportType _sport = widget.existing?.sport ?? SportType.laufen;
   late String _level = widget.existing?.level ?? 'Fortgeschritten';
-  final _lowCtrl = TextEditingController();
-  final _highCtrl = TextEditingController();
+  late double? _valueLow = widget.existing?.valueLow;
+  late double? _valueHigh = widget.existing?.valueHigh;
   bool _saving = false;
 
   static const _levels = ['Anfänger', 'Fortgeschritten', 'Profi'];
-
-  @override
-  void initState() {
-    super.initState();
-    _lowCtrl.text = widget.existing?.valueLow?.toString() ?? '';
-    _highCtrl.text = widget.existing?.valueHigh?.toString() ?? '';
-  }
-
-  @override
-  void dispose() {
-    _lowCtrl.dispose();
-    _highCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -46,8 +33,8 @@ class _EditSportSheetState extends State<EditSportSheet> {
         sport: _sport,
         level: _level,
         unit: _sport.defaultUnit,
-        valueLow: double.tryParse(_lowCtrl.text.replaceAll(',', '.')),
-        valueHigh: double.tryParse(_highCtrl.text.replaceAll(',', '.')),
+        valueLow: _valueLow,
+        valueHigh: _valueHigh,
       );
       if (mounted) Navigator.of(context).pop();
     } finally {
@@ -101,18 +88,20 @@ class _EditSportSheetState extends State<EditSportSheet> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _lowCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'von'),
+                child: PacePickerField(
+                  label: 'von',
+                  unit: _sport.defaultUnit,
+                  value: _valueLow,
+                  onChanged: (v) => setState(() => _valueLow = v),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextField(
-                  controller: _highCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'bis'),
+                child: PacePickerField(
+                  label: 'bis',
+                  unit: _sport.defaultUnit,
+                  value: _valueHigh,
+                  onChanged: (v) => setState(() => _valueHigh = v),
                 ),
               ),
             ],

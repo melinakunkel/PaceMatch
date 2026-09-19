@@ -1,3 +1,4 @@
+import '../utils/pace_format.dart';
 import 'sport_type.dart';
 
 class UserSport {
@@ -33,17 +34,8 @@ class UserSport {
   String get rangeLabel {
     if (valueLow == null || valueHigh == null) return '–';
     if (unit == 'km_per_h') {
-      return '${_fmtNum(valueLow!)} - ${_fmtNum(valueHigh!)} km/h';
+      return '${formatSpeed(valueLow!)} - ${formatSpeed(valueHigh!)} km/h';
     }
-    return '${_fmtPace(valueLow!)} - ${_fmtPace(valueHigh!)} /km';
-  }
-
-  static String _fmtNum(double v) =>
-      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
-
-  static String _fmtPace(double minutesPerKm) {
-    final minutes = minutesPerKm.floor();
-    final seconds = ((minutesPerKm - minutes) * 60).round();
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+    return '${formatPace(valueLow!)} - ${formatPace(valueHigh!)} /km';
   }
 }

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/activity.dart';
+import '../../models/picked_location.dart';
 import '../../models/sport_type.dart';
 import '../../services/activity_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/pace_picker_field.dart';
+import 'location_picker_screen.dart';
 
 class NewActivityScreen extends StatefulWidget {
   const NewActivityScreen({super.key, required this.initialSport});
@@ -18,27 +21,24 @@ class NewActivityScreen extends StatefulWidget {
 
 class _NewActivityScreenState extends State<NewActivityScreen> {
   final _activityService = ActivityService();
-  final _locationCtrl = TextEditingController();
   final _radiusCtrl = TextEditingController(text: '3');
   final _distanceMinCtrl = TextEditingController();
   final _distanceMaxCtrl = TextEditingController();
-  final _paceMinCtrl = TextEditingController();
-  final _paceMaxCtrl = TextEditingController();
 
   late SportType _sport = widget.initialSport;
   int _dayOfWeek = DateTime.now().weekday;
   TimeOfDay _start = const TimeOfDay(hour: 18, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 19, minute: 0);
+  PickedLocation? _location;
+  double? _paceMin;
+  double? _paceMax;
   bool _saving = false;
 
   @override
   void dispose() {
-    _locationCtrl.dispose();
     _radiusCtrl.dispose();
     _distanceMinCtrl.dispose();
     _distanceMaxCtrl.dispose();
-    _paceMinCtrl.dispose();
-    _paceMaxCtrl.dispose();
     super.dispose();
   }
 
@@ -51,6 +51,15 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     setState(() => isStart ? _start = picked : _end = picked);
   }
 
+  Future<void> _pickLocation() async {
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(initial: _location),
+      ),
+    );
+    if (picked != null) setState(() => _location = picked);
+  }
+
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
@@ -60,13 +69,14 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
         dayOfWeek: _dayOfWeek,
         startTime: _start,
         endTime: _end,
-        locationName:
-            _locationCtrl.text.trim().isEmpty ? null : _locationCtrl.text.trim(),
+        locationName: _location?.name,
+        latitude: _location?.latitude,
+        longitude: _location?.longitude,
         radiusKm: double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3,
         distanceMinKm: double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.')),
         distanceMaxKm: double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.')),
-        paceMin: double.tryParse(_paceMinCtrl.text.replaceAll(',', '.')),
-        paceMax: double.tryParse(_paceMaxCtrl.text.replaceAll(',', '.')),
+        paceMin: _paceMin,
+        paceMax: _paceMax,
       );
       if (!mounted) return;
       context.pushReplacement('/matches/${activity.id}');
@@ -149,11 +159,23 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ),
             const SizedBox(height: 20),
             const _SectionLabel('Wo?'),
-            TextField(
-              controller: _locationCtrl,
-              decoration: const InputDecoration(
-                hintText: 'z.B. Prater',
-                prefixIcon: Icon(Icons.place_outlined),
+            InkWell(
+              onTap: _pickLocation,
+              borderRadius: BorderRadius.circular(12),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  hintText: 'Ort auf der Karte auswählen',
+                  prefixIcon: Icon(Icons.place_outlined),
+                  suffixIcon: Icon(Icons.map_outlined),
+                ),
+                child: Text(
+                  _location?.name ?? 'Ort auf der Karte auswählen',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _location == null
+                      ? const TextStyle(color: AppColors.textSecondary)
+                      : null,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -191,18 +213,20 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _paceMinCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'von'),
+                  child: PacePickerField(
+                    label: 'von',
+                    unit: _sport.defaultUnit,
+                    value: _paceMin,
+                    onChanged: (v) => setState(() => _paceMin = v),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
-                    controller: _paceMaxCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'bis'),
+                  child: PacePickerField(
+                    label: 'bis',
+                    unit: _sport.defaultUnit,
+                    value: _paceMax,
+                    onChanged: (v) => setState(() => _paceMax = v),
                   ),
                 ),
               ],
