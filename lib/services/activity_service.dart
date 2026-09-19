@@ -47,6 +47,7 @@ class ActivityService {
     double? paceMin,
     double? paceMax,
   }) async {
+    await SupabaseService.ensureFreshSession();
     final map = await _client
         .from('activities')
         .insert({

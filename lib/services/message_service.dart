@@ -18,6 +18,7 @@ class MessageService {
     required String senderId,
     required String content,
   }) async {
+    await SupabaseService.ensureFreshSession();
     await _client.from('messages').insert({
       'group_id': groupId,
       'sender_id': senderId,

@@ -16,6 +16,7 @@ class ProfileService {
   }
 
   Future<void> updateProfile(Profile profile) async {
+    await SupabaseService.ensureFreshSession();
     await _client
         .from('profiles')
         .update(profile.toUpdateMap())
@@ -39,6 +40,7 @@ class ProfileService {
     double? valueLow,
     double? valueHigh,
   }) async {
+    await SupabaseService.ensureFreshSession();
     await _client.from('user_sports').upsert({
       'user_id': userId,
       'sport': sport.name,

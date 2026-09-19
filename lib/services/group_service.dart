@@ -17,6 +17,7 @@ class GroupService {
     DateTime? meetingTime,
     String? activityId,
   }) async {
+    await SupabaseService.ensureFreshSession();
     final map = await _client
         .from('groups')
         .insert({
@@ -34,8 +35,9 @@ class GroupService {
     return group;
   }
 
-  Future<void> joinGroup({required String groupId, required String userId}) {
-    return _client.from('group_members').upsert({
+  Future<void> joinGroup({required String groupId, required String userId}) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.from('group_members').upsert({
       'group_id': groupId,
       'user_id': userId,
     }, onConflict: 'group_id,user_id');
@@ -46,6 +48,7 @@ class GroupService {
     required String meetingPoint,
     DateTime? meetingTime,
   }) async {
+    await SupabaseService.ensureFreshSession();
     await _client.from('groups').update({
       'meeting_point': meetingPoint,
       if (meetingTime != null) 'meeting_time': meetingTime.toIso8601String(),
