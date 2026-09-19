@@ -104,13 +104,18 @@ class _GroupScreenState extends State<GroupScreen> {
                                 child: CircleAvatar(
                                   radius: 16,
                                   backgroundColor: AppColors.secondaryLight,
-                                  child: Text(
-                                    m.fullName.isNotEmpty
-                                        ? m.fullName[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                        color: AppColors.primary, fontSize: 13),
-                                  ),
+                                  backgroundImage: m.avatarUrl != null
+                                      ? NetworkImage(m.avatarUrl!)
+                                      : null,
+                                  child: m.avatarUrl != null
+                                      ? null
+                                      : Text(
+                                          m.fullName.isNotEmpty
+                                              ? m.fullName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: AppColors.primary, fontSize: 13),
+                                        ),
                                 ),
                               ))
                           .toList(),

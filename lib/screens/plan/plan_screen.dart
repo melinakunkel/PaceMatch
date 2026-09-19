@@ -6,6 +6,7 @@ import '../../services/activity_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
+import 'new_activity_screen.dart';
 
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
@@ -184,12 +185,55 @@ class _DayList extends StatelessWidget {
             ),
             title: Text('${a.timeRangeLabel}  ·  ${a.sport.label}'),
             subtitle: Text(a.locationName ?? 'Ohne festen Ort'),
-            trailing: IconButton(
-              icon: const Icon(Icons.people_outline, color: AppColors.secondary),
-              tooltip: 'Passende Leute anzeigen',
-              onPressed: () => context.push('/matches/${a.id}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.people_outline, color: AppColors.secondary),
+                  tooltip: 'Passende Leute anzeigen',
+                  onPressed: () => context.push('/matches/${a.id}'),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      await Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => NewActivityScreen(existing: a),
+                      ));
+                      onDeleted();
+                    } else if (value == 'delete') {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Sportzeit löschen?'),
+                          content: Text(
+                              '${a.sport.label} am ${a.dayLabel}, ${a.timeRangeLabel} wirklich löschen?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Abbrechen'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Löschen',
+                                  style: TextStyle(color: AppColors.danger)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        await ActivityService().deleteActivity(a.id);
+                        onDeleted();
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Bearbeiten')),
+                    PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                  ],
+                ),
+              ],
             ),
-            onTap: () => context.push('/matches/${a.id}'),
           ),
         );
       },

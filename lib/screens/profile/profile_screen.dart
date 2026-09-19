@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../models/activity.dart';
 import '../../models/profile.dart';
@@ -9,6 +10,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
+import 'edit_profile_sheet.dart';
 import 'edit_sport_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -24,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<UserSport> _sports = [];
   List<bool> _last7Days = List.filled(7, false);
   bool _loading = true;
+  bool _uploadingAvatar = false;
   String? _error;
 
   @override
@@ -68,6 +71,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => EditSportSheet(userId: userId, existing: existing),
     );
     _load();
+  }
+
+  Future<void> _editProfile() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => EditProfileSheet(profile: _profile!),
+    );
+    _load();
+  }
+
+  Future<void> _pickAvatar() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null) return;
+    setState(() => _uploadingAvatar = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.contains('.') ? picked.name.split('.').last : 'jpg';
+      final url = await _profileService.uploadAvatar(
+        userId: SupabaseService.currentUserId!,
+        bytes: bytes,
+        fileExtension: ext,
+      );
+      await _profileService.updateProfile(Profile(
+        id: _profile!.id,
+        fullName: _profile!.fullName,
+        age: _profile!.age,
+        gender: _profile!.gender,
+        city: _profile!.city,
+        avatarUrl: url,
+        bio: _profile!.bio,
+      ));
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Foto konnte nicht hochgeladen werden: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
   }
 
   @override
@@ -117,17 +162,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: AppColors.secondaryLight,
-                        child: Text(
-                          _profile!.fullName.isNotEmpty
-                              ? _profile!.fullName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              fontSize: 28,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700),
+                      GestureDetector(
+                        onTap: _uploadingAvatar ? null : _pickAvatar,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 36,
+                              backgroundColor: AppColors.secondaryLight,
+                              backgroundImage: _profile!.avatarUrl != null
+                                  ? NetworkImage(_profile!.avatarUrl!)
+                                  : null,
+                              child: _profile!.avatarUrl != null
+                                  ? null
+                                  : (_uploadingAvatar
+                                      ? const CircularProgressIndicator(strokeWidth: 2)
+                                      : Text(
+                                          _profile!.fullName.isNotEmpty
+                                              ? _profile!.fullName[0].toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              fontSize: 28,
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w700),
+                                        )),
+                            ),
+                            if (_uploadingAvatar && _profile!.avatarUrl != null)
+                              const Positioned.fill(
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.black38,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                ),
+                              ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.secondary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child:
+                                    const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -141,12 +221,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text(
                               [
                                 if (_profile!.age != null) '${_profile!.age} Jahre',
+                                if (_profile!.gender != null) _profile!.gender!,
                                 if (_profile!.city != null) _profile!.city!,
                               ].join(' · '),
                               style: const TextStyle(color: AppColors.textSecondary),
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Profil bearbeiten',
+                        onPressed: _editProfile,
                       ),
                     ],
                   ),

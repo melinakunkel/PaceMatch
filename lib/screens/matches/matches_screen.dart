@@ -174,22 +174,37 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         controlAffinity: ListTileControlAffinity.leading,
                         secondary: CircleAvatar(
                           backgroundColor: AppColors.secondaryLight,
-                          child: Text(
-                            c.profile.fullName.isNotEmpty
-                                ? c.profile.fullName[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(color: AppColors.primary),
-                          ),
+                          backgroundImage: c.profile.avatarUrl != null
+                              ? NetworkImage(c.profile.avatarUrl!)
+                              : null,
+                          child: c.profile.avatarUrl != null
+                              ? null
+                              : Text(
+                                  c.profile.fullName.isNotEmpty
+                                      ? c.profile.fullName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(color: AppColors.primary),
+                                ),
                         ),
                         title: Row(
                           children: [
-                            Expanded(child: Text(c.profile.fullName)),
+                            Expanded(
+                              child: Text(
+                                [
+                                  c.profile.fullName,
+                                  if (c.profile.age != null) '${c.profile.age}',
+                                ].join(', '),
+                              ),
+                            ),
                             _MatchBadge(percent: c.matchPercent),
                           ],
                         ),
                         subtitle: Text(
-                          '${c.theirActivity.timeRangeLabel} · '
-                          '${c.theirActivity.locationName ?? "Ort flexibel"}',
+                          [
+                            if (c.profile.gender != null) c.profile.gender!,
+                            c.theirActivity.timeRangeLabel,
+                            c.theirActivity.locationName ?? 'Ort flexibel',
+                          ].join(' · '),
                         ),
                       ),
                     );

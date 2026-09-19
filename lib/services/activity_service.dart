@@ -75,7 +75,46 @@ class ActivityService {
     return Activity.fromMap(map);
   }
 
+  Future<Activity> updateActivity({
+    required String id,
+    required SportType sport,
+    required int dayOfWeek,
+    required TimeOfDay startTime,
+    required TimeOfDay endTime,
+    String? locationName,
+    double? latitude,
+    double? longitude,
+    double radiusKm = 3,
+    double? distanceMinKm,
+    double? distanceMaxKm,
+    double? paceMin,
+    double? paceMax,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    final map = await _client
+        .from('activities')
+        .update({
+          'sport': sport.name,
+          'day_of_week': dayOfWeek,
+          'start_time': Activity.formatTime(startTime),
+          'end_time': Activity.formatTime(endTime),
+          'location_name': locationName,
+          'latitude': latitude,
+          'longitude': longitude,
+          'radius_km': radiusKm,
+          'distance_min_km': distanceMinKm,
+          'distance_max_km': distanceMaxKm,
+          'pace_min': paceMin,
+          'pace_max': paceMax,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    return Activity.fromMap(map);
+  }
+
   Future<void> deleteActivity(String id) async {
+    await SupabaseService.ensureFreshSession();
     await _client.from('activities').delete().eq('id', id);
   }
 }

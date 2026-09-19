@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/profile.dart';
 import '../models/sport_type.dart';
 import '../models/user_sport.dart';
@@ -49,6 +53,25 @@ class ProfileService {
       'value_low': valueLow,
       'value_high': valueHigh,
     }, onConflict: 'user_id,sport');
+  }
+
+  /// Uploads a profile photo to the `avatars` bucket (one file per user,
+  /// overwritten on re-upload) and returns its public URL.
+  Future<String> uploadAvatar({
+    required String userId,
+    required Uint8List bytes,
+    required String fileExtension,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    final path = '$userId/avatar.$fileExtension';
+    await _client.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
+    final url = _client.storage.from('avatars').getPublicUrl(path);
+    // Cache-bust so the new photo shows up immediately everywhere.
+    return '$url?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
   /// % of the last 7 days the user had an active (checked-in) session.

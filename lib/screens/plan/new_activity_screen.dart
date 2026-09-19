@@ -11,9 +11,20 @@ import '../../widgets/pace_picker_field.dart';
 import 'location_picker_screen.dart';
 
 class NewActivityScreen extends StatefulWidget {
-  const NewActivityScreen({super.key, required this.initialSport});
+  const NewActivityScreen({
+    super.key,
+    this.initialSport = SportType.laufen,
+    this.existing,
+  });
 
+  /// Preselected sport when creating a new activity from the Home screen.
   final SportType initialSport;
+
+  /// When set, the screen edits this activity in place instead of creating
+  /// new ones, and day selection is single-choice.
+  final Activity? existing;
+
+  bool get isEditing => existing != null;
 
   @override
   State<NewActivityScreen> createState() => _NewActivityScreenState();
@@ -21,17 +32,32 @@ class NewActivityScreen extends StatefulWidget {
 
 class _NewActivityScreenState extends State<NewActivityScreen> {
   final _activityService = ActivityService();
-  final _radiusCtrl = TextEditingController(text: '3');
-  final _distanceMinCtrl = TextEditingController();
-  final _distanceMaxCtrl = TextEditingController();
+  late final _radiusCtrl =
+      TextEditingController(text: '${widget.existing?.radiusKm ?? 3}');
+  late final _distanceMinCtrl =
+      TextEditingController(text: widget.existing?.distanceMinKm?.toString() ?? '');
+  late final _distanceMaxCtrl =
+      TextEditingController(text: widget.existing?.distanceMaxKm?.toString() ?? '');
 
-  late SportType _sport = widget.initialSport;
-  final Set<int> _selectedDays = {DateTime.now().weekday};
-  TimeOfDay _start = const TimeOfDay(hour: 18, minute: 0);
-  TimeOfDay _end = const TimeOfDay(hour: 19, minute: 0);
-  PickedLocation? _location;
-  double? _paceMin;
-  double? _paceMax;
+  late SportType _sport = widget.existing?.sport ?? widget.initialSport;
+  late final Set<int> _selectedDays = {
+    widget.existing?.dayOfWeek ?? DateTime.now().weekday
+  };
+  late TimeOfDay _start =
+      widget.existing?.startTime ?? const TimeOfDay(hour: 18, minute: 0);
+  late TimeOfDay _end =
+      widget.existing?.endTime ?? const TimeOfDay(hour: 19, minute: 0);
+  late PickedLocation? _location = widget.existing == null
+      ? null
+      : (widget.existing!.locationName == null
+          ? null
+          : PickedLocation(
+              name: widget.existing!.locationName!,
+              latitude: widget.existing!.latitude ?? 0,
+              longitude: widget.existing!.longitude ?? 0,
+            ));
+  late double? _paceMin = widget.existing?.paceMin;
+  late double? _paceMax = widget.existing?.paceMax;
   bool _saving = false;
 
   @override
@@ -64,6 +90,31 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     if (_selectedDays.isEmpty) return;
     setState(() => _saving = true);
     try {
+      final radiusKm = double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3;
+      final distanceMinKm = double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.'));
+      final distanceMaxKm = double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.'));
+
+      if (widget.isEditing) {
+        final updated = await _activityService.updateActivity(
+          id: widget.existing!.id,
+          sport: _sport,
+          dayOfWeek: _selectedDays.first,
+          startTime: _start,
+          endTime: _end,
+          locationName: _location?.name,
+          latitude: _location?.latitude,
+          longitude: _location?.longitude,
+          radiusKm: radiusKm,
+          distanceMinKm: distanceMinKm,
+          distanceMaxKm: distanceMaxKm,
+          paceMin: _paceMin,
+          paceMax: _paceMax,
+        );
+        if (!mounted) return;
+        context.pushReplacement('/matches/${updated.id}');
+        return;
+      }
+
       final userId = SupabaseService.currentUserId!;
       final days = _selectedDays.toList()..sort();
       final created = <Activity>[];
@@ -77,9 +128,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           locationName: _location?.name,
           latitude: _location?.latitude,
           longitude: _location?.longitude,
-          radiusKm: double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3,
-          distanceMinKm: double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.')),
-          distanceMaxKm: double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.')),
+          radiusKm: radiusKm,
+          distanceMinKm: distanceMinKm,
+          distanceMaxKm: distanceMaxKm,
           paceMin: _paceMin,
           paceMax: _paceMax,
         ));
@@ -114,7 +165,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Neue Aktivität'),
+        title: Text(widget.isEditing ? 'Aktivität bearbeiten' : 'Neue Aktivität'),
       ),
       body: SafeArea(
         child: ListView(
@@ -137,13 +188,24 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Wann? (mehrere Tage möglich)'),
+            _SectionLabel(widget.isEditing ? 'Wann?' : 'Wann? (mehrere Tage möglich)'),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: List.generate(7, (i) {
                 final day = i + 1;
                 final selected = _selectedDays.contains(day);
+                if (widget.isEditing) {
+                  return ChoiceChip(
+                    label: Text(weekdayLabels[i]),
+                    selected: selected,
+                    onSelected: (_) => setState(() {
+                      _selectedDays
+                        ..clear()
+                        ..add(day);
+                    }),
+                  );
+                }
                 return FilterChip(
                   label: Text(weekdayLabels[i]),
                   selected: selected,
@@ -260,9 +322,11 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : Text(_selectedDays.length > 1
-                      ? 'Veröffentlichen (${_selectedDays.length} Tage)'
-                      : 'Veröffentlichen'),
+                  : Text(widget.isEditing
+                      ? 'Speichern'
+                      : _selectedDays.length > 1
+                          ? 'Veröffentlichen (${_selectedDays.length} Tage)'
+                          : 'Veröffentlichen'),
             ),
           ],
         ),
