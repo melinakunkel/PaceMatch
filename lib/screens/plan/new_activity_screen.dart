@@ -26,7 +26,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   final _distanceMaxCtrl = TextEditingController();
 
   late SportType _sport = widget.initialSport;
-  int _dayOfWeek = DateTime.now().weekday;
+  final Set<int> _selectedDays = {DateTime.now().weekday};
   TimeOfDay _start = const TimeOfDay(hour: 18, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 19, minute: 0);
   PickedLocation? _location;
@@ -61,34 +61,42 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   }
 
   Future<void> _save() async {
+    if (_selectedDays.isEmpty) return;
     setState(() => _saving = true);
     try {
-      final activity = await _activityService.createActivity(
-        userId: SupabaseService.currentUserId!,
-        sport: _sport,
-        dayOfWeek: _dayOfWeek,
-        startTime: _start,
-        endTime: _end,
-        locationName: _location?.name,
-        latitude: _location?.latitude,
-        longitude: _location?.longitude,
-        radiusKm: double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3,
-        distanceMinKm: double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.')),
-        distanceMaxKm: double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.')),
-        paceMin: _paceMin,
-        paceMax: _paceMax,
-      );
+      final userId = SupabaseService.currentUserId!;
+      final days = _selectedDays.toList()..sort();
+      final created = <Activity>[];
+      for (final day in days) {
+        created.add(await _activityService.createActivity(
+          userId: userId,
+          sport: _sport,
+          dayOfWeek: day,
+          startTime: _start,
+          endTime: _end,
+          locationName: _location?.name,
+          latitude: _location?.latitude,
+          longitude: _location?.longitude,
+          radiusKm: double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3,
+          distanceMinKm: double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.')),
+          distanceMaxKm: double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.')),
+          paceMin: _paceMin,
+          paceMax: _paceMax,
+        ));
+      }
       if (!mounted) return;
-      context.pushReplacement('/matches/${activity.id}');
+      if (created.length == 1) {
+        context.pushReplacement('/matches/${created.first.id}');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${created.length} Sportzeiten hinzugefügt.')),
+        );
+        context.pushReplacement('/plan');
+      }
     } catch (e) {
       if (!mounted) return;
-      final session = SupabaseService.auth.currentSession;
-      final debug = 'uid=${SupabaseService.currentUserId} '
-          'hasSession=${session != null} '
-          'expired=${session?.isExpired} '
-          'tokenLen=${session?.accessToken.length}';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Speichern fehlgeschlagen: $e\n$debug')),
+        SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -129,16 +137,23 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Wann?'),
+            const _SectionLabel('Wann? (mehrere Tage möglich)'),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: List.generate(7, (i) {
                 final day = i + 1;
-                return ChoiceChip(
+                final selected = _selectedDays.contains(day);
+                return FilterChip(
                   label: Text(weekdayLabels[i]),
-                  selected: _dayOfWeek == day,
-                  onSelected: (_) => setState(() => _dayOfWeek = day),
+                  selected: selected,
+                  onSelected: (value) => setState(() {
+                    if (value) {
+                      _selectedDays.add(day);
+                    } else if (_selectedDays.length > 1) {
+                      _selectedDays.remove(day);
+                    }
+                  }),
                 );
               }),
             ),
@@ -245,7 +260,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Veröffentlichen'),
+                  : Text(_selectedDays.length > 1
+                      ? 'Veröffentlichen (${_selectedDays.length} Tage)'
+                      : 'Veröffentlichen'),
             ),
           ],
         ),
