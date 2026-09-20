@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/profile/settings_screen.dart';
+import '../services/match_notifier.dart';
 import '../services/unread_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -85,8 +86,35 @@ class AppScaffold extends StatelessWidget {
               icon: Icon(Icons.calendar_today_outlined),
               label: 'Plan',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
+            BottomNavigationBarItem(
+              icon: ValueListenableBuilder<bool>(
+                valueListenable: MatchNotifier.hasNewMatch,
+                builder: (context, hasNew, _) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.people_outline),
+                      if (hasNew)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.danger,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
               label: 'Matches',
             ),
             BottomNavigationBarItem(

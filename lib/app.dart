@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
+import 'services/match_notifier.dart';
 import 'services/profile_service.dart';
 import 'services/supabase_service.dart';
 import 'services/unread_controller.dart';
@@ -34,14 +35,19 @@ class _SamepaceAppState extends State<SamepaceApp> {
       if (data.session != null) {
         UnreadController.startListening();
         UnreadController.refresh();
+        MatchNotifier.startListening();
+        MatchNotifier.refresh();
         _syncThemeFromProfile();
       } else {
         UnreadController.stopListening();
+        MatchNotifier.stopListening();
       }
     });
     if (SupabaseService.currentUserId != null) {
       UnreadController.startListening();
       UnreadController.refresh();
+      MatchNotifier.startListening();
+      MatchNotifier.refresh();
       _syncThemeFromProfile();
     }
   }
@@ -70,6 +76,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
   void dispose() {
     _authSub?.cancel();
     UnreadController.stopListening();
+    MatchNotifier.stopListening();
     super.dispose();
   }
 

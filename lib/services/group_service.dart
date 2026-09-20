@@ -20,6 +20,7 @@ class GroupService {
     double? longitude,
     DateTime? meetingTime,
     String? activityId,
+    bool isMatch = false,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -33,6 +34,7 @@ class GroupService {
           'longitude': longitude,
           'meeting_time': meetingTime?.toIso8601String(),
           'activity_id': activityId,
+          'is_match': isMatch,
         })
         .select()
         .single();
@@ -292,6 +294,24 @@ class GroupService {
         .update({'attended': attended})
         .eq('group_id', groupId)
         .eq('user_id', userId);
+  }
+
+  /// Whether I've been added to a match-created group (see
+  /// [createGroup]'s `isMatch`) since [seenAt] — or at all, if [seenAt] is
+  /// null. Drives the badge on the Matches tab.
+  Future<bool> hasUnseenMatch({
+    required String userId,
+    required DateTime? seenAt,
+  }) async {
+    final rows = await _client
+        .from('group_members')
+        .select('joined_at, groups!inner(is_match)')
+        .eq('user_id', userId)
+        .eq('groups.is_match', true);
+    if (seenAt == null) return rows.isNotEmpty;
+    return rows.any(
+      (row) => DateTime.parse(row['joined_at'] as String).isAfter(seenAt),
+    );
   }
 
   Future<Activity?> getActivity(String? activityId) async {

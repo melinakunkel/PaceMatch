@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/activity.dart';
 import '../../services/activity_service.dart';
+import '../../services/match_notifier.dart';
 import '../../services/match_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -32,6 +33,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
   void initState() {
     super.initState();
     _future = _load();
+    MatchNotifier.markSeen();
   }
 
   Future<List<_MatchedActivity>> _load() async {

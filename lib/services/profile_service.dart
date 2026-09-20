@@ -142,6 +142,26 @@ class ProfileService {
     return score;
   }
 
+  /// When the user last opened the Matches tab — used to know whether a
+  /// match-created group is "new" (see [GroupService.hasUnseenMatch]).
+  Future<DateTime?> getMatchesSeenAt(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('matches_seen_at')
+        .eq('id', userId)
+        .maybeSingle();
+    final raw = row?['matches_seen_at'] as String?;
+    return raw == null ? null : DateTime.parse(raw);
+  }
+
+  Future<void> markMatchesSeen(String userId) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'matches_seen_at': DateTime.now().toIso8601String()})
+        .eq('id', userId);
+  }
+
   /// % of the last 7 days the user had an active (checked-in) session.
   Future<List<bool>> getActivityLast7Days(String userId) async {
     final since = DateTime.now().subtract(const Duration(days: 7));

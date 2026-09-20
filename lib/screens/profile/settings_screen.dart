@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/browser_notification_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -15,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _profileService = ProfileService();
   bool? _autoArchive;
+  bool? _browserNotifications;
 
   @override
   void initState() {
@@ -22,6 +24,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _profileService.getProfile(SupabaseService.currentUserId!).then((p) {
       if (mounted) setState(() => _autoArchive = p.autoArchiveInactiveChats);
     });
+    BrowserNotificationService.isEnabled().then((v) {
+      if (mounted) setState(() => _browserNotifications = v);
+    });
+  }
+
+  Future<void> _setBrowserNotifications(bool value) async {
+    if (!value) {
+      await BrowserNotificationService.disable();
+      setState(() => _browserNotifications = false);
+      return;
+    }
+    final granted = await BrowserNotificationService.requestEnable();
+    if (!mounted) return;
+    setState(() => _browserNotifications = granted);
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Berechtigung nicht erteilt. Du kannst sie in den Browser-Einstellungen ändern.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _setAutoArchive(bool value) async {
@@ -86,6 +111,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: _autoArchive == null
                       ? null
                       : (v) => _setAutoArchive(v),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Benachrichtigungen',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  BrowserNotificationService.isSupported
+                      ? 'Erhalte eine Browser-Benachrichtigung für neue Nachrichten und Matches, solange SAMEPACE in einem Tab offen ist.'
+                      : 'Dein Browser unterstützt keine Benachrichtigungen.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Browser-Benachrichtigungen'),
+                  value: _browserNotifications ?? false,
+                  onChanged:
+                      (_browserNotifications == null ||
+                          !BrowserNotificationService.isSupported)
+                      ? null
+                      : (v) => _setBrowserNotifications(v),
                 ),
                 const SizedBox(height: 24),
                 const Text(

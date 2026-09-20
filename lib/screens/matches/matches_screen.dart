@@ -94,6 +94,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
       longitude: activity.longitude,
       meetingTime: activity.nextOccurrence,
       activityId: activity.id,
+      isMatch: true,
     );
     await _groupService.joinGroup(groupId: group.id, userId: otherUserId);
     return group.id;
