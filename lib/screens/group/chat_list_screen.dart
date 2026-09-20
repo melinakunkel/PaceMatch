@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/activity.dart';
 import '../../models/group.dart';
 import '../../services/group_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
@@ -25,21 +26,30 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   final _groupService = GroupService();
+  final _profileService = ProfileService();
   bool _showArchived = false;
   late Future<List<SportGroup>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _groupService.getMyGroups(SupabaseService.currentUserId!);
+    _future = _loadGroups();
+  }
+
+  Future<List<SportGroup>> _loadGroups() async {
+    final userId = SupabaseService.currentUserId!;
+    if (!_showArchived) {
+      final profile = await _profileService.getProfile(userId);
+      if (profile.autoArchiveInactiveChats) {
+        await _groupService.archiveStaleChats(userId);
+      }
+    }
+    return _groupService.getMyGroups(userId, archived: _showArchived);
   }
 
   void _reload() {
     setState(() {
-      _future = _groupService.getMyGroups(
-        SupabaseService.currentUserId!,
-        archived: _showArchived,
-      );
+      _future = _loadGroups();
     });
   }
 
@@ -60,10 +70,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
         content: Text('Du verlässt die Gruppe "${g.name}".'),
         actions: [
           TextButton(
-              onPressed: () => context.pop(false), child: const Text('Abbrechen')),
+            onPressed: () => context.pop(false),
+            child: const Text('Abbrechen'),
+          ),
           TextButton(
-              onPressed: () => context.pop(true),
-              child: const Text('Verlassen')),
+            onPressed: () => context.pop(true),
+            child: const Text('Verlassen'),
+          ),
         ],
       ),
     );
@@ -82,13 +95,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Chat löschen?'),
         content: Text(
-            'Die Gruppe "${g.name}" wird für alle Teilnehmer unwiderruflich gelöscht.'),
+          'Die Gruppe "${g.name}" wird für alle Teilnehmer unwiderruflich gelöscht.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => context.pop(false), child: const Text('Abbrechen')),
+            onPressed: () => context.pop(false),
+            child: const Text('Abbrechen'),
+          ),
           TextButton(
-              onPressed: () => context.pop(true),
-              child: const Text('Löschen')),
+            onPressed: () => context.pop(true),
+            child: const Text('Löschen'),
+          ),
         ],
       ),
     );
@@ -106,8 +123,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
       title: _showArchived ? 'Archivierte Chats' : 'Gruppen & Chats',
       actions: [
         IconButton(
-          tooltip: _showArchived ? 'Aktive Chats anzeigen' : 'Archivierte Chats anzeigen',
-          icon: Icon(_showArchived ? Icons.chat_bubble_outline : Icons.archive_outlined),
+          tooltip: _showArchived
+              ? 'Aktive Chats anzeigen'
+              : 'Archivierte Chats anzeigen',
+          icon: Icon(
+            _showArchived ? Icons.chat_bubble_outline : Icons.archive_outlined,
+          ),
           onPressed: () {
             setState(() => _showArchived = !_showArchived);
             _reload();
@@ -126,9 +147,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  _showArchived
-                      ? 'Keine archivierten Chats.'
-                      : 'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
+                  _showArchived ? 'Keine archivierten Chats.' : 'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -161,7 +180,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.danger,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.surface, width: 2),
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -169,15 +191,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ),
                   title: Text(
                     g.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontWeight: g.hasUnread ? FontWeight.bold : FontWeight.normal),
+                      fontWeight: g.hasUnread
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
                   ),
                   subtitle: Text(
                     [
-                      if (g.meetingTime != null) _formatMeetingTime(g.meetingTime!),
+                      if (g.meetingTime != null)
+                        _formatMeetingTime(g.meetingTime!),
                       if (g.meetingPoint != null) g.meetingPoint!,
                       '${g.memberCount} Teilnehmer',
                     ].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   trailing: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
@@ -220,7 +250,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ),
                     ],
                   ),
-                  onTap: () => context.push('/group/${g.id}').then((_) => _reload()),
+                  onTap: () =>
+                      context.push('/group/${g.id}').then((_) => _reload()),
                 ),
               );
             },

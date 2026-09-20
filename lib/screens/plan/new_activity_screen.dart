@@ -64,6 +64,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               ));
   late double? _paceMin = widget.existing?.paceMin;
   late double? _paceMax = widget.existing?.paceMax;
+  late String? _venueStatus = widget.existing?.venueStatus;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
   bool _saving = false;
@@ -153,6 +154,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           : null;
       final paceMin = _sport.usesPace ? _paceMin : null;
       final paceMax = _sport.usesPace ? _paceMax : null;
+      final venueStatus = _sport.usesVenueQuestion ? _venueStatus : null;
       final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
@@ -170,6 +172,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           distanceMaxKm: distanceMaxKm,
           paceMin: paceMin,
           paceMax: paceMax,
+          venueStatus: venueStatus,
           specificDate: specificDate,
         );
         if (!mounted) return;
@@ -196,6 +199,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             distanceMaxKm: distanceMaxKm,
             paceMin: paceMin,
             paceMax: paceMax,
+            venueStatus: venueStatus,
             specificDate: specificDate,
           ),
         );
@@ -260,6 +264,27 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 );
               }).toList(),
             ),
+            if (_sport.usesVenueQuestion) ...[
+              const SizedBox(height: 20),
+              const _SectionLabel('Hast du schon einen Platz?'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Hab schon einen Platz'),
+                    selected: _venueStatus == 'has_venue',
+                    onSelected: (_) =>
+                        setState(() => _venueStatus = 'has_venue'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Suche noch einen Platz'),
+                    selected: _venueStatus == 'needs_venue',
+                    onSelected: (_) =>
+                        setState(() => _venueStatus = 'needs_venue'),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 20),
             const _SectionLabel('Wann?'),
             Wrap(

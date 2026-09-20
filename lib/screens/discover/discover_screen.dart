@@ -368,46 +368,52 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.secondaryLight,
-              backgroundImage: e.profile.avatarUrl != null
-                  ? NetworkImage(e.profile.avatarUrl!)
-                  : null,
-              child: e.profile.avatarUrl != null
-                  ? null
-                  : Text(
-                      e.profile.fullName.isNotEmpty
-                          ? e.profile.fullName[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+            GestureDetector(
+              onTap: () => context.push('/profile/${e.profile.id}'),
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.secondaryLight,
+                backgroundImage: e.profile.avatarUrl != null
+                    ? NetworkImage(e.profile.avatarUrl!)
+                    : null,
+                child: e.profile.avatarUrl != null
+                    ? null
+                    : Text(
+                        e.profile.fullName.isNotEmpty
+                            ? e.profile.fullName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          [
-                            e.profile.fullName,
-                            if (e.profile.age != null) '${e.profile.age}',
-                          ].join(', '),
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                  GestureDetector(
+                    onTap: () => context.push('/profile/${e.profile.id}'),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            [
+                              e.profile.fullName,
+                              if (e.profile.age != null) '${e.profile.age}',
+                            ].join(', '),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
-                      ),
-                      if (e.profile.isVerified) ...[
-                        const SizedBox(width: 4),
-                        const VerifiedBadge(size: 14),
+                        if (e.profile.isVerified) ...[
+                          const SizedBox(width: 4),
+                          const VerifiedBadge(size: 14),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                   if (e.profile.gender != null)
                     Text(

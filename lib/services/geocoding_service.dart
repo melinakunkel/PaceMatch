@@ -11,30 +11,32 @@ class GeocodingService {
 
   Future<List<PickedLocation>> search(String query) async {
     if (query.trim().length < 2) return [];
-    final uri = Uri.parse('$_baseUrl/search').replace(queryParameters: {
-      'format': 'json',
-      'q': query,
-      'limit': '6',
-      'addressdetails': '0',
-    });
+    final uri = Uri.parse('$_baseUrl/search').replace(
+      queryParameters: {
+        'format': 'json',
+        'q': query,
+        'limit': '6',
+        'addressdetails': '0',
+      },
+    );
     final response = await http.get(uri);
     if (response.statusCode != 200) return [];
     final results = jsonDecode(response.body) as List;
     return results
-        .map((r) => PickedLocation(
-              name: r['display_name'] as String,
-              latitude: double.parse(r['lat'] as String),
-              longitude: double.parse(r['lon'] as String),
-            ))
+        .map(
+          (r) => PickedLocation(
+            name: r['display_name'] as String,
+            latitude: double.parse(r['lat'] as String),
+            longitude: double.parse(r['lon'] as String),
+          ),
+        )
         .toList();
   }
 
   Future<String?> reverseGeocode(double lat, double lon) async {
-    final uri = Uri.parse('$_baseUrl/reverse').replace(queryParameters: {
-      'format': 'json',
-      'lat': '$lat',
-      'lon': '$lon',
-    });
+    final uri = Uri.parse('$_baseUrl/reverse').replace(
+      queryParameters: {'format': 'json', 'lat': '$lat', 'lon': '$lon'},
+    );
     final response = await http.get(uri);
     if (response.statusCode != 200) return null;
     final result = jsonDecode(response.body) as Map<String, dynamic>;

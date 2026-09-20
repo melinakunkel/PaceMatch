@@ -19,8 +19,9 @@ class MatchService {
       excludeUserId: myActivity.userId,
     );
 
-    final sameDay =
-        candidates.where((a) => a.dayOfWeek == myActivity.dayOfWeek).toList();
+    final sameDay = candidates
+        .where((a) => a.dayOfWeek == myActivity.dayOfWeek)
+        .toList();
     if (sameDay.isEmpty) return [];
 
     final scored = <MapEntry<Activity, int>>[];
@@ -30,27 +31,37 @@ class MatchService {
     }
     if (scored.isEmpty) return [];
 
-    final myProfileRow =
-        await _client.from('profiles').select().eq('id', myActivity.userId).maybeSingle();
-    final myProfile = myProfileRow == null ? null : Profile.fromMap(myProfileRow);
+    final myProfileRow = await _client
+        .from('profiles')
+        .select()
+        .eq('id', myActivity.userId)
+        .maybeSingle();
+    final myProfile = myProfileRow == null
+        ? null
+        : Profile.fromMap(myProfileRow);
 
     final userIds = scored.map((e) => e.key.userId).toSet().toList();
-    final profileRows =
-        await _client.from('profiles').select().inFilter('id', userIds);
+    final profileRows = await _client
+        .from('profiles')
+        .select()
+        .inFilter('id', userIds);
     final profilesById = {
-      for (final row in profileRows) row['id'] as String: Profile.fromMap(row)
+      for (final row in profileRows) row['id'] as String: Profile.fromMap(row),
     };
 
     final result = <MatchCandidate>[];
     for (final entry in scored) {
       final profile = profilesById[entry.key.userId];
       if (profile == null) continue;
-      if (myProfile != null && !isAllowedByPreferences(myProfile, profile)) continue;
-      result.add(MatchCandidate(
-        profile: profile,
-        theirActivity: entry.key,
-        matchPercent: entry.value,
-      ));
+      if (myProfile != null && !isAllowedByPreferences(myProfile, profile))
+        continue;
+      result.add(
+        MatchCandidate(
+          profile: profile,
+          theirActivity: entry.key,
+          matchPercent: entry.value,
+        ),
+      );
     }
     result.sort((a, b) => b.matchPercent.compareTo(a.matchPercent));
     return result;
@@ -83,13 +94,18 @@ class MatchService {
     final overlapEnd = aEnd < bEnd ? aEnd : bEnd;
     final overlap = overlapEnd - overlapStart;
     if (overlap <= 0) return 0;
-    final unionSpan = (aEnd > bEnd ? aEnd : bEnd) - (aStart < bStart ? aStart : bStart);
+    final unionSpan =
+        (aEnd > bEnd ? aEnd : bEnd) - (aStart < bStart ? aStart : bStart);
     if (unionSpan <= 0) return 0;
     return overlap / unionSpan;
   }
 
   double _rangeOverlapRatio(
-      double? aMin, double? aMax, double? bMin, double? bMax) {
+    double? aMin,
+    double? aMax,
+    double? bMin,
+    double? bMax,
+  ) {
     if (aMin == null || aMax == null || bMin == null || bMax == null) {
       return 0.7; // neutral score when pace data is missing
     }

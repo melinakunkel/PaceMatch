@@ -14,10 +14,10 @@ class ChatMessage {
   });
 
   factory ChatMessage.fromMap(Map<String, dynamic> map) => ChatMessage(
-        id: map['id'] as String,
-        groupId: map['group_id'] as String,
-        senderId: map['sender_id'] as String,
-        content: map['content'] as String,
-        createdAt: DateTime.parse(map['created_at'] as String),
-      );
+    id: map['id'] as String,
+    groupId: map['group_id'] as String,
+    senderId: map['sender_id'] as String,
+    content: map['content'] as String,
+    createdAt: DateTime.parse(map['created_at'] as String),
+  );
 }

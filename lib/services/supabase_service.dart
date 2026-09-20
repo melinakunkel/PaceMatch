@@ -18,7 +18,8 @@ class SupabaseService {
     // session survives this same browser session (so the app keeps working
     // while open), but a cold restart signs the user back out.
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_rememberMeKey) == false && client.auth.currentSession != null) {
+    if (prefs.getBool(_rememberMeKey) == false &&
+        client.auth.currentSession != null) {
       await client.auth.signOut();
     }
   }

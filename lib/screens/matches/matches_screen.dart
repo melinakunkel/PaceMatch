@@ -201,40 +201,47 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           }
                         }),
                         controlAffinity: ListTileControlAffinity.leading,
-                        secondary: CircleAvatar(
-                          backgroundColor: AppColors.secondaryLight,
-                          backgroundImage: c.profile.avatarUrl != null
-                              ? NetworkImage(c.profile.avatarUrl!)
-                              : null,
-                          child: c.profile.avatarUrl != null
-                              ? null
-                              : Text(
-                                  c.profile.fullName.isNotEmpty
-                                      ? c.profile.fullName[0].toUpperCase()
-                                      : '?',
-                                  style: TextStyle(color: AppColors.primary),
-                                ),
+                        secondary: GestureDetector(
+                          onTap: () => context.push('/profile/${c.profile.id}'),
+                          child: CircleAvatar(
+                            backgroundColor: AppColors.secondaryLight,
+                            backgroundImage: c.profile.avatarUrl != null
+                                ? NetworkImage(c.profile.avatarUrl!)
+                                : null,
+                            child: c.profile.avatarUrl != null
+                                ? null
+                                : Text(
+                                    c.profile.fullName.isNotEmpty
+                                        ? c.profile.fullName[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(color: AppColors.primary),
+                                  ),
+                          ),
                         ),
                         title: Row(
                           children: [
                             Expanded(
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      [
-                                        c.profile.fullName,
-                                        if (c.profile.age != null)
-                                          '${c.profile.age}',
-                                      ].join(', '),
-                                      overflow: TextOverflow.ellipsis,
+                              child: GestureDetector(
+                                onTap: () =>
+                                    context.push('/profile/${c.profile.id}'),
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        [
+                                          c.profile.fullName,
+                                          if (c.profile.age != null)
+                                            '${c.profile.age}',
+                                        ].join(', '),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  if (c.profile.isVerified) ...[
-                                    const SizedBox(width: 4),
-                                    const VerifiedBadge(size: 14),
+                                    if (c.profile.isVerified) ...[
+                                      const SizedBox(width: 4),
+                                      const VerifiedBadge(size: 14),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                             _MatchBadge(percent: c.matchPercent),

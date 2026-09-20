@@ -56,7 +56,9 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
         reportedUserId: _selectedMember!.id,
         groupId: widget.groupId,
         reason: _reason,
-        details: _detailsCtrl.text.trim().isEmpty ? null : _detailsCtrl.text.trim(),
+        details: _detailsCtrl.text.trim().isEmpty
+            ? null
+            : _detailsCtrl.text.trim(),
       );
       if (mounted) setState(() => _sent = true);
     } catch (e) {
@@ -87,7 +89,12 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                     isExpanded: true,
                     value: _selectedMember,
                     items: widget.members
-                        .map((m) => DropdownMenuItem(value: m, child: Text(m.fullName)))
+                        .map(
+                          (m) => DropdownMenuItem(
+                            value: m,
+                            child: Text(m.fullName),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _selectedMember = v),
                   ),
@@ -100,7 +107,8 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                     items: _reasons
                         .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
-                    onChanged: (v) => setState(() => _reason = v ?? _reasons.first),
+                    onChanged: (v) =>
+                        setState(() => _reason = v ?? _reasons.first),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -131,7 +139,10 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                 ? const SizedBox(
                     height: 16,
                     width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('Melden'),
           ),

@@ -83,10 +83,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       _picked = point;
       _pickedName = null;
     });
-    final name = await _geocoding.reverseGeocode(point.latitude, point.longitude);
+    final name = await _geocoding.reverseGeocode(
+      point.latitude,
+      point.longitude,
+    );
     if (!mounted || _picked != point) return;
     setState(() {
-      _pickedName = name ??
+      _pickedName =
+          name ??
           '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
       _searchCtrl.text = _pickedName!;
     });
@@ -94,12 +98,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   void _confirm() {
     if (_picked == null) return;
-    Navigator.of(context).pop(PickedLocation(
-      name: _pickedName ??
-          '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}',
-      latitude: _picked!.latitude,
-      longitude: _picked!.longitude,
-    ));
+    Navigator.of(context).pop(
+      PickedLocation(
+        name:
+            _pickedName ??
+            '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}',
+        latitude: _picked!.latitude,
+        longitude: _picked!.longitude,
+      ),
+    );
   }
 
   @override
@@ -127,15 +134,20 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 userAgentPackageName: 'com.samepace.samepace',
               ),
               if (_picked != null)
-                MarkerLayer(markers: [
-                  Marker(
-                    point: _picked!,
-                    width: 44,
-                    height: 44,
-                    child: Icon(Icons.location_pin,
-                        color: AppColors.secondary, size: 44),
-                  ),
-                ]),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _picked!,
+                      width: 44,
+                      height: 44,
+                      child: Icon(
+                        Icons.location_pin,
+                        color: AppColors.secondary,
+                        size: 44,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
           Positioned(
@@ -159,7 +171,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                               child: SizedBox(
                                 height: 16,
                                 width: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           : null,
@@ -192,7 +206,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         final r = _results[index];
                         return ListTile(
                           leading: const Icon(Icons.place_outlined),
-                          title: Text(r.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          title: Text(
+                            r.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           onTap: () => _selectResult(r),
                         );
                       },

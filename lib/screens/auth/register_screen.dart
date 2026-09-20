@@ -74,8 +74,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(labelText: 'E-Mail'),
-                  validator: (v) =>
-                      (v == null || !v.contains('@')) ? 'Gültige E-Mail eingeben' : null,
+                  validator: (v) => (v == null || !v.contains('@'))
+                      ? 'Gültige E-Mail eingeben'
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
@@ -97,7 +98,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Registrieren'),
                 ),

@@ -201,9 +201,11 @@ class _DayList extends StatelessWidget {
                   icon: const Icon(Icons.more_vert),
                   onSelected: (value) async {
                     if (value == 'edit') {
-                      await Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => NewActivityScreen(existing: a),
-                      ));
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewActivityScreen(existing: a),
+                        ),
+                      );
                       onDeleted();
                     } else if (value == 'delete') {
                       final confirmed = await showDialog<bool>(
@@ -211,7 +213,8 @@ class _DayList extends StatelessWidget {
                         builder: (context) => AlertDialog(
                           title: const Text('Sportzeit löschen?'),
                           content: Text(
-                              '${a.sport.label} am ${a.dayLabel}, ${a.timeRangeLabel} wirklich löschen?'),
+                            '${a.sport.label} am ${a.dayLabel}, ${a.timeRangeLabel} wirklich löschen?',
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
@@ -219,8 +222,10 @@ class _DayList extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: Text('Löschen',
-                                  style: TextStyle(color: AppColors.danger)),
+                              child: Text(
+                                'Löschen',
+                                style: TextStyle(color: AppColors.danger),
+                              ),
                             ),
                           ],
                         ),

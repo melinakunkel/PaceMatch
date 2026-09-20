@@ -83,7 +83,10 @@ class _SportCard extends StatelessWidget {
               child: Icon(sport.icon, color: AppColors.primary, size: 28),
             ),
             const SizedBox(height: 12),
-            Text(sport.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              sport.label,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ],
         ),
       ),

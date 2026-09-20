@@ -35,25 +35,27 @@ class CommunityEvent {
   });
 
   factory CommunityEvent.fromMap(Map<String, dynamic> map) => CommunityEvent(
-        id: map['id'] as String,
-        name: map['name'] as String,
-        source: map['source'] as String?,
-        sport: SportType.fromDb(map['sport'] as String),
-        dayOfWeek: map['day_of_week'] as int?,
-        specificDate: map['specific_date'] == null
-            ? null
-            : DateTime.parse(map['specific_date'] as String),
-        startTime: (map['start_time'] as String).substring(0, 5),
-        endTime: map['end_time'] == null
-            ? null
-            : (map['end_time'] as String).substring(0, 5),
-        locationName: map['location_name'] as String,
-        latitude: (map['latitude'] as num?)?.toDouble(),
-        longitude: (map['longitude'] as num?)?.toDouble(),
-        city: map['city'] as String,
-        url: map['url'] as String?,
-      );
+    id: map['id'] as String,
+    name: map['name'] as String,
+    source: map['source'] as String?,
+    sport: SportType.fromDb(map['sport'] as String),
+    dayOfWeek: map['day_of_week'] as int?,
+    specificDate: map['specific_date'] == null
+        ? null
+        : DateTime.parse(map['specific_date'] as String),
+    startTime: (map['start_time'] as String).substring(0, 5),
+    endTime: map['end_time'] == null
+        ? null
+        : (map['end_time'] as String).substring(0, 5),
+    locationName: map['location_name'] as String,
+    latitude: (map['latitude'] as num?)?.toDouble(),
+    longitude: (map['longitude'] as num?)?.toDouble(),
+    city: map['city'] as String,
+    url: map['url'] as String?,
+  );
 
-  String get timeRangeLabel => endTime == null ? startTime : '$startTime - $endTime';
-  String get dayLabel => dayOfWeek == null ? '' : weekdayFullLabels[dayOfWeek! - 1];
+  String get timeRangeLabel =>
+      endTime == null ? startTime : '$startTime - $endTime';
+  String get dayLabel =>
+      dayOfWeek == null ? '' : weekdayFullLabels[dayOfWeek! - 1];
 }

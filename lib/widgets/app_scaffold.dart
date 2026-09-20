@@ -39,11 +39,18 @@ class AppScaffold extends StatelessWidget {
           context.go(_routes[index]);
         },
         items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
           const BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined), label: 'Plan'),
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
           const BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline), label: 'Matches'),
+            icon: Icon(Icons.calendar_today_outlined),
+            label: 'Plan',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            label: 'Matches',
+          ),
           BottomNavigationBarItem(
             icon: ValueListenableBuilder<bool>(
               valueListenable: UnreadController.hasUnread,
@@ -62,7 +69,10 @@ class AppScaffold extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.danger,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.surface, width: 1),
+                            border: Border.all(
+                              color: AppColors.surface,
+                              width: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -72,7 +82,10 @@ class AppScaffold extends StatelessWidget {
             ),
             label: 'Chat',
           ),
-          const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profil',
+          ),
         ],
       ),
     );

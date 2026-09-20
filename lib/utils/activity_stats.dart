@@ -22,6 +22,9 @@ String? activityStatsLabel(Activity activity, UserSport? theirSport) {
       '${_formatKm(activity.distanceMinKm!)} - ${_formatKm(activity.distanceMaxKm!)} km',
     );
   }
+  if (activity.venueStatusLabel != null) {
+    parts.add(activity.venueStatusLabel!);
+  }
   return parts.isEmpty ? null : parts.join(' · ');
 }
 

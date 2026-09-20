@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../models/activity.dart';
+import '../../models/interest.dart';
 import '../../models/profile.dart';
 import '../../models/user_sport.dart';
 import '../../services/auth_service.dart';
@@ -102,17 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         bytes: bytes,
         fileExtension: ext,
       );
-      await _profileService.updateProfile(
-        Profile(
-          id: _profile!.id,
-          fullName: _profile!.fullName,
-          age: _profile!.age,
-          gender: _profile!.gender,
-          city: _profile!.city,
-          avatarUrl: url,
-          bio: _profile!.bio,
-        ),
-      );
+      await _profileService.updateProfile(_profile!.copyWith(avatarUrl: url));
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -351,6 +342,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
+                  if (_profile!.interests.isNotEmpty ||
+                      _profile!.language != null) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Interessen & Sprache',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (_profile!.language != null)
+                          Chip(
+                            avatar: const Icon(Icons.language, size: 16),
+                            label: Text(
+                              kLanguageOptions[_profile!.language] ??
+                                  _profile!.language!,
+                            ),
+                          ),
+                        ..._profile!.interests.map((i) => Chip(label: Text(i))),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   const Text(
                     'Zuverlässigkeit',

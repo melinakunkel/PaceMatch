@@ -104,7 +104,8 @@ class AppColors {
 
   static Color primary = AppThemeVariant.standard._palette.primary;
   static Color secondary = AppThemeVariant.standard._palette.secondary;
-  static Color secondaryLight = AppThemeVariant.standard._palette.secondaryLight;
+  static Color secondaryLight =
+      AppThemeVariant.standard._palette.secondaryLight;
   static Color background = AppThemeVariant.standard._palette.background;
   static Color surface = AppThemeVariant.standard._palette.surface;
   static Color textPrimary = AppThemeVariant.standard._palette.textPrimary;
@@ -132,8 +133,9 @@ class ThemeController {
   ThemeController._();
 
   static const _prefsKey = 'theme_variant';
-  static final ValueNotifier<AppThemeVariant> variant =
-      ValueNotifier(AppThemeVariant.standard);
+  static final ValueNotifier<AppThemeVariant> variant = ValueNotifier(
+    AppThemeVariant.standard,
+  );
 
   static Future<void> loadSaved() async {
     final prefs = await SharedPreferences.getInstance();
@@ -195,10 +197,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -214,8 +213,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppColors.border),

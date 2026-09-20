@@ -67,4 +67,9 @@ enum SportType {
   /// Whether a distance range makes sense for this sport. False for tennis,
   /// which isn't measured in km.
   bool get usesDistance => this != SportType.tennis;
+
+  /// Whether this sport typically needs a reserved venue (a court, a
+  /// booked slot), so activities should ask whether the creator already
+  /// has one or is still looking for one.
+  bool get usesVenueQuestion => this == SportType.tennis;
 }

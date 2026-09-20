@@ -1,9 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../../services/profile_service.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _profileService = ProfileService();
+  bool? _autoArchive;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileService.getProfile(SupabaseService.currentUserId!).then((p) {
+      if (mounted) setState(() => _autoArchive = p.autoArchiveInactiveChats);
+    });
+  }
+
+  Future<void> _setAutoArchive(bool value) async {
+    setState(() => _autoArchive = value);
+    final profile = await _profileService.getProfile(
+      SupabaseService.currentUserId!,
+    );
+    await _profileService.updateProfile(
+      profile.copyWith(autoArchiveInactiveChats: value),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +50,29 @@ class SettingsScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const Text('Design',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Chats',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Chats ohne neue Nachricht seit 7 Tagen automatisch archivieren.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Automatisch archivieren'),
+                  value: _autoArchive ?? false,
+                  onChanged: _autoArchive == null
+                      ? null
+                      : (v) => _setAutoArchive(v),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Design',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Wähle den Look, der am besten zu dir passt.',
@@ -44,7 +93,9 @@ class SettingsScreen extends StatelessWidget {
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: selected ? palette.primary : AppColors.border,
+                            color: selected
+                                ? palette.primary
+                                : AppColors.border,
                             width: selected ? 2 : 1,
                           ),
                         ),
@@ -56,13 +107,20 @@ class SettingsScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(variant.label,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w700, fontSize: 16)),
+                                  Text(
+                                    variant.label,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                                   const SizedBox(height: 2),
-                                  Text(variant.description,
-                                      style:
-                                          TextStyle(color: AppColors.textSecondary)),
+                                  Text(
+                                    variant.description,
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -70,7 +128,9 @@ class SettingsScreen extends StatelessWidget {
                               selected
                                   ? Icons.check_circle
                                   : Icons.radio_button_unchecked,
-                              color: selected ? palette.primary : AppColors.border,
+                              color: selected
+                                  ? palette.primary
+                                  : AppColors.border,
                             ),
                           ],
                         ),
@@ -98,16 +158,8 @@ class _PalettePreview extends StatelessWidget {
       height: 48,
       child: Stack(
         children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            child: _dot(colors.primary, 30),
-          ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: _dot(colors.secondary, 26),
-          ),
+          Positioned(left: 0, top: 0, child: _dot(colors.primary, 30)),
+          Positioned(right: 0, bottom: 0, child: _dot(colors.secondary, 26)),
         ],
       ),
     );

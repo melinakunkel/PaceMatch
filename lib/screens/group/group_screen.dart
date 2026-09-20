@@ -107,10 +107,16 @@ class _GroupScreenState extends State<GroupScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(group.sport.icon, size: 18, color: AppColors.primary),
+                      Icon(
+                        group.sport.icon,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 6),
-                      Text('${group.memberCount} Teilnehmer',
-                          style: TextStyle(color: AppColors.textSecondary)),
+                      Text(
+                        '${group.memberCount} Teilnehmer',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -119,8 +125,15 @@ class _GroupScreenState extends State<GroupScreen> {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: _members
-                          .map((m) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
+                          .map(
+                            (m) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => context.push(
+                                  m.id == myId
+                                      ? '/profile'
+                                      : '/profile/${m.id}',
+                                ),
                                 child: CircleAvatar(
                                   radius: 16,
                                   backgroundColor: AppColors.secondaryLight,
@@ -134,10 +147,14 @@ class _GroupScreenState extends State<GroupScreen> {
                                               ? m.fullName[0].toUpperCase()
                                               : '?',
                                           style: TextStyle(
-                                              color: AppColors.primary, fontSize: 13),
+                                            color: AppColors.primary,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                 ),
-                              ))
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -158,7 +175,9 @@ class _GroupScreenState extends State<GroupScreen> {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: _setMeetingPoint,
-                          style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           child: const Text('Speichern'),
                         ),
                       ],
@@ -166,8 +185,11 @@ class _GroupScreenState extends State<GroupScreen> {
                   else if (group.meetingPoint != null)
                     Row(
                       children: [
-                        Icon(Icons.place_outlined,
-                            size: 18, color: AppColors.textSecondary),
+                        Icon(
+                          Icons.place_outlined,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 6),
                         Text(group.meetingPoint!),
                       ],
@@ -232,8 +254,10 @@ class _ChatViewState extends State<_ChatView> {
               }
               if (messages.isEmpty) {
                 return Center(
-                  child: Text('Noch keine Nachrichten. Sag hallo!',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(
+                    'Noch keine Nachrichten. Sag hallo!',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                 );
               }
               final lastMessage = messages.last;
@@ -258,19 +282,28 @@ class _ChatViewState extends State<_ChatView> {
                   final m = messages[index];
                   final mine = m.senderId == myId;
                   return Align(
-                    alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: mine
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       constraints: const BoxConstraints(maxWidth: 280),
                       decoration: BoxDecoration(
                         color: mine ? AppColors.secondary : AppColors.surface,
-                        border: mine ? null : Border.all(color: AppColors.border),
+                        border: mine
+                            ? null
+                            : Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         m.content,
-                        style: TextStyle(color: mine ? Colors.white : AppColors.textPrimary),
+                        style: TextStyle(
+                          color: mine ? Colors.white : AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   );
@@ -297,7 +330,9 @@ class _ChatViewState extends State<_ChatView> {
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
-                  style: IconButton.styleFrom(backgroundColor: AppColors.secondary),
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.secondary,
+                  ),
                   onPressed: _send,
                   icon: const Icon(Icons.send, color: Colors.white),
                 ),

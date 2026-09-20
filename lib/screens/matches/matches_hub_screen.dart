@@ -35,8 +35,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
   }
 
   Future<List<_MatchedActivity>> _load() async {
-    final activities =
-        await _activityService.getMyActivities(SupabaseService.currentUserId!);
+    final activities = await _activityService.getMyActivities(
+      SupabaseService.currentUserId!,
+    );
     final results = <_MatchedActivity>[];
     for (final a in activities) {
       final matches = await _matchService.findMatches(a);
@@ -80,8 +81,11 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
                 padding: const EdgeInsets.all(32),
                 children: [
                   const SizedBox(height: 40),
-                  Icon(Icons.people_outline,
-                      size: 48, color: AppColors.textSecondary),
+                  Icon(
+                    Icons.people_outline,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Aktuell gibt es noch keine passenden Leute zu deinen '
@@ -118,7 +122,10 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
                     title: Text('${a.sport.label} · ${a.dayLabel}'),
                     subtitle: Text(a.timeRangeLabel),
                     trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.secondaryLight,
                         borderRadius: BorderRadius.circular(20),
@@ -126,7 +133,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
                       child: Text(
                         '${m.matchCount}',
                         style: TextStyle(
-                            color: AppColors.primary, fontWeight: FontWeight.w700),
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     onTap: () => context.push('/matches/${a.id}'),

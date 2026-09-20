@@ -88,8 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: 'E-Mail'),
-                    validator: (v) =>
-                        (v == null || !v.contains('@')) ? 'Gültige E-Mail eingeben' : null,
+                    validator: (v) => (v == null || !v.contains('@'))
+                        ? 'Gültige E-Mail eingeben'
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -103,14 +104,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Checkbox(
                         value: _rememberMe,
-                        onChanged: (v) => setState(() => _rememberMe = v ?? true),
+                        onChanged: (v) =>
+                            setState(() => _rememberMe = v ?? true),
                       ),
                       const Text('Eingeloggt bleiben'),
                       const Spacer(),
                       TextButton(
                         onPressed: () => showDialog(
                           context: context,
-                          builder: (_) => ForgotPasswordDialog(initialEmail: _emailCtrl.text),
+                          builder: (_) => ForgotPasswordDialog(
+                            initialEmail: _emailCtrl.text,
+                          ),
                         ),
                         child: const Text('Passwort vergessen?'),
                       ),
@@ -128,7 +132,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Anmelden'),
                   ),

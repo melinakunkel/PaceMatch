@@ -68,6 +68,7 @@ class ActivityService {
     double? distanceMaxKm,
     double? paceMin,
     double? paceMax,
+    String? venueStatus,
     DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -87,7 +88,10 @@ class ActivityService {
           'distance_max_km': distanceMaxKm,
           'pace_min': paceMin,
           'pace_max': paceMax,
-          'specific_date': specificDate == null ? null : _formatDate(specificDate),
+          'venue_status': venueStatus,
+          'specific_date': specificDate == null
+              ? null
+              : _formatDate(specificDate),
         })
         .select()
         .single();
@@ -113,6 +117,7 @@ class ActivityService {
     double? distanceMaxKm,
     double? paceMin,
     double? paceMax,
+    String? venueStatus,
     DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -131,7 +136,10 @@ class ActivityService {
           'distance_max_km': distanceMaxKm,
           'pace_min': paceMin,
           'pace_max': paceMax,
-          'specific_date': specificDate == null ? null : _formatDate(specificDate),
+          'venue_status': venueStatus,
+          'specific_date': specificDate == null
+              ? null
+              : _formatDate(specificDate),
         })
         .eq('id', id)
         .select()

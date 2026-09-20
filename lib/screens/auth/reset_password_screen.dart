@@ -37,9 +37,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       await AuthService().updatePassword(_passwordCtrl.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwort geändert.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Passwort geändert.')));
       context.go('/');
     } on AuthException catch (e) {
       setState(() => _error = e.message);
@@ -73,7 +72,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   TextFormField(
                     controller: _passwordCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Neues Passwort'),
+                    decoration: const InputDecoration(
+                      labelText: 'Neues Passwort',
+                    ),
                     validator: (v) =>
                         (v == null || v.length < 6) ? 'Mind. 6 Zeichen' : null,
                   ),
@@ -81,9 +82,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   TextFormField(
                     controller: _confirmCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Passwort bestätigen'),
-                    validator: (v) =>
-                        v != _passwordCtrl.text ? 'Passwörter stimmen nicht überein' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Passwort bestätigen',
+                    ),
+                    validator: (v) => v != _passwordCtrl.text
+                        ? 'Passwörter stimmen nicht überein'
+                        : null,
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
@@ -97,7 +101,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Passwort ändern'),
                   ),

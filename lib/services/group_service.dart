@@ -40,8 +40,10 @@ class GroupService {
   /// A group both [userId] and I are already members of, if any — used to
   /// avoid spinning up a second chat for the same person.
   Future<String?> findSharedGroupId(String userId) async {
-    final rows =
-        await _client.from('group_members').select('group_id').eq('user_id', userId);
+    final rows = await _client
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', userId);
     return rows.isEmpty ? null : rows.first['group_id'] as String;
   }
 
@@ -55,7 +57,10 @@ class GroupService {
     return rows.isEmpty ? null : rows.first['id'] as String;
   }
 
-  Future<void> joinGroup({required String groupId, required String userId}) async {
+  Future<void> joinGroup({
+    required String groupId,
+    required String userId,
+  }) async {
     await SupabaseService.ensureFreshSession();
     try {
       await _client.from('group_members').insert({
@@ -74,10 +79,14 @@ class GroupService {
     DateTime? meetingTime,
   }) async {
     await SupabaseService.ensureFreshSession();
-    await _client.from('groups').update({
-      'meeting_point': meetingPoint,
-      if (meetingTime != null) 'meeting_time': meetingTime.toIso8601String(),
-    }).eq('id', groupId);
+    await _client
+        .from('groups')
+        .update({
+          'meeting_point': meetingPoint,
+          if (meetingTime != null)
+            'meeting_time': meetingTime.toIso8601String(),
+        })
+        .eq('id', groupId);
   }
 
   Future<SportGroup> getGroup(String groupId) async {
@@ -112,7 +121,11 @@ class GroupService {
       final count = countRows != null && countRows.isNotEmpty
           ? (countRows.first['count'] as int? ?? 0)
           : 0;
-      final group = SportGroup.fromMap({...g, 'member_count': count, 'archived': archived});
+      final group = SportGroup.fromMap({
+        ...g,
+        'member_count': count,
+        'archived': archived,
+      });
       groups.add(group);
       lastReadByGroupId[group.id] = row['last_read_at'] == null
           ? null
@@ -120,21 +133,50 @@ class GroupService {
     }
     if (groups.isEmpty) return groups;
 
-    final latestMessageByGroupId = await _latestMessageTimes(groups.map((g) => g.id).toList());
+    final latestMessageByGroupId = await _latestMessageTimes(
+      groups.map((g) => g.id).toList(),
+    );
     final withUnread = groups.map((g) {
       final lastMessageAt = latestMessageByGroupId[g.id];
       final lastReadAt = lastReadByGroupId[g.id];
-      final unread = lastMessageAt != null &&
+      final unread =
+          lastMessageAt != null &&
           (lastReadAt == null || lastMessageAt.isAfter(lastReadAt));
-      return g.copyWith(hasUnread: unread, archived: archived);
+      return g.copyWith(
+        hasUnread: unread,
+        archived: archived,
+        lastMessageAt: lastMessageAt,
+      );
     }).toList();
 
-    withUnread.sort((a, b) =>
-        (b.meetingTime ?? DateTime(2100)).compareTo(a.meetingTime ?? DateTime(2100)));
+    withUnread.sort(
+      (a, b) => (b.meetingTime ?? DateTime(2100)).compareTo(
+        a.meetingTime ?? DateTime(2100),
+      ),
+    );
     return withUnread;
   }
 
-  Future<Map<String, DateTime>> _latestMessageTimes(List<String> groupIds) async {
+  /// Archives (for [userId] only) any of their non-archived chats with no
+  /// activity for [inactiveFor] — used when the user has opted into
+  /// auto-archiving inactive chats.
+  Future<void> archiveStaleChats(
+    String userId, {
+    Duration inactiveFor = const Duration(days: 7),
+  }) async {
+    final groups = await getMyGroups(userId);
+    final cutoff = DateTime.now().subtract(inactiveFor);
+    for (final g in groups) {
+      final lastActivity = g.lastActivityAt;
+      if (lastActivity != null && lastActivity.isBefore(cutoff)) {
+        await setArchived(groupId: g.id, userId: userId, archived: true);
+      }
+    }
+  }
+
+  Future<Map<String, DateTime>> _latestMessageTimes(
+    List<String> groupIds,
+  ) async {
     if (groupIds.isEmpty) return {};
     final rows = await _client
         .from('messages')
@@ -144,7 +186,10 @@ class GroupService {
     final result = <String, DateTime>{};
     for (final row in rows) {
       final groupId = row['group_id'] as String;
-      result.putIfAbsent(groupId, () => DateTime.parse(row['created_at'] as String));
+      result.putIfAbsent(
+        groupId,
+        () => DateTime.parse(row['created_at'] as String),
+      );
     }
     return result;
   }
@@ -156,7 +201,10 @@ class GroupService {
     return groups.any((g) => g.hasUnread);
   }
 
-  Future<void> markGroupRead({required String groupId, required String userId}) async {
+  Future<void> markGroupRead({
+    required String groupId,
+    required String userId,
+  }) async {
     await SupabaseService.ensureFreshSession();
     await _client
         .from('group_members')
@@ -179,7 +227,10 @@ class GroupService {
   }
 
   /// Removes me from the group without affecting other members.
-  Future<void> leaveGroup({required String groupId, required String userId}) async {
+  Future<void> leaveGroup({
+    required String groupId,
+    required String userId,
+  }) async {
     await SupabaseService.ensureFreshSession();
     await _client
         .from('group_members')
