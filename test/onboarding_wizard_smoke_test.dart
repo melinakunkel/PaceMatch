@@ -38,4 +38,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ein paar Basisdaten'), findsOneWidget);
   });
+
+  testWidgets('Weiter button stays visible and tappable on a short viewport', (
+    tester,
+  ) async {
+    // Simulates a cramped browser window (e.g. split-screen on a laptop) —
+    // short enough that a layout overflow would hide the button row.
+    await tester.binding.setSurfaceSize(const Size(390, 420));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(home: OnboardingWizardScreen()),
+    );
+
+    expect(tester.takeException(), isNull);
+    final weiterFinder = find.text('Weiter');
+    expect(weiterFinder, findsOneWidget);
+    // hitTestable() fails if the widget is off-screen/clipped/obscured —
+    // exactly what "no Weiter button to click" would look like.
+    expect(find.text('Weiter').hitTestable(), findsOneWidget);
+
+    await tester.tap(weiterFinder);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Wie fit bist du dabei?'), findsOneWidget);
+  });
 }
