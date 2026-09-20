@@ -18,7 +18,8 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
   });
 
-  /// Null for screens outside the 5-tab flow (Home): no bottom nav shown.
+  /// Null for screens outside the 5-tab flow (Home): the bar still shows,
+  /// for navigation, just with no tab highlighted.
   final int? currentIndex;
   final Widget body;
   final String? title;
@@ -58,64 +59,74 @@ class AppScaffold extends StatelessWidget {
             ),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: currentIndex == null
-          ? null
-          : BottomNavigationBar(
-              currentIndex: currentIndex!,
-              onTap: (index) {
-                if (index == currentIndex) return;
-                context.go(_routes[index]);
-              },
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.explore_outlined),
-                  label: 'Entdecken',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.calendar_today_outlined),
-                  label: 'Plan',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.people_outline),
-                  label: 'Matches',
-                ),
-                BottomNavigationBarItem(
-                  icon: ValueListenableBuilder<bool>(
-                    valueListenable: UnreadController.hasUnread,
-                    builder: (context, unread, _) {
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(Icons.chat_bubble_outline),
-                          if (unread)
-                            Positioned(
-                              right: -2,
-                              top: -2,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.danger,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.surface,
-                                    width: 1,
-                                  ),
-                                ),
+      bottomNavigationBar: Theme(
+        // On Home, currentIndex is null (it isn't one of the 5 tabs) — still
+        // show the bar so navigation stays reachable, just with nothing
+        // highlighted, by making the "selected" and "unselected" colors match.
+        data: currentIndex == null
+            ? Theme.of(context).copyWith(
+                bottomNavigationBarTheme: Theme.of(context)
+                    .bottomNavigationBarTheme
+                    .copyWith(selectedItemColor: AppColors.textSecondary),
+              )
+            : Theme.of(context),
+        child: BottomNavigationBar(
+          currentIndex: currentIndex ?? 0,
+          onTap: (index) {
+            if (index == currentIndex) return;
+            context.go(_routes[index]);
+          },
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              label: 'Entdecken',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_outlined),
+              label: 'Plan',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              label: 'Matches',
+            ),
+            BottomNavigationBarItem(
+              icon: ValueListenableBuilder<bool>(
+                valueListenable: UnreadController.hasUnread,
+                builder: (context, unread, _) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.chat_bubble_outline),
+                      if (unread)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.danger,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 1,
                               ),
                             ),
-                        ],
-                      );
-                    },
-                  ),
-                  label: 'Chat',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  label: 'Profil',
-                ),
-              ],
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              label: 'Chat',
             ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
