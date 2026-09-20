@@ -15,6 +15,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/matching_preferences.dart';
+import '../../widgets/app_scaffold.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 
@@ -51,6 +52,42 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<_DiscoverEntry> _entries = [];
   List<CommunityEvent> _communityEvents = [];
   final Set<String> _contacting = {};
+
+  bool _showCommunityEvents = true;
+  Set<SportType> _sportFilter = {};
+  RangeValues _timeRange = const RangeValues(0, 24);
+
+  bool get _filtersActive =>
+      !_showCommunityEvents ||
+      _sportFilter.isNotEmpty ||
+      _timeRange.start > 0 ||
+      _timeRange.end < 24;
+
+  List<_DiscoverEntry> get _filteredEntries => _entries.where((e) {
+    if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.activity.sport)) {
+      return false;
+    }
+    return _withinTimeRange(
+      e.activity.startTime.hour,
+      e.activity.startTime.minute,
+    );
+  }).toList();
+
+  List<CommunityEvent> get _filteredCommunityEvents {
+    if (!_showCommunityEvents) return [];
+    return _communityEvents.where((e) {
+      if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.sport)) {
+        return false;
+      }
+      final parts = e.startTime.split(':');
+      return _withinTimeRange(int.parse(parts[0]), int.parse(parts[1]));
+    }).toList();
+  }
+
+  bool _withinTimeRange(int hour, int minute) {
+    final t = hour + minute / 60;
+    return t >= _timeRange.start && t <= _timeRange.end;
+  }
 
   /// Level/pace for sports without a numeric pace (tennis, wandern), keyed
   /// by "sportName:userId" since a user can have a level per sport.
@@ -164,31 +201,139 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  Future<void> _openFilters() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Filter',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Events in der Nähe anzeigen'),
+                  value: _showCommunityEvents,
+                  onChanged: (v) {
+                    setSheetState(() => _showCommunityEvents = v);
+                    setState(() {});
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sportart',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: SportType.values.map((sport) {
+                    final selected = _sportFilter.contains(sport);
+                    return FilterChip(
+                      label: Text(sport.label),
+                      selected: selected,
+                      onSelected: (_) {
+                        setSheetState(() {
+                          if (selected) {
+                            _sportFilter.remove(sport);
+                          } else {
+                            _sportFilter.add(sport);
+                          }
+                        });
+                        setState(() {});
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Uhrzeit: ${_formatHour(_timeRange.start)} - '
+                  '${_formatHour(_timeRange.end)}'
+                  '${_timeRange.start <= 0 && _timeRange.end >= 24 ? ' (egal)' : ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                RangeSlider(
+                  values: _timeRange,
+                  min: 0,
+                  max: 24,
+                  divisions: 48,
+                  labels: RangeLabels(
+                    _formatHour(_timeRange.start),
+                    _formatHour(_timeRange.end),
+                  ),
+                  onChanged: (v) {
+                    setSheetState(() => _timeRange = v);
+                    setState(() {});
+                  },
+                ),
+                const SizedBox(height: 12),
+                if (_filtersActive)
+                  TextButton(
+                    onPressed: () {
+                      setSheetState(() {
+                        _showCommunityEvents = true;
+                        _sportFilter = {};
+                        _timeRange = const RangeValues(0, 24);
+                      });
+                      setState(() {});
+                    },
+                    child: const Text('Filter zurücksetzen'),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatHour(double h) {
+    final hour = h.floor().clamp(0, 24);
+    final minute = ((h - h.floor()) * 60).round();
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+    return AppScaffold(
+      currentIndex: 0,
+      title: 'Entdecken',
+      actions: [
+        IconButton(
+          icon: Icon(
+            _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+          ),
+          tooltip: 'Filter',
+          onPressed: _openFilters,
         ),
-        title: const Text('Entdecken'),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _DateStrip(
-              dates: _dateRange,
-              selected: _selectedDate,
-              onSelect: (d) {
-                setState(() => _selectedDate = d);
-                _load();
-              },
-            ),
-            const Divider(height: 1),
-            Expanded(child: _buildBody()),
-          ],
-        ),
+      ],
+      body: Column(
+        children: [
+          _DateStrip(
+            dates: _dateRange,
+            selected: _selectedDate,
+            onSelect: (d) {
+              setState(() => _selectedDate = d);
+              _load();
+            },
+          ),
+          const Divider(height: 1),
+          Expanded(child: _buildBody()),
+        ],
       ),
     );
   }
@@ -219,6 +364,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         ),
       );
     }
+    final entries = _filteredEntries;
+    final communityEvents = _filteredCommunityEvents;
     if (_entries.isEmpty && _communityEvents.isEmpty) {
       return Center(
         child: Padding(
@@ -231,12 +378,34 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         ),
       );
     }
+    if (entries.isEmpty && communityEvents.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Nichts passt zu deinen Filtern.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: _openFilters,
+                child: const Text('Filter anpassen'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          if (_communityEvents.isNotEmpty) ...[
+          if (communityEvents.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 4),
               child: Row(
@@ -253,10 +422,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ],
               ),
             ),
-            ..._communityEvents.map(_buildCommunityEventCard),
+            ...communityEvents.map(_buildCommunityEventCard),
             const SizedBox(height: 8),
           ],
-          if (_entries.isNotEmpty)
+          if (entries.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 4),
               child: Text(
@@ -267,7 +436,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
               ),
             ),
-          ..._entries.map(_buildEntryCard),
+          ...entries.map(_buildEntryCard),
         ],
       ),
     );

@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      currentIndex: 0,
+      currentIndex: null,
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
