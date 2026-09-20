@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/activity.dart';
+import '../../models/community_event.dart';
 import '../../models/profile.dart';
 import '../../services/activity_service.dart';
+import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
@@ -31,6 +34,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final _activityService = ActivityService();
   final _profileService = ProfileService();
   final _groupService = GroupService();
+  final _communityEventService = CommunityEventService();
 
   late DateTime _selectedDate = _dateOnly(DateTime.now());
   late final List<DateTime> _dateRange = List.generate(
@@ -41,6 +45,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _loading = true;
   String? _error;
   List<_DiscoverEntry> _entries = [];
+  List<CommunityEvent> _communityEvents = [];
   final Set<String> _contacting = {};
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -75,9 +80,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         if (myProfile != null && !isAllowedByPreferences(myProfile, p)) continue;
         entries.add(_DiscoverEntry(profile: p, activity: a));
       }
+
+      final communityEvents = await _communityEventService.getForCityAndDate(
+        city: myProfile?.city ?? 'Wien',
+        date: _selectedDate,
+      );
+
       if (!mounted) return;
       setState(() {
         _entries = entries;
+        _communityEvents = communityEvents;
         _loading = false;
       });
     } catch (e) {
@@ -168,7 +180,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         ),
       );
     }
-    if (_entries.isEmpty) {
+    if (_entries.isEmpty && _communityEvents.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -182,13 +194,103 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        itemCount: _entries.length,
-        itemBuilder: (context, index) {
-          final e = _entries[index];
-          final contacting = _contacting.contains(e.activity.id);
-          return Card(
+        children: [
+          if (_communityEvents.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.star, size: 16, color: Colors.amber),
+                  const SizedBox(width: 6),
+                  Text('Events in der Nähe',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            ..._communityEvents.map(_buildCommunityEventCard),
+            const SizedBox(height: 8),
+          ],
+          if (_entries.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              child: Text('Passende Leute',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+            ),
+          ..._entries.map(_buildEntryCard),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunityEventCard(CommunityEvent event) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: AppColors.secondaryLight.withValues(alpha: 0.4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.star, color: Colors.amber, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(event.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  if (event.source != null)
+                    Text(event.source!,
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(event.sport.icon, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(event.sport.label),
+                      const SizedBox(width: 10),
+                      Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(event.timeRangeLabel),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.place_outlined, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(event.locationName,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                  if (event.url != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 32,
+                      child: OutlinedButton(
+                        onPressed: () => launchUrl(Uri.parse(event.url!),
+                            mode: LaunchMode.externalApplication),
+                        child: const Text('Mehr Infos'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntryCard(_DiscoverEntry e) {
+    final contacting = _contacting.contains(e.activity.id);
+    return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -280,9 +382,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ],
               ),
             ),
-          );
-        },
-      ),
     );
   }
 }
