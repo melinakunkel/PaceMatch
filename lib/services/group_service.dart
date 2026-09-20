@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/activity.dart';
 import '../models/group.dart';
 import '../models/profile.dart';
@@ -37,10 +39,15 @@ class GroupService {
 
   Future<void> joinGroup({required String groupId, required String userId}) async {
     await SupabaseService.ensureFreshSession();
-    await _client.from('group_members').upsert({
-      'group_id': groupId,
-      'user_id': userId,
-    }, onConflict: 'group_id,user_id');
+    try {
+      await _client.from('group_members').insert({
+        'group_id': groupId,
+        'user_id': userId,
+      });
+    } on PostgrestException catch (e) {
+      // 23505 = unique_violation: already a member, nothing to do.
+      if (e.code != '23505') rethrow;
+    }
   }
 
   Future<void> updateMeetingPoint({
