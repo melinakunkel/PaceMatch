@@ -20,17 +20,21 @@ class PlanScreen extends StatefulWidget {
 
 class _PlanScreenState extends State<PlanScreen> {
   static const _viewModeKey = 'plan_view_mode';
+  static const _hourStartKey = 'plan_hour_start';
+  static const _hourEndKey = 'plan_hour_end';
 
   final _activityService = ActivityService();
   late Future<List<Activity>> _future;
   int _selectedDay = DateTime.now().weekday; // 1 = Monday
   _PlanViewMode _viewMode = _PlanViewMode.list;
+  RangeValues _hourRange = const RangeValues(7, 21);
 
   @override
   void initState() {
     super.initState();
     _load();
     _loadViewMode();
+    _loadHourRange();
   }
 
   Future<void> _loadViewMode() async {
@@ -46,6 +50,79 @@ class _PlanScreenState extends State<PlanScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_viewModeKey, mode.name);
   }
+
+  Future<void> _loadHourRange() async {
+    final prefs = await SharedPreferences.getInstance();
+    final start = prefs.getDouble(_hourStartKey);
+    final end = prefs.getDouble(_hourEndKey);
+    if (start != null && end != null && mounted) {
+      setState(() => _hourRange = RangeValues(start, end));
+    }
+  }
+
+  Future<void> _setHourRange(RangeValues range) async {
+    setState(() => _hourRange = range);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_hourStartKey, range.start);
+    await prefs.setDouble(_hourEndKey, range.end);
+  }
+
+  Future<void> _openHourRangeSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          var range = _hourRange;
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sichtbarer Zeitraum',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Welchen Teil des Tages soll der Kalender anzeigen?',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${_formatHour(range.start)} - ${_formatHour(range.end)} Uhr',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                RangeSlider(
+                  values: range,
+                  min: 0,
+                  max: 24,
+                  divisions: 48,
+                  labels: RangeLabels(
+                    _formatHour(range.start),
+                    _formatHour(range.end),
+                  ),
+                  onChanged: (v) {
+                    setSheetState(() => range = v);
+                    _setHourRange(v);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  static String _formatHour(double h) =>
+      '${h.floor().clamp(0, 24).toString().padLeft(2, '0')}:00';
 
   void _load() {
     final userId = SupabaseService.currentUserId!;
@@ -63,6 +140,12 @@ class _PlanScreenState extends State<PlanScreen> {
       currentIndex: 1,
       title: 'Mein Sportplan',
       actions: [
+        if (_viewMode == _PlanViewMode.week)
+          IconButton(
+            icon: const Icon(Icons.schedule_outlined),
+            tooltip: 'Sichtbarer Zeitraum',
+            onPressed: _openHourRangeSheet,
+          ),
         IconButton(
           icon: Icon(
             _viewMode == _PlanViewMode.list
@@ -101,6 +184,8 @@ class _PlanScreenState extends State<PlanScreen> {
               child: _WeekCalendarView(
                 activities: activities,
                 onChanged: _refresh,
+                preferredMinHour: _hourRange.start.round(),
+                preferredMaxHour: _hourRange.end.round(),
               ),
             );
           }
@@ -306,22 +391,64 @@ class _DayList extends StatelessWidget {
   }
 }
 
-/// A compact week-at-a-glance timetable: one column per weekday, activities
-/// placed by their start/end time. Same underlying weekly pattern as the
-/// list view (activities bucketed by [Activity.dayOfWeek]), just laid out
-/// as a calendar instead of picked one day at a time.
-class _WeekCalendarView extends StatelessWidget {
-  const _WeekCalendarView({required this.activities, required this.onChanged});
+/// A compact week-at-a-glance timetable, tied to real calendar dates: one
+/// column per weekday of the currently viewed week, activities placed by
+/// their start/end time. Recurring activities repeat every week on their
+/// [Activity.dayOfWeek]; one-off activities ([Activity.specificDate]) only
+/// show up in the week they actually fall in.
+class _WeekCalendarView extends StatefulWidget {
+  const _WeekCalendarView({
+    required this.activities,
+    required this.onChanged,
+    required this.preferredMinHour,
+    required this.preferredMaxHour,
+  });
 
   final List<Activity> activities;
   final Future<void> Function() onChanged;
 
+  /// The hour range the user wants to see by default (from the "Sichtbarer
+  /// Zeitraum" setting) — the grid still auto-expands beyond this if an
+  /// activity in the viewed week falls outside it.
+  final int preferredMinHour;
+  final int preferredMaxHour;
+
+  @override
+  State<_WeekCalendarView> createState() => _WeekCalendarViewState();
+}
+
+class _WeekCalendarViewState extends State<_WeekCalendarView> {
   static const _hourHeight = 52.0;
   static const _hourLabelWidth = 34.0;
 
+  late DateTime _weekStart = _mondayOf(DateTime.now());
+
+  static DateTime _mondayOf(DateTime d) {
+    final date = DateTime(d.year, d.month, d.day);
+    return date.subtract(Duration(days: date.weekday - 1));
+  }
+
+  static bool _isSameDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  List<Activity> _activitiesForDate(DateTime date, int weekday) {
+    return widget.activities.where((a) {
+      if (a.specificDate != null) return _isSameDate(a.specificDate!, date);
+      return a.dayOfWeek == weekday;
+    }).toList();
+  }
+
+  void _shiftWeek(int days) =>
+      setState(() => _weekStart = _weekStart.add(Duration(days: days)));
+
+  void _goToToday() => setState(() => _weekStart = _mondayOf(DateTime.now()));
+
+  static String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.';
+
   @override
   Widget build(BuildContext context) {
-    if (activities.isEmpty) {
+    if (widget.activities.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -337,15 +464,25 @@ class _WeekCalendarView extends StatelessWidget {
       );
     }
 
-    var minHour = 7;
-    var maxHour = 21;
-    for (final a in activities) {
+    final dates = List.generate(7, (i) => _weekStart.add(Duration(days: i)));
+    final byDay = List.generate(
+      7,
+      (i) => _activitiesForDate(dates[i], i + 1),
+    );
+    final weekActivities = byDay.expand((l) => l).toList();
+    final today = DateTime.now();
+    final isCurrentWeek = _isSameDate(_weekStart, _mondayOf(today));
+
+    var minHour = widget.preferredMinHour;
+    var maxHour = widget.preferredMaxHour;
+    for (final a in weekActivities) {
       minHour = minHour < a.startTime.hour ? minHour : a.startTime.hour;
       final endHour = a.endTime.minute > 0
           ? a.endTime.hour + 1
           : a.endTime.hour;
       maxHour = maxHour > endHour ? maxHour : endHour;
     }
+    if (maxHour <= minHour) maxHour = minHour + 1;
     final hourCount = maxHour - minHour;
     final gridHeight = hourCount * _hourHeight;
 
@@ -356,14 +493,65 @@ class _WeekCalendarView extends StatelessWidget {
         children: [
           Row(
             children: [
-              const SizedBox(width: _hourLabelWidth),
-              ...List.generate(7, (i) {
-                return Expanded(
-                  child: Center(
-                    child: Text(
-                      weekdayLabels[i],
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => _shiftWeek(-7),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      '${_fmtDate(dates.first)} - ${_fmtDate(dates.last)}',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
+                    if (!isCurrentWeek)
+                      GestureDetector(
+                        onTap: _goToToday,
+                        child: Text(
+                          'Zu dieser Woche',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => _shiftWeek(7),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const SizedBox(width: _hourLabelWidth),
+              ...List.generate(7, (i) {
+                final isToday = _isSameDate(dates[i], today);
+                return Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        weekdayLabels[i],
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: isToday ? AppColors.primary : null,
+                        ),
+                      ),
+                      Text(
+                        _fmtDate(dates[i]),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: isToday ? FontWeight.w700 : null,
+                          color: isToday
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }),
@@ -395,23 +583,29 @@ class _WeekCalendarView extends StatelessWidget {
                   ),
                 ),
                 ...List.generate(7, (i) {
-                  final day = i + 1;
-                  final dayActivities = activities
-                      .where((a) => a.dayOfWeek == day)
-                      .toList();
                   return Expanded(
                     child: _DayColumn(
-                      activities: dayActivities,
+                      activities: byDay[i],
                       minHour: minHour,
                       hourCount: hourCount,
                       hourHeight: _hourHeight,
-                      onChanged: onChanged,
+                      onChanged: widget.onChanged,
                     ),
                   );
                 }),
               ],
             ),
           ),
+          if (weekActivities.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'Keine Sportzeiten in dieser Woche.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            ),
         ],
       ),
     );
