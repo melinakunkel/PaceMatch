@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
+              children: [
                 Icon(Icons.terrain, color: AppColors.primary, size: 28),
                 SizedBox(width: 8),
                 Text(
@@ -76,7 +76,7 @@ class _SportCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.secondaryLight,
                 shape: BoxShape.circle,
               ),

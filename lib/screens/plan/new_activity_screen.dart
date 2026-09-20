@@ -305,7 +305,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                             '${_specificDate!.month.toString().padLeft(2, '0')}.'
                             '${_specificDate!.year}',
                     style: _specificDate == null
-                        ? const TextStyle(color: AppColors.textSecondary)
+                        ? TextStyle(color: AppColors.textSecondary)
                         : null,
                   ),
                 ),
@@ -346,7 +346,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: _location == null
-                      ? const TextStyle(color: AppColors.textSecondary)
+                      ? TextStyle(color: AppColors.textSecondary)
                       : null,
                 ),
               ),

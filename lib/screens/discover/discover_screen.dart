@@ -151,9 +151,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+              Icon(Icons.error_outline, color: AppColors.danger, size: 40),
               const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
+              Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.danger)),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: _load, child: const Text('Erneut versuchen')),
             ],
@@ -162,9 +162,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       );
     }
     if (_entries.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
             'An diesem Tag hat noch niemand eine Sportzeit eingetragen.',
             textAlign: TextAlign.center,
@@ -199,7 +199,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             e.profile.fullName.isNotEmpty
                                 ? e.profile.fullName[0].toUpperCase()
                                 : '?',
-                            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                           ),
                   ),
                   const SizedBox(width: 12),
@@ -227,7 +227,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ),
                         if (e.profile.gender != null)
                           Text(e.profile.gender!,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                         const SizedBox(height: 6),
                         Row(
                           children: [
@@ -235,7 +235,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             const SizedBox(width: 4),
                             Text(e.activity.sport.label),
                             const SizedBox(width: 10),
-                            const Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
+                            Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
                             const SizedBox(width: 4),
                             Text(e.activity.timeRangeLabel),
                           ],
@@ -244,7 +244,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              const Icon(Icons.place_outlined, size: 16, color: AppColors.textSecondary),
+                              Icon(Icons.place_outlined, size: 16, color: AppColors.textSecondary),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(e.activity.locationName!,

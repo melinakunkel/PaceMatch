@@ -65,9 +65,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.terrain, size: 48, color: AppColors.primary),
+                  Icon(Icons.terrain, size: 48, color: AppColors.primary),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'SAMEPACE',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Gemeinsam Sport machen, wenn es zeitlich passt.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 4),
-                    Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                    Text(_error!, style: TextStyle(color: AppColors.danger)),
                   ],
                   const SizedBox(height: 12),
                   ElevatedButton(

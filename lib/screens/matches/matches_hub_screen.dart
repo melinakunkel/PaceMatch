@@ -80,10 +80,10 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
                 padding: const EdgeInsets.all(32),
                 children: [
                   const SizedBox(height: 40),
-                  const Icon(Icons.people_outline,
+                  Icon(Icons.people_outline,
                       size: 48, color: AppColors.textSecondary),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Aktuell gibt es noch keine passenden Leute zu deinen '
                     'Sportzeiten. Trag weitere Zeiten ein oder schau später nochmal vorbei.',
                     textAlign: TextAlign.center,
@@ -125,7 +125,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
                       ),
                       child: Text(
                         '${m.matchCount}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.primary, fontWeight: FontWeight.w700),
                       ),
                     ),

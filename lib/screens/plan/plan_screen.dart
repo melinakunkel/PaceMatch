@@ -159,8 +159,8 @@ class _DayList extends StatelessWidget {
     if (activities.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(24),
-        children: const [
-          SizedBox(height: 40),
+        children: [
+          const SizedBox(height: 40),
           Center(
             child: Text(
               'Noch keine Sportzeit an diesem Tag.\nTippe unten, um eine hinzuzufügen.',
@@ -193,7 +193,7 @@ class _DayList extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.people_outline, color: AppColors.secondary),
+                  icon: Icon(Icons.people_outline, color: AppColors.secondary),
                   tooltip: 'Passende Leute anzeigen',
                   onPressed: () => context.push('/matches/${a.id}'),
                 ),
@@ -219,7 +219,7 @@ class _DayList extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Löschen',
+                              child: Text('Löschen',
                                   style: TextStyle(color: AppColors.danger)),
                             ),
                           ],

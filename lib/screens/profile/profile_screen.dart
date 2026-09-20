@@ -13,6 +13,7 @@ import '../../widgets/app_scaffold.dart';
 import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
 import 'edit_sport_sheet.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -123,6 +124,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Mein Profil',
       actions: [
         IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: 'Einstellungen',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ),
+        ),
+        IconButton(
           icon: const Icon(Icons.logout),
           tooltip: 'Abmelden',
           onPressed: () async {
@@ -140,11 +148,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+                        Icon(Icons.error_outline, color: AppColors.danger, size: 40),
                         const SizedBox(height: 12),
                         Text(_error!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.danger)),
+                            style: TextStyle(color: AppColors.danger)),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _load,
@@ -181,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           _profile!.fullName.isNotEmpty
                                               ? _profile!.fullName[0].toUpperCase()
                                               : '?',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontSize: 28,
                                               color: AppColors.primary,
                                               fontWeight: FontWeight.w700),
@@ -200,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               bottom: 0,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: AppColors.secondary,
                                   shape: BoxShape.circle,
                                 ),
@@ -236,7 +244,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 if (_profile!.gender != null) _profile!.gender!,
                                 if (_profile!.city != null) _profile!.city!,
                               ].join(' · '),
-                              style: const TextStyle(color: AppColors.textSecondary),
+                              style: TextStyle(color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -286,8 +294,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 8),
                   if (_sports.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text('Noch keine Sportart hinterlegt.',
                           style: TextStyle(color: AppColors.textSecondary)),
                     ),
@@ -340,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(weekdayLabels[i],
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12, color: AppColors.textSecondary)),
                         ],
                       );

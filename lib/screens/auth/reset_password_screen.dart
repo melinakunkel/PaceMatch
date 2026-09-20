@@ -64,7 +64,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Bitte lege ein neues Passwort fest.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
@@ -87,7 +87,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                    Text(_error!, style: TextStyle(color: AppColors.danger)),
                   ],
                   const SizedBox(height: 24),
                   ElevatedButton(

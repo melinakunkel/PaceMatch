@@ -104,7 +104,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text(_error!, style: const TextStyle(color: AppColors.danger)))
+                ? Center(child: Text(_error!, style: TextStyle(color: AppColors.danger)))
                 : _buildBody(),
       ),
     );
@@ -118,11 +118,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
           child: Row(
             children: [
-              const Icon(Icons.schedule, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.schedule, size: 18, color: AppColors.textSecondary),
               const SizedBox(width: 6),
               Text(activity.timeRangeLabel),
               const SizedBox(width: 16),
-              const Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
+              Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
               const SizedBox(width: 6),
               Expanded(child: Text(activity.locationName ?? 'Ort flexibel')),
             ],
@@ -144,9 +144,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
         const SizedBox(height: 8),
         Expanded(
           child: _candidates.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Text(
                       'Sobald jemand eine ähnliche Sportzeit einträgt, '
                       'erscheint er oder sie hier.',
@@ -184,7 +184,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                   c.profile.fullName.isNotEmpty
                                       ? c.profile.fullName[0].toUpperCase()
                                       : '?',
-                                  style: const TextStyle(color: AppColors.primary),
+                                  style: TextStyle(color: AppColors.primary),
                                 ),
                         ),
                         title: Row(
@@ -257,7 +257,7 @@ class _MatchBadge extends StatelessWidget {
       ),
       child: Text(
         '$percent%',
-        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+        style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
       ),
     );
   }

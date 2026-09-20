@@ -87,7 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                  Text(_error!, style: TextStyle(color: AppColors.danger)),
                 ],
                 const SizedBox(height: 24),
                 ElevatedButton(

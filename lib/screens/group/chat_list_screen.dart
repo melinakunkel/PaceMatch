@@ -44,9 +44,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
           final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Text(
                   'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
                   textAlign: TextAlign.center,

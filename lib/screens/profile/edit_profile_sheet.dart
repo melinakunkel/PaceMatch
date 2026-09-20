@@ -136,8 +136,8 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               ],
             ),
             if (_gender == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   'Lege oben dein Geschlecht fest, um dies einzuschränken.',
                   style: TextStyle(fontSize: 12, color: AppColors.textSecondary),

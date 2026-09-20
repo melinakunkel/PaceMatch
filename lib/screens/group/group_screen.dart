@@ -104,7 +104,7 @@ class _GroupScreenState extends State<GroupScreen> {
                       Icon(group.sport.icon, size: 18, color: AppColors.primary),
                       const SizedBox(width: 6),
                       Text('${group.memberCount} Teilnehmer',
-                          style: const TextStyle(color: AppColors.textSecondary)),
+                          style: TextStyle(color: AppColors.textSecondary)),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -127,7 +127,7 @@ class _GroupScreenState extends State<GroupScreen> {
                                           m.fullName.isNotEmpty
                                               ? m.fullName[0].toUpperCase()
                                               : '?',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               color: AppColors.primary, fontSize: 13),
                                         ),
                                 ),
@@ -160,7 +160,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   else if (group.meetingPoint != null)
                     Row(
                       children: [
-                        const Icon(Icons.place_outlined,
+                        Icon(Icons.place_outlined,
                             size: 18, color: AppColors.textSecondary),
                         const SizedBox(width: 6),
                         Text(group.meetingPoint!),
@@ -223,7 +223,7 @@ class _ChatViewState extends State<_ChatView> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (messages.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text('Noch keine Nachrichten. Sag hallo!',
                       style: TextStyle(color: AppColors.textSecondary)),
                 );

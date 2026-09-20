@@ -40,11 +40,17 @@ class _SamepaceAppState extends State<SamepaceApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'SAMEPACE',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      routerConfig: _router,
+    return ValueListenableBuilder<AppThemeVariant>(
+      valueListenable: ThemeController.variant,
+      builder: (context, variant, _) {
+        return MaterialApp.router(
+          key: ValueKey(variant),
+          title: 'SAMEPACE',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          routerConfig: _router,
+        );
+      },
     );
   }
 }
