@@ -115,7 +115,7 @@ class AppScaffold extends StatelessWidget {
                   );
                 },
               ),
-              label: 'Matches',
+              label: 'Buddys',
             ),
             BottomNavigationBarItem(
               icon: ValueListenableBuilder<bool>(

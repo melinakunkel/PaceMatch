@@ -250,7 +250,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Hilft uns, dich mit Leuten auf ähnlichem Niveau zu matchen.',
+            'Hilft uns, dich mit Leuten auf ähnlichem Niveau zusammenzubringen.',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),

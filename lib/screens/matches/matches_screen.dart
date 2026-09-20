@@ -6,9 +6,9 @@ import '../../models/match_candidate.dart';
 import '../../models/profile.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
-import '../../services/group_service.dart';
 import '../../services/like_service.dart';
 import '../../services/match_service.dart';
+import '../../services/match_notifier.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -28,7 +28,6 @@ class MatchesScreen extends StatefulWidget {
 class _MatchesScreenState extends State<MatchesScreen> {
   final _activityService = ActivityService();
   final _matchService = MatchService();
-  final _groupService = GroupService();
   final _profileService = ProfileService();
   final _likeService = LikeService();
 
@@ -36,7 +35,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   List<MatchCandidate> _candidates = [];
   Map<String, UserSport> _theirSports = {};
   int _topIndex = 0;
-  bool _busy = false;
+  bool _celebrating = false;
   bool _loading = true;
   String? _error;
 
@@ -69,35 +68,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
         _topIndex = 0;
       });
     } catch (e) {
-      setState(() => _error = 'Matches konnten nicht geladen werden.');
+      setState(() => _error = 'Sportbuddys konnten nicht geladen werden.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  Future<String> _createGroupWith(String otherUserId) async {
-    final activity = _activity!;
-    final me = SupabaseService.currentUserId!;
-    final existingId =
-        await _groupService.findSharedGroupId(otherUserId) ??
-        await _groupService.findGroupIdForActivity(activity.id);
-    if (existingId != null) {
-      await _groupService.joinGroup(groupId: existingId, userId: otherUserId);
-      return existingId;
-    }
-    final group = await _groupService.createGroup(
-      createdBy: me,
-      sport: activity.sport,
-      name: '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
-      meetingPoint: activity.locationName,
-      latitude: activity.latitude,
-      longitude: activity.longitude,
-      meetingTime: activity.nextOccurrence,
-      activityId: activity.id,
-      isMatch: true,
-    );
-    await _groupService.joinGroup(groupId: group.id, userId: otherUserId);
-    return group.id;
   }
 
   Future<void> _swipe(MatchCandidate candidate, bool liked) async {
@@ -105,8 +79,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
     if (!liked) return;
     // Every right-swipe must reach the server, even if a previous one
     // (from a fast double-swipe) is still in flight — this used to bail
-    // out early via a `_busy` check and silently drop the like, so a quick
-    // second swipe never got recorded and a mutual match could never fire.
+    // out early via a busy check and silently drop the like, so a quick
+    // second swipe never got recorded and a mutual connection could never
+    // fire.
     try {
       final me = SupabaseService.currentUserId!;
       final mutual = await _likeService.like(
@@ -115,26 +90,23 @@ class _MatchesScreenState extends State<MatchesScreen> {
         activityId: _activity?.id,
       );
       if (!mounted || !mutual) return;
-      // Only guard the celebration/navigation part against overlapping
-      // dialogs if two matches land back to back.
-      if (_busy) return;
-      setState(() => _busy = true);
-      final groupId = await _createGroupWith(candidate.profile.id);
-      if (!mounted) return;
+      MatchNotifier.refresh();
+      // Only guard the celebration dialog against overlapping popups if two
+      // connections land back to back.
+      if (_celebrating) return;
+      _celebrating = true;
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (_) => _MatchCelebrationDialog(profile: candidate.profile),
       );
-      if (!mounted) return;
-      context.pushReplacement('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Da ging etwas schief: $e')));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      _celebrating = false;
     }
   }
 
@@ -283,17 +255,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 _RoundActionButton(
                   icon: Icons.close,
                   color: AppColors.danger,
-                  onPressed: _busy
-                      ? null
-                      : () => _swipe(_candidates[_topIndex], false),
+                  onPressed: () => _swipe(_candidates[_topIndex], false),
                 ),
                 const SizedBox(width: 32),
                 _RoundActionButton(
                   icon: Icons.favorite,
                   color: AppColors.secondary,
-                  onPressed: _busy
-                      ? null
-                      : () => _swipe(_candidates[_topIndex], true),
+                  onPressed: () => _swipe(_candidates[_topIndex], true),
                 ),
               ],
             ),
@@ -587,15 +555,15 @@ class _MatchCelebrationDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.favorite, color: AppColors.secondary, size: 56),
+            Icon(Icons.groups, color: AppColors.secondary, size: 56),
             const SizedBox(height: 12),
             const Text(
-              "It's a Match!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+              'Ihr seid jetzt Sportbuddys!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              '${profile.fullName} und du wollt beide trainieren. Sag hallo!',
+              '${profile.fullName} und du wollt beide zusammen trainieren.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -623,8 +591,19 @@ class _MatchCelebrationDialog extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.go('/matches');
+                },
+                child: const Text('Zu deinen Sportbuddys'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Chat starten'),
+                child: const Text('Weiter swipen'),
               ),
             ),
           ],

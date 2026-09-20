@@ -815,7 +815,7 @@ Future<void> _showActivitySheet(
                       context.push('/matches/${a.id}');
                     },
                     icon: const Icon(Icons.people_outline),
-                    label: const Text('Matches'),
+                    label: const Text('Vorschläge'),
                   ),
                 ),
                 const SizedBox(width: 12),

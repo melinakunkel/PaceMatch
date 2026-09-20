@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'browser_notification_service.dart';
-import 'group_service.dart';
+import 'like_service.dart';
 import 'profile_service.dart';
 import 'supabase_service.dart';
 
-/// App-wide "do I have an unseen match" flag, driving the dot on the
-/// Matches tab. A match is a group created from a mutual like (see
-/// MatchesScreen); "seen" is tracked per-account via
-/// profiles.matches_seen_at so it stays in sync across devices.
+/// App-wide "do I have an unseen Sportbuddy" flag, driving the dot on the
+/// Sportbuddys tab. A buddy is a mutual like (see MatchesScreen/LikeService);
+/// "seen" is tracked per-account via profiles.matches_seen_at so it stays in
+/// sync across devices.
 class MatchNotifier {
   MatchNotifier._();
 
@@ -24,16 +24,16 @@ class MatchNotifier {
     }
     try {
       final seenAt = await ProfileService().getMatchesSeenAt(userId);
-      hasNewMatch.value = await GroupService().hasUnseenMatch(
-        userId: userId,
-        seenAt: seenAt,
-      );
+      final buddies = await LikeService().getBuddies(userId);
+      hasNewMatch.value = seenAt == null
+          ? buddies.isNotEmpty
+          : buddies.any((b) => b.connectedAt.isAfter(seenAt));
     } catch (_) {
       // Leave the previous value on transient errors.
     }
   }
 
-  /// Call when the user opens the Matches tab.
+  /// Call when the user opens the Sportbuddys tab.
   static Future<void> markSeen() async {
     final userId = SupabaseService.currentUserId;
     if (userId == null) return;
@@ -45,15 +45,15 @@ class MatchNotifier {
     }
   }
 
-  /// Call once after login so a new mutual match updates the dot live.
+  /// Call once after login so a new mutual like updates the dot live.
   static void startListening() {
     if (_channel != null) return;
     _channel = SupabaseService.client
-        .channel('match-groups')
+        .channel('buddy-likes')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
-          table: 'group_members',
+          table: 'likes',
           callback: (payload) {
             refresh();
             _maybeNotify(payload.newRecord);
@@ -63,26 +63,29 @@ class MatchNotifier {
   }
 
   /// The realtime subscription above isn't filtered to my rows, so before
-  /// notifying, confirm I was actually the one just added, and that it's a
-  /// match-created group (not a regular contact or open event).
+  /// notifying, confirm this like involves me, then check whether it just
+  /// completed a mutual connection.
   static Future<void> _maybeNotify(Map<String, dynamic> row) async {
     final myId = SupabaseService.currentUserId;
-    final userId = row['user_id'] as String?;
-    final groupId = row['group_id'] as String?;
-    if (myId == null || userId != myId || groupId == null) return;
+    if (myId == null) return;
+    final fromUser = row['from_user'] as String?;
+    final toUser = row['to_user'] as String?;
+    if (fromUser != myId && toUser != myId) return;
     try {
-      final group = await SupabaseService.client
-          .from('groups')
-          .select('is_match, name')
-          .eq('id', groupId)
-          .maybeSingle();
-      if (group == null || group['is_match'] != true) return;
+      final buddies = await LikeService().getBuddies(myId);
+      if (buddies.isEmpty) return;
+      final newest = buddies.first;
+      if (DateTime.now().difference(newest.connectedAt) >
+          const Duration(seconds: 10)) {
+        return; // not a fresh connection, just some other like event
+      }
+      final profile = await ProfileService().getProfile(newest.userId);
       await BrowserNotificationService.showIfEnabled(
-        title: "It's a Match! 🎉",
-        body: '${group['name']} — sag hallo!',
+        title: 'Neuer Sportbuddy! 🎉',
+        body: '${profile.fullName} und du wollt beide trainieren.',
       );
     } catch (_) {
-      // Best-effort — never let a notification failure break match state.
+      // Best-effort — never let a notification failure break buddy state.
     }
   }
 

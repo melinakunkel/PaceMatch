@@ -33,11 +33,11 @@ const _slides = [
   ),
   _TutorialSlide(
     icon: Icons.people_outline,
-    title: 'Matches',
+    title: 'Sportbuddys',
     description:
         'Sobald jemand eine passende Sportzeit einträgt, seht ihr euch '
-        'gegenseitig als Match — mit Pace, Level und ob schon ein Platz '
-        'gebucht ist.',
+        'gegenseitig als Vorschlag — mit Pace, Level und ob schon ein Platz '
+        'gebucht ist. Wischt beide nach rechts, seid ihr Sportbuddys.',
   ),
   _TutorialSlide(
     icon: Icons.explore_outlined,

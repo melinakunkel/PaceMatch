@@ -296,24 +296,6 @@ class GroupService {
         .eq('user_id', userId);
   }
 
-  /// Whether I've been added to a match-created group (see
-  /// [createGroup]'s `isMatch`) since [seenAt] — or at all, if [seenAt] is
-  /// null. Drives the badge on the Matches tab.
-  Future<bool> hasUnseenMatch({
-    required String userId,
-    required DateTime? seenAt,
-  }) async {
-    final rows = await _client
-        .from('group_members')
-        .select('joined_at, groups!inner(is_match)')
-        .eq('user_id', userId)
-        .eq('groups.is_match', true);
-    if (seenAt == null) return rows.isNotEmpty;
-    return rows.any(
-      (row) => DateTime.parse(row['joined_at'] as String).isAfter(seenAt),
-    );
-  }
-
   Future<Activity?> getActivity(String? activityId) async {
     if (activityId == null) return null;
     final map = await _client

@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 4),
                 Text(
                   BrowserNotificationService.isSupported
-                      ? 'Erhalte eine Browser-Benachrichtigung für neue Nachrichten und Matches, solange SAMEPACE in einem Tab offen ist.'
+                      ? 'Erhalte eine Browser-Benachrichtigung für neue Nachrichten und Sportbuddys, solange SAMEPACE in einem Tab offen ist.'
                       : 'Dein Browser unterstützt keine Benachrichtigungen.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),

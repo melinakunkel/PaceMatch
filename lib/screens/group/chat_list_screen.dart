@@ -147,7 +147,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  _showArchived ? 'Keine archivierten Chats.' : 'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
+                  _showArchived ? 'Keine archivierten Chats.' : 'Noch keine Gruppen. Starte einen Chat über deine Sportbuddys.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
