@@ -4,12 +4,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/activity.dart';
 import '../../models/community_event.dart';
+import '../../models/open_event.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
+import '../../services/open_event_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -40,6 +42,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final _profileService = ProfileService();
   final _groupService = GroupService();
   final _communityEventService = CommunityEventService();
+  final _openEventService = OpenEventService();
 
   late DateTime _selectedDate = _dateOnly(DateTime.now());
   late final List<DateTime> _dateRange = List.generate(
@@ -51,7 +54,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String? _error;
   List<_DiscoverEntry> _entries = [];
   List<CommunityEvent> _communityEvents = [];
+  List<OpenEvent> _openEvents = [];
   final Set<String> _contacting = {};
+  final Set<String> _joining = {};
 
   bool _showCommunityEvents = true;
   Set<SportType> _sportFilter = {};
@@ -81,6 +86,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       }
       final parts = e.startTime.split(':');
       return _withinTimeRange(int.parse(parts[0]), int.parse(parts[1]));
+    }).toList();
+  }
+
+  List<OpenEvent> get _filteredOpenEvents {
+    return _openEvents.where((e) {
+      if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.sport)) {
+        return false;
+      }
+      return _withinTimeRange(e.startTime.hour, e.startTime.minute);
     }).toList();
   }
 
@@ -132,6 +146,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         city: myProfile?.city ?? 'Wien',
         date: _selectedDate,
       );
+      final openEvents = await _openEventService.getForCityAndDate(
+        city: myProfile?.city ?? 'Wien',
+        date: _selectedDate,
+        userId: myId,
+      );
 
       final byNonPaceSport = <SportType, List<String>>{};
       for (final e in entries) {
@@ -154,6 +173,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       setState(() {
         _entries = entries;
         _communityEvents = communityEvents;
+        _openEvents = openEvents;
         _theirSports = theirSports;
         _loading = false;
       });
@@ -208,6 +228,29 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     } finally {
       if (mounted) setState(() => _contacting.remove(entry.activity.id));
     }
+  }
+
+  Future<void> _joinOpenEvent(OpenEvent event) async {
+    setState(() => _joining.add(event.id));
+    try {
+      final myId = SupabaseService.currentUserId!;
+      await _openEventService.joinEvent(groupId: event.groupId, userId: myId);
+      if (!mounted) return;
+      context.push('/group/${event.groupId}');
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Beitreten fehlgeschlagen: $e')));
+    } finally {
+      if (mounted) setState(() => _joining.remove(event.id));
+    }
+  }
+
+  Future<void> _hostEvent() async {
+    await context.push('/host-event');
+    _load();
   }
 
   Future<void> _openFilters() async {
@@ -323,6 +366,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       title: 'Entdecken',
       actions: [
         IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: 'Event hosten',
+          onPressed: _hostEvent,
+        ),
+        IconButton(
           icon: Icon(
             _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
           ),
@@ -375,19 +423,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
     final entries = _filteredEntries;
     final communityEvents = _filteredCommunityEvents;
-    if (_entries.isEmpty && _communityEvents.isEmpty) {
+    final openEvents = _filteredOpenEvents;
+    if (_entries.isEmpty && _communityEvents.isEmpty && _openEvents.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(
-            'An diesem Tag hat noch niemand eine Sportzeit eingetragen.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'An diesem Tag hat noch niemand eine Sportzeit eingetragen.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _hostEvent,
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Event hosten'),
+              ),
+            ],
           ),
         ),
       );
     }
-    if (entries.isEmpty && communityEvents.isEmpty) {
+    if (entries.isEmpty && communityEvents.isEmpty && openEvents.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -432,6 +492,26 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ),
             ),
             ...communityEvents.map(_buildCommunityEventCard),
+            const SizedBox(height: 8),
+          ],
+          if (openEvents.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8, left: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.groups, size: 16, color: AppColors.secondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Offene Events',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...openEvents.map(_buildOpenEventCard),
             const SizedBox(height: 8),
           ],
           if (entries.isNotEmpty)
@@ -529,6 +609,131 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpenEventCard(OpenEvent event) {
+    final joining = _joining.contains(event.id);
+    final myId = SupabaseService.currentUserId;
+    final isHost = event.hostId == myId;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: AppColors.primary.withValues(alpha: 0.06),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.groups, color: AppColors.secondary, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  if (event.description != null &&
+                      event.description!.isNotEmpty)
+                    Text(
+                      event.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        event.sport.icon,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(event.sport.label),
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(event.timeRangeLabel),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.place_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          event.locationName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        event.maxParticipants == null
+                            ? '${event.participantCount} dabei'
+                            : '${event.participantCount}/${event.maxParticipants} dabei',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 32,
+                    child: event.joined || isHost
+                        ? OutlinedButton(
+                            onPressed: () =>
+                                context.push('/group/${event.groupId}'),
+                            child: const Text('Chat öffnen'),
+                          )
+                        : ElevatedButton(
+                            onPressed: (joining || event.isFull)
+                                ? null
+                                : () => _joinOpenEvent(event),
+                            child: joining
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(event.isFull ? 'Voll' : 'Teilnehmen'),
+                          ),
+                  ),
                 ],
               ),
             ),

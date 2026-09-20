@@ -5,6 +5,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/discover/discover_screen.dart';
+import '../screens/discover/host_event_screen.dart';
 import '../screens/group/chat_list_screen.dart';
 import '../screens/group/group_screen.dart';
 import '../screens/home/home_screen.dart';
@@ -52,6 +53,10 @@ GoRouter buildRouter() {
       ),
       GoRoute(path: '/matches', builder: (_, _) => const MatchesHubScreen()),
       GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
+      GoRoute(
+        path: '/host-event',
+        builder: (_, _) => const HostEventScreen(),
+      ),
       GoRoute(
         path: '/matches/:activityId',
         builder: (context, state) =>
