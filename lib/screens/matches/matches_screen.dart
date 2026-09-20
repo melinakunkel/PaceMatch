@@ -81,7 +81,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gruppe konnte nicht erstellt werden.')),
+        SnackBar(content: Text('Gruppe konnte nicht erstellt werden: $e')),
       );
     } finally {
       if (mounted) setState(() => _creatingGroup = false);
