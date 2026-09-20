@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/activity.dart';
 import '../../models/match_candidate.dart';
+import '../../models/profile.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/group_service.dart';
+import '../../services/like_service.dart';
 import '../../services/match_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
@@ -28,13 +30,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final _matchService = MatchService();
   final _groupService = GroupService();
   final _profileService = ProfileService();
+  final _likeService = LikeService();
 
   Activity? _activity;
   List<MatchCandidate> _candidates = [];
   Map<String, UserSport> _theirSports = {};
-  final Set<String> _selectedUserIds = {};
+  int _topIndex = 0;
+  bool _busy = false;
   bool _loading = true;
-  bool _creatingGroup = false;
   String? _error;
 
   @override
@@ -63,9 +66,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         _activity = activity;
         _candidates = candidates;
         _theirSports = theirSports;
-        _selectedUserIds
-          ..clear()
-          ..addAll(candidates.map((c) => c.profile.id));
+        _topIndex = 0;
       });
     } catch (e) {
       setState(() => _error = 'Matches konnten nicht geladen werden.');
@@ -74,41 +75,60 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-  Future<void> _createGroup() async {
-    final activity = _activity;
-    if (activity == null || _selectedUserIds.isEmpty) return;
-    setState(() => _creatingGroup = true);
+  Future<String> _createGroupWith(String otherUserId) async {
+    final activity = _activity!;
+    final me = SupabaseService.currentUserId!;
+    final existingId =
+        await _groupService.findSharedGroupId(otherUserId) ??
+        await _groupService.findGroupIdForActivity(activity.id);
+    if (existingId != null) {
+      await _groupService.joinGroup(groupId: existingId, userId: otherUserId);
+      return existingId;
+    }
+    final group = await _groupService.createGroup(
+      createdBy: me,
+      sport: activity.sport,
+      name: '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+      meetingPoint: activity.locationName,
+      latitude: activity.latitude,
+      longitude: activity.longitude,
+      meetingTime: activity.nextOccurrence,
+      activityId: activity.id,
+    );
+    await _groupService.joinGroup(groupId: group.id, userId: otherUserId);
+    return group.id;
+  }
+
+  Future<void> _swipe(MatchCandidate candidate, bool liked) async {
+    setState(() => _topIndex++);
+    if (!liked || _busy) return;
+    setState(() => _busy = true);
     try {
       final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findGroupIdForActivity(
-        activity.id,
+      final mutual = await _likeService.like(
+        fromUser: me,
+        toUser: candidate.profile.id,
+        activityId: _activity?.id,
       );
-      final groupId =
-          existingId ??
-          (await _groupService.createGroup(
-            createdBy: me,
-            sport: activity.sport,
-            name:
-                '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
-            meetingPoint: activity.locationName,
-            latitude: activity.latitude,
-            longitude: activity.longitude,
-            meetingTime: activity.nextOccurrence,
-            activityId: activity.id,
-          )).id;
-      for (final userId in _selectedUserIds) {
-        if (userId == me) continue;
-        await _groupService.joinGroup(groupId: groupId, userId: userId);
-      }
       if (!mounted) return;
-      context.pushReplacement('/group/$groupId');
+      if (mutual) {
+        final groupId = await _createGroupWith(candidate.profile.id);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => _MatchCelebrationDialog(profile: candidate.profile),
+        );
+        if (!mounted) return;
+        context.pushReplacement('/group/$groupId');
+      }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gruppe konnte nicht erstellt werden: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Da ging etwas schief: $e')));
     } finally {
-      if (mounted) setState(() => _creatingGroup = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -140,6 +160,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Widget _buildBody() {
     final activity = _activity!;
+    final remaining = _candidates.length - _topIndex;
     return Column(
       children: [
         Padding(
@@ -168,7 +189,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child: Text(
               _candidates.isEmpty
                   ? 'Noch keine passenden Leute gefunden.'
-                  : 'Heute passen ${_candidates.length} Leute zu dir.',
+                  : remaining > 0
+                  ? 'Wisch durch, wer zu dir passt.'
+                  : 'Das waren alle für heute.',
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ),
@@ -187,135 +210,312 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  itemCount: _candidates.length,
-                  itemBuilder: (context, index) {
-                    final c = _candidates[index];
-                    final selected = _selectedUserIds.contains(c.profile.id);
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: CheckboxListTile(
-                        value: selected,
-                        onChanged: (v) => setState(() {
-                          if (v == true) {
-                            _selectedUserIds.add(c.profile.id);
-                          } else {
-                            _selectedUserIds.remove(c.profile.id);
-                          }
-                        }),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        secondary: GestureDetector(
-                          onTap: () => context.push('/profile/${c.profile.id}'),
-                          child: CircleAvatar(
-                            backgroundColor: AppColors.secondaryLight,
-                            backgroundImage: c.profile.avatarUrl != null
-                                ? NetworkImage(c.profile.avatarUrl!)
-                                : null,
-                            child: c.profile.avatarUrl != null
-                                ? null
-                                : Text(
-                                    c.profile.fullName.isNotEmpty
-                                        ? c.profile.fullName[0].toUpperCase()
-                                        : '?',
-                                    style: TextStyle(color: AppColors.primary),
-                                  ),
-                          ),
+              : remaining <= 0
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 48,
+                          color: AppColors.textSecondary,
                         ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () =>
-                                    context.push('/profile/${c.profile.id}'),
-                                child: Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        [
-                                          c.profile.fullName,
-                                          if (c.profile.age != null)
-                                            '${c.profile.age}',
-                                        ].join(', '),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (c.profile.isVerified) ...[
-                                      const SizedBox(width: 4),
-                                      const VerifiedBadge(size: 14),
-                                    ],
-                                  ],
-                                ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Keine weiteren Vorschläge — schau später nochmal vorbei.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                  child: Stack(
+                    children: [
+                      for (
+                        var i =
+                            (_topIndex + 2).clamp(0, _candidates.length) - 1;
+                        i >= _topIndex;
+                        i--
+                      )
+                        if (i == _topIndex)
+                          _SwipeCard(
+                            key: ValueKey(_candidates[i].profile.id),
+                            onSwiped: (liked) =>
+                                _swipe(_candidates[i], liked),
+                            child: _MatchCard(
+                              candidate: _candidates[i],
+                              theirSport: _theirSports[_candidates[i].profile.id],
+                            ),
+                          )
+                        else
+                          Transform.scale(
+                            scale: 0.95,
+                            child: Opacity(
+                              opacity: 0.6,
+                              child: _MatchCard(
+                                candidate: _candidates[i],
+                                theirSport:
+                                    _theirSports[_candidates[i].profile.id],
                               ),
                             ),
-                            _MatchBadge(percent: c.matchPercent),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              [
-                                if (c.profile.gender != null) c.profile.gender!,
-                                c.theirActivity.timeRangeLabel,
-                                c.theirActivity.locationName ?? 'Ort flexibel',
-                              ].join(' · '),
-                            ),
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                VenueStatusBadge(activity: c.theirActivity),
-                                Builder(
-                                  builder: (context) {
-                                    final stats = activityStatsLabel(
-                                      c.theirActivity,
-                                      _theirSports[c.profile.id],
-                                    );
-                                    if (stats == null) {
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Text(
-                                      stats,
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                          ),
+                    ],
+                  ),
                 ),
         ),
-        if (_candidates.isNotEmpty)
+        if (_candidates.isNotEmpty && remaining > 0)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: ElevatedButton(
-              onPressed: (_creatingGroup || _selectedUserIds.isEmpty)
-                  ? null
-                  : _createGroup,
-              child: _creatingGroup
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Gruppe erstellen'),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _RoundActionButton(
+                  icon: Icons.close,
+                  color: AppColors.danger,
+                  onPressed: _busy
+                      ? null
+                      : () => _swipe(_candidates[_topIndex], false),
+                ),
+                const SizedBox(width: 32),
+                _RoundActionButton(
+                  icon: Icons.favorite,
+                  color: AppColors.secondary,
+                  onPressed: _busy
+                      ? null
+                      : () => _swipe(_candidates[_topIndex], true),
+                ),
+              ],
             ),
           ),
       ],
+    );
+  }
+}
+
+class _RoundActionButton extends StatelessWidget {
+  const _RoundActionButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: CircleBorder(side: BorderSide(color: color, width: 2)),
+      elevation: 2,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Icon(icon, color: color, size: 28),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wraps [child] with drag-to-swipe: drag far enough left/right and
+/// [onSwiped] fires with whether it was a "like" (right) or "pass" (left).
+class _SwipeCard extends StatefulWidget {
+  const _SwipeCard({super.key, required this.child, required this.onSwiped});
+
+  final Widget child;
+  final void Function(bool liked) onSwiped;
+
+  @override
+  State<_SwipeCard> createState() => _SwipeCardState();
+}
+
+class _SwipeCardState extends State<_SwipeCard> {
+  Offset _drag = Offset.zero;
+  static const _threshold = 110.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final angle = (_drag.dx / 300).clamp(-0.5, 0.5);
+    return GestureDetector(
+      onPanUpdate: (details) => setState(() => _drag += details.delta),
+      onPanEnd: (details) {
+        if (_drag.dx.abs() > _threshold) {
+          widget.onSwiped(_drag.dx > 0);
+        } else {
+          setState(() => _drag = Offset.zero);
+        }
+      },
+      child: Transform.translate(
+        offset: _drag,
+        child: Transform.rotate(
+          angle: angle,
+          child: Stack(
+            children: [
+              widget.child,
+              if (_drag.dx > 20)
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: _StampBadge(label: 'LIKE', color: AppColors.secondary),
+                ),
+              if (_drag.dx < -20)
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: _StampBadge(label: 'NOPE', color: AppColors.danger),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StampBadge extends StatelessWidget {
+  const _StampBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: color, width: 3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 22,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({required this.candidate, required this.theirSport});
+
+  final MatchCandidate candidate;
+  final UserSport? theirSport;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = candidate.profile;
+    return SizedBox.expand(
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                color: AppColors.secondaryLight,
+                child: profile.avatarUrl != null
+                    ? Image.network(profile.avatarUrl!, fit: BoxFit.cover)
+                    : Center(
+                        child: Text(
+                          profile.fullName.isNotEmpty
+                              ? profile.fullName[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                            fontSize: 64,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          [
+                            profile.fullName,
+                            if (profile.age != null) '${profile.age}',
+                          ].join(', '),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (profile.isVerified) ...[
+                        const SizedBox(width: 4),
+                        const VerifiedBadge(size: 16),
+                      ],
+                      const Spacer(),
+                      _MatchBadge(percent: candidate.matchPercent),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    [
+                      if (profile.gender != null) profile.gender!,
+                      candidate.theirActivity.timeRangeLabel,
+                      candidate.theirActivity.locationName ?? 'Ort flexibel',
+                    ].join(' · '),
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  if (profile.bio != null && profile.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(profile.bio!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      VenueStatusBadge(activity: candidate.theirActivity),
+                      Builder(
+                        builder: (context) {
+                          final stats = activityStatsLabel(
+                            candidate.theirActivity,
+                            theirSport,
+                          );
+                          if (stats == null) return const SizedBox.shrink();
+                          return Text(
+                            stats,
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -335,6 +535,66 @@ class _MatchBadge extends StatelessWidget {
       child: Text(
         '$percent%',
         style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _MatchCelebrationDialog extends StatelessWidget {
+  const _MatchCelebrationDialog({required this.profile});
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.favorite, color: AppColors.secondary, size: 56),
+            const SizedBox(height: 12),
+            const Text(
+              "It's a Match!",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${profile.fullName} und du wollt beide trainieren. Sag hallo!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 24),
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: AppColors.secondaryLight,
+              backgroundImage: profile.avatarUrl != null
+                  ? NetworkImage(profile.avatarUrl!)
+                  : null,
+              child: profile.avatarUrl != null
+                  ? null
+                  : Text(
+                      profile.fullName.isNotEmpty
+                          ? profile.fullName[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Chat starten'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
