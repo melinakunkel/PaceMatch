@@ -424,23 +424,47 @@ class _MatchCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                width: double.infinity,
-                color: AppColors.secondaryLight,
-                child: profile.avatarUrl != null
-                    ? Image.network(profile.avatarUrl!, fit: BoxFit.cover)
-                    : Center(
-                        child: Text(
-                          profile.fullName.isNotEmpty
-                              ? profile.fullName[0].toUpperCase()
-                              : '?',
-                          style: TextStyle(
-                            fontSize: 64,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: AppColors.secondaryLight,
+                    child: profile.avatarUrl != null
+                        ? Image.network(profile.avatarUrl!, fit: BoxFit.cover)
+                        : Center(
+                            child: Text(
+                              profile.fullName.isNotEmpty
+                                  ? profile.fullName[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                fontSize: 64,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => context.push('/profile/${profile.id}'),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.info_outline,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -452,15 +476,19 @@ class _MatchCard extends StatelessWidget {
                   Row(
                     children: [
                       Flexible(
-                        child: Text(
-                          [
-                            profile.fullName,
-                            if (profile.age != null) '${profile.age}',
-                          ].join(', '),
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                        child: GestureDetector(
+                          onTap: () =>
+                              context.push('/profile/${profile.id}'),
+                          child: Text(
+                            [
+                              profile.fullName,
+                              if (profile.age != null) '${profile.age}',
+                            ].join(', '),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
