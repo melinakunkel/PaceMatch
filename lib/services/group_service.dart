@@ -37,6 +37,24 @@ class GroupService {
     return group;
   }
 
+  /// A group both [userId] and I are already members of, if any — used to
+  /// avoid spinning up a second chat for the same person.
+  Future<String?> findSharedGroupId(String userId) async {
+    final rows =
+        await _client.from('group_members').select('group_id').eq('user_id', userId);
+    return rows.isEmpty ? null : rows.first['group_id'] as String;
+  }
+
+  /// A group I already created for this activity, if any.
+  Future<String?> findGroupIdForActivity(String activityId) async {
+    final rows = await _client
+        .from('groups')
+        .select('id')
+        .eq('activity_id', activityId)
+        .limit(1);
+    return rows.isEmpty ? null : rows.first['id'] as String;
+  }
+
   Future<void> joinGroup({required String groupId, required String userId}) async {
     await SupabaseService.ensureFreshSession();
     try {

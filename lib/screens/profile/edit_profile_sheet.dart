@@ -28,6 +28,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     (widget.profile.ageRangeMax ?? _maxAge.toInt()).toDouble().clamp(_minAge, _maxAge),
   );
   bool _saving = false;
+  String? _error;
 
   static const _genders = ['weiblich', 'männlich', 'divers'];
 
@@ -40,7 +41,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   }
 
   Future<void> _save() async {
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final noAgeLimit = _ageRange.start <= _minAge && _ageRange.end >= _maxAge;
       await _profileService.updateProfile(Profile(
@@ -56,6 +60,8 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
         ageRangeMax: noAgeLimit ? null : _ageRange.end.round(),
       ));
       if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Speichern fehlgeschlagen: $e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -160,6 +166,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               ),
               onChanged: (v) => setState(() => _ageRange = v),
             ),
+            if (_error != null) ...[
+              Text(_error!, style: TextStyle(color: AppColors.danger)),
+              const SizedBox(height: 12),
+            ],
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _saving ? null : _save,

@@ -93,16 +93,23 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     setState(() => _contacting.add(entry.activity.id));
     try {
       final me = SupabaseService.currentUserId!;
-      final group = await _groupService.createGroup(
-        createdBy: me,
-        sport: entry.activity.sport,
-        name: '${entry.activity.sport.label} mit ${entry.profile.fullName}',
-        meetingPoint: entry.activity.locationName,
-        activityId: entry.activity.id,
-      );
-      await _groupService.joinGroup(groupId: group.id, userId: entry.profile.id);
+      final existingId = await _groupService.findSharedGroupId(entry.profile.id);
+      String groupId;
+      if (existingId != null) {
+        groupId = existingId;
+      } else {
+        final group = await _groupService.createGroup(
+          createdBy: me,
+          sport: entry.activity.sport,
+          name: '${entry.activity.sport.label} mit ${entry.profile.fullName}',
+          meetingPoint: entry.activity.locationName,
+          activityId: entry.activity.id,
+        );
+        await _groupService.joinGroup(groupId: group.id, userId: entry.profile.id);
+        groupId = group.id;
+      }
       if (!mounted) return;
-      context.push('/group/${group.id}');
+      context.push('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

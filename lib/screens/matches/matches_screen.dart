@@ -65,19 +65,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
     setState(() => _creatingGroup = true);
     try {
       final me = SupabaseService.currentUserId!;
-      final group = await _groupService.createGroup(
-        createdBy: me,
-        sport: activity.sport,
-        name: '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
-        meetingPoint: activity.locationName,
-        activityId: activity.id,
-      );
+      final existingId = await _groupService.findGroupIdForActivity(activity.id);
+      final groupId = existingId ??
+          (await _groupService.createGroup(
+            createdBy: me,
+            sport: activity.sport,
+            name: '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+            meetingPoint: activity.locationName,
+            activityId: activity.id,
+          ))
+              .id;
       for (final userId in _selectedUserIds) {
         if (userId == me) continue;
-        await _groupService.joinGroup(groupId: group.id, userId: userId);
+        await _groupService.joinGroup(groupId: groupId, userId: userId);
       }
       if (!mounted) return;
-      context.pushReplacement('/group/${group.id}');
+      context.pushReplacement('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
