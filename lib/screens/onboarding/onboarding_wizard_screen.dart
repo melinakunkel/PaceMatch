@@ -25,7 +25,6 @@ class OnboardingWizardScreen extends StatefulWidget {
 
 class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   final _profileService = ProfileService();
-  final _pageController = PageController();
   late final _ageCtrl = TextEditingController();
   late final _cityCtrl = TextEditingController();
 
@@ -43,7 +42,6 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
   @override
   void dispose() {
-    _pageController.dispose();
     _ageCtrl.dispose();
     _cityCtrl.dispose();
     super.dispose();
@@ -66,21 +64,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       return;
     }
     setState(() => _step++);
-    _pageController.animateToPage(
-      _step,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
   }
 
   void _back() {
     if (_step == 0) return;
     setState(() => _step--);
-    _pageController.animateToPage(
-      _step,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
   }
 
   Future<void> _finish() async {
@@ -168,9 +156,8 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
               ),
             ),
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
+              child: IndexedStack(
+                index: _step,
                 children: [
                   _buildSportsStep(),
                   _buildLevelStep(),
