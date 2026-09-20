@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../models/sport_type.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/reset_password_screen.dart';
 import '../screens/discover/discover_screen.dart';
 import '../screens/group/chat_list_screen.dart';
 import '../screens/group/group_screen.dart';
@@ -32,6 +33,7 @@ GoRouter buildRouter() {
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+      GoRoute(path: '/reset-password', builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
       GoRoute(path: '/plan', builder: (_, _) => const PlanScreen()),
       GoRoute(

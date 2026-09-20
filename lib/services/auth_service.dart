@@ -2,6 +2,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
 
+/// Where Supabase redirects back to after an email link (confirmation,
+/// password reset). Must be listed under Authentication -> URL
+/// Configuration -> Redirect URLs in the Supabase project.
+const appBaseUrl = 'https://melinakunkel.github.io/PaceMatch/';
+
 class AuthService {
   final _client = SupabaseService.client;
 
@@ -25,4 +30,12 @@ class AuthService {
   }
 
   Future<void> signOut() => _client.auth.signOut();
+
+  Future<void> sendPasswordResetEmail(String email) {
+    return _client.auth.resetPasswordForEmail(email, redirectTo: appBaseUrl);
+  }
+
+  Future<void> updatePassword(String newPassword) {
+    return _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
 }

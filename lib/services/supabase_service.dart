@@ -1,8 +1,11 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
   SupabaseService._();
+
+  static const _rememberMeKey = 'remember_me';
 
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
@@ -10,6 +13,19 @@ class SupabaseService {
       url: dotenv.env['SUPABASE_URL'] ?? '',
       anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
     );
+
+    // "Eingeloggt bleiben" was unchecked at the last login: a persisted
+    // session survives this same browser session (so the app keeps working
+    // while open), but a cold restart signs the user back out.
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_rememberMeKey) == false && client.auth.currentSession != null) {
+      await client.auth.signOut();
+    }
+  }
+
+  static Future<void> setRememberMe(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberMeKey, value);
   }
 
   static SupabaseClient get client => Supabase.instance.client;
