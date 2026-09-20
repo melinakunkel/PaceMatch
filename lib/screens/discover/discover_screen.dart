@@ -8,6 +8,8 @@ import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/matching_preferences.dart';
+import '../../widgets/verified_badge.dart';
 
 class _DiscoverEntry {
   _DiscoverEntry({required this.profile, required this.activity});
@@ -60,6 +62,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         date: _selectedDate,
         excludeUserId: myId,
       );
+      final myProfiles = await _profileService.getProfilesByIds([myId]);
+      final myProfile = myProfiles.isEmpty ? null : myProfiles.first;
       final userIds = activities.map((a) => a.userId).toSet().toList();
       final profiles = await _profileService.getProfilesByIds(userIds);
       final profilesById = {for (final p in profiles) p.id: p};
@@ -68,6 +72,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       for (final a in activities) {
         final p = profilesById[a.userId];
         if (p == null) continue;
+        if (myProfile != null && !isAllowedByPreferences(myProfile, p)) continue;
         entries.add(_DiscoverEntry(profile: p, activity: a));
       }
       if (!mounted) return;
@@ -202,12 +207,23 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          [
-                            e.profile.fullName,
-                            if (e.profile.age != null) '${e.profile.age}',
-                          ].join(', '),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                [
+                                  e.profile.fullName,
+                                  if (e.profile.age != null) '${e.profile.age}',
+                                ].join(', '),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            if (e.profile.isVerified) ...[
+                              const SizedBox(width: 4),
+                              const VerifiedBadge(size: 14),
+                            ],
+                          ],
                         ),
                         if (e.profile.gender != null)
                           Text(e.profile.gender!,

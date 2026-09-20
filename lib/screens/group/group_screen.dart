@@ -8,6 +8,7 @@ import '../../services/group_service.dart';
 import '../../services/message_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import 'report_user_dialog.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key, required this.groupId});
@@ -76,6 +77,19 @@ class _GroupScreenState extends State<GroupScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(group.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Person melden',
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => ReportUserDialog(
+                members: _members.where((m) => m.id != myId).toList(),
+                groupId: widget.groupId,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

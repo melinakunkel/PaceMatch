@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/activity.dart';
 import '../models/match_candidate.dart';
 import '../models/profile.dart';
+import '../utils/matching_preferences.dart';
 import 'activity_service.dart';
 import 'supabase_service.dart';
 
@@ -29,6 +30,10 @@ class MatchService {
     }
     if (scored.isEmpty) return [];
 
+    final myProfileRow =
+        await _client.from('profiles').select().eq('id', myActivity.userId).maybeSingle();
+    final myProfile = myProfileRow == null ? null : Profile.fromMap(myProfileRow);
+
     final userIds = scored.map((e) => e.key.userId).toSet().toList();
     final profileRows =
         await _client.from('profiles').select().inFilter('id', userIds);
@@ -40,6 +45,7 @@ class MatchService {
     for (final entry in scored) {
       final profile = profilesById[entry.key.userId];
       if (profile == null) continue;
+      if (myProfile != null && !isAllowedByPreferences(myProfile, profile)) continue;
       result.add(MatchCandidate(
         profile: profile,
         theirActivity: entry.key,

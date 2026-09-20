@@ -8,6 +8,7 @@ import '../../services/group_service.dart';
 import '../../services/match_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/verified_badge.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key, required this.activityId});
@@ -189,11 +190,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         title: Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                [
-                                  c.profile.fullName,
-                                  if (c.profile.age != null) '${c.profile.age}',
-                                ].join(', '),
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      [
+                                        c.profile.fullName,
+                                        if (c.profile.age != null) '${c.profile.age}',
+                                      ].join(', '),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (c.profile.isVerified) ...[
+                                    const SizedBox(width: 4),
+                                    const VerifiedBadge(size: 14),
+                                  ],
+                                ],
                               ),
                             ),
                             _MatchBadge(percent: c.matchPercent),

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../models/activity.dart';
 import '../../models/picked_location.dart';
 import '../../models/sport_type.dart';
+import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pace_picker_field.dart';
@@ -61,6 +63,31 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
   bool _saving = false;
+  Map<SportType, UserSport> _mySports = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isEditing) _loadMySports();
+  }
+
+  Future<void> _loadMySports() async {
+    final sports = await ProfileService().getUserSports(SupabaseService.currentUserId!);
+    if (!mounted) return;
+    setState(() {
+      _mySports = {for (final s in sports) s.sport: s};
+      _applyPaceFromProfile(_sport);
+    });
+  }
+
+  /// Prefills the pace fields from the saved pace for [sport] on the user's
+  /// profile, when creating a new activity (never overrides while editing).
+  void _applyPaceFromProfile(SportType sport) {
+    final saved = _mySports[sport];
+    if (saved == null) return;
+    _paceMin = saved.valueLow;
+    _paceMax = saved.valueHigh;
+  }
 
   @override
   void dispose() {
@@ -202,7 +229,10 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 return ChoiceChip(
                   label: Text(sport.label),
                   selected: selected,
-                  onSelected: (_) => setState(() => _sport = sport),
+                  onSelected: (_) => setState(() {
+                    _sport = sport;
+                    if (!widget.isEditing) _applyPaceFromProfile(sport);
+                  }),
                   avatar: Icon(sport.icon,
                       size: 18,
                       color: selected ? AppColors.primary : AppColors.textSecondary),

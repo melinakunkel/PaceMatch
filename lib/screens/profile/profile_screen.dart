@@ -10,6 +10,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
 import 'edit_sport_sheet.dart';
 
@@ -215,9 +216,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_profile!.fullName,
-                                style: const TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.w700)),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(_profile!.fullName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 20, fontWeight: FontWeight.w700)),
+                                ),
+                                if (_profile!.isVerified) ...[
+                                  const SizedBox(width: 6),
+                                  const VerifiedBadge(),
+                                ],
+                              ],
+                            ),
                             Text(
                               [
                                 if (_profile!.age != null) '${_profile!.age} Jahre',
@@ -236,6 +248,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                  if (!_profile!.isVerified) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Profil verifizieren'),
+                          content: const Text(
+                            'Die Verifizierung ist bald verfügbar. Damit kannst du '
+                            'anderen zeigen, dass dein Profil echt ist.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Okay'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      icon: const Icon(Icons.verified_outlined),
+                      label: const Text('Profil verifizieren'),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
