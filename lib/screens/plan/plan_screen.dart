@@ -612,6 +612,58 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
   }
 }
 
+/// One activity placed in a side-by-side "lane" among others that overlap
+/// it in time, plus how many lanes its overlap cluster needs in total —
+/// enough to size and position it without covering its neighbors.
+class _LanedActivity {
+  const _LanedActivity(this.activity, this.column, this.columnCount);
+  final Activity activity;
+  final int column;
+  final int columnCount;
+}
+
+/// Greedily assigns each activity a column so time-overlapping ones sit
+/// side by side instead of stacked exactly on top of each other (which
+/// used to hide all but the last one drawn). Non-overlapping activities
+/// each still get the full column width.
+List<_LanedActivity> _layoutLanes(List<Activity> activities) {
+  final sorted = [...activities]..sort((a, b) {
+    final aStart = a.startTime.hour * 60 + a.startTime.minute;
+    final bStart = b.startTime.hour * 60 + b.startTime.minute;
+    return aStart.compareTo(bStart);
+  });
+
+  final result = <_LanedActivity>[];
+  final active = <(Activity, int, int)>[]; // (activity, column, endMinutes)
+  var cluster = <(Activity, int)>[]; // (activity, column)
+  var clusterColumns = 0;
+
+  void flushCluster() {
+    for (final entry in cluster) {
+      result.add(_LanedActivity(entry.$1, entry.$2, clusterColumns));
+    }
+    cluster = [];
+    clusterColumns = 0;
+  }
+
+  for (final a in sorted) {
+    final startMin = a.startTime.hour * 60 + a.startTime.minute;
+    final endMin = a.endTime.hour * 60 + a.endTime.minute;
+    active.removeWhere((e) => e.$3 <= startMin);
+    if (active.isEmpty && cluster.isNotEmpty) flushCluster();
+    final usedColumns = active.map((e) => e.$2).toSet();
+    var column = 0;
+    while (usedColumns.contains(column)) {
+      column++;
+    }
+    active.add((a, column, endMin));
+    cluster.add((a, column));
+    if (column + 1 > clusterColumns) clusterColumns = column + 1;
+  }
+  flushCluster();
+  return result;
+}
+
 class _DayColumn extends StatelessWidget {
   const _DayColumn({
     required this.activities,
@@ -630,69 +682,88 @@ class _DayColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = hourCount * hourHeight;
+    final laned = _layoutLanes(activities);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 1),
       height: height,
       decoration: BoxDecoration(
         border: Border(left: BorderSide(color: AppColors.border)),
       ),
-      child: Stack(
-        children: [
-          ...List.generate(
-            hourCount + 1,
-            (i) => Positioned(
-              top: i * hourHeight,
-              left: 0,
-              right: 0,
-              child: Divider(height: 1, color: AppColors.border),
-            ),
-          ),
-          ...activities.map((a) {
-            final startMinutes =
-                (a.startTime.hour - minHour) * 60 + a.startTime.minute;
-            final endMinutes =
-                (a.endTime.hour - minHour) * 60 + a.endTime.minute;
-            final top = startMinutes / 60 * hourHeight;
-            final blockHeight = ((endMinutes - startMinutes) / 60 * hourHeight)
-                .clamp(20, height);
-            return Positioned(
-              top: top,
-              left: 1,
-              right: 1,
-              height: blockHeight.toDouble(),
-              child: GestureDetector(
-                onTap: () => _showActivitySheet(context, a, onChanged),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryLight,
-                    border: Border.all(color: AppColors.secondary, width: 1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(a.sport.icon, size: 12, color: AppColors.primary),
-                      if (blockHeight > 34)
-                        Text(
-                          a.startTime.hour.toString().padLeft(2, '0'),
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          return Stack(
+            children: [
+              ...List.generate(
+                hourCount + 1,
+                (i) => Positioned(
+                  top: i * hourHeight,
+                  left: 0,
+                  right: 0,
+                  child: Divider(height: 1, color: AppColors.border),
                 ),
               ),
-            );
-          }),
-        ],
+              ...laned.map((l) {
+                final a = l.activity;
+                final startMinutes =
+                    (a.startTime.hour - minHour) * 60 + a.startTime.minute;
+                final endMinutes =
+                    (a.endTime.hour - minHour) * 60 + a.endTime.minute;
+                final top = startMinutes / 60 * hourHeight;
+                final blockHeight =
+                    ((endMinutes - startMinutes) / 60 * hourHeight).clamp(
+                      20,
+                      height,
+                    );
+                final colWidth = totalWidth / l.columnCount;
+                final left = l.column * colWidth;
+                return Positioned(
+                  top: top,
+                  left: left + 1,
+                  width: (colWidth - 2).clamp(0, totalWidth),
+                  height: blockHeight.toDouble(),
+                  child: GestureDetector(
+                    onTap: () => _showActivitySheet(context, a, onChanged),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryLight,
+                        border: Border.all(
+                          color: AppColors.secondary,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            a.sport.icon,
+                            size: 12,
+                            color: AppColors.primary,
+                          ),
+                          if (blockHeight > 34)
+                            Text(
+                              a.startTime.hour.toString().padLeft(2, '0'),
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          );
+        },
       ),
     );
   }

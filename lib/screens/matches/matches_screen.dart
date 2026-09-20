@@ -102,8 +102,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Future<void> _swipe(MatchCandidate candidate, bool liked) async {
     setState(() => _topIndex++);
-    if (!liked || _busy) return;
-    setState(() => _busy = true);
+    if (!liked) return;
+    // Every right-swipe must reach the server, even if a previous one
+    // (from a fast double-swipe) is still in flight — this used to bail
+    // out early via a `_busy` check and silently drop the like, so a quick
+    // second swipe never got recorded and a mutual match could never fire.
     try {
       final me = SupabaseService.currentUserId!;
       final mutual = await _likeService.like(
@@ -111,18 +114,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
         toUser: candidate.profile.id,
         activityId: _activity?.id,
       );
+      if (!mounted || !mutual) return;
+      // Only guard the celebration/navigation part against overlapping
+      // dialogs if two matches land back to back.
+      if (_busy) return;
+      setState(() => _busy = true);
+      final groupId = await _createGroupWith(candidate.profile.id);
       if (!mounted) return;
-      if (mutual) {
-        final groupId = await _createGroupWith(candidate.profile.id);
-        if (!mounted) return;
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => _MatchCelebrationDialog(profile: candidate.profile),
-        );
-        if (!mounted) return;
-        context.pushReplacement('/group/$groupId');
-      }
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => _MatchCelebrationDialog(profile: candidate.profile),
+      );
+      if (!mounted) return;
+      context.pushReplacement('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
