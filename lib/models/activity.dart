@@ -68,6 +68,32 @@ class Activity {
 
   bool get isRecurring => specificDate == null;
 
+  /// The next real calendar date+time this activity happens — the exact
+  /// date for a one-off activity, or the next upcoming [dayOfWeek] for a
+  /// recurring one. Used to know when a meetup is over and ripe for a
+  /// check-in.
+  DateTime get nextOccurrence {
+    if (specificDate != null) {
+      return DateTime(
+        specificDate!.year,
+        specificDate!.month,
+        specificDate!.day,
+        startTime.hour,
+        startTime.minute,
+      );
+    }
+    final now = DateTime.now();
+    var daysUntil = (dayOfWeek - now.weekday) % 7;
+    final today = DateTime(now.year, now.month, now.day);
+    var occurrence = today
+        .add(Duration(days: daysUntil))
+        .add(Duration(hours: startTime.hour, minutes: startTime.minute));
+    if (daysUntil == 0 && occurrence.isBefore(now)) {
+      occurrence = occurrence.add(const Duration(days: 7));
+    }
+    return occurrence;
+  }
+
   factory Activity.fromMap(Map<String, dynamic> map) => Activity(
     id: map['id'] as String,
     userId: map['user_id'] as String,

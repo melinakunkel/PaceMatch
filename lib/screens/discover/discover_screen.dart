@@ -184,6 +184,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           meetingPoint: entry.activity.locationName,
           latitude: entry.activity.latitude,
           longitude: entry.activity.longitude,
+          meetingTime: DateTime(
+            _selectedDate.year,
+            _selectedDate.month,
+            _selectedDate.day,
+            entry.activity.startTime.hour,
+            entry.activity.startTime.minute,
+          ),
           activityId: entry.activity.id,
         );
         await _groupService.joinGroup(

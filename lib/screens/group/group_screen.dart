@@ -11,6 +11,7 @@ import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
@@ -28,9 +29,12 @@ class GroupScreen extends StatefulWidget {
 
 class _GroupScreenState extends State<GroupScreen> {
   final _groupService = GroupService();
+  final _profileService = ProfileService();
 
   SportGroup? _group;
   List<Profile> _members = [];
+  bool? _myAttendance;
+  bool _checkingIn = false;
   bool _loading = true;
 
   @override
@@ -43,16 +47,56 @@ class _GroupScreenState extends State<GroupScreen> {
     final group = await _groupService.getGroup(widget.groupId);
     final members = await _groupService.getGroupMembers(widget.groupId);
     final myId = SupabaseService.currentUserId;
+    bool? myAttendance;
     if (myId != null) {
       await _groupService.markGroupRead(groupId: widget.groupId, userId: myId);
       UnreadController.refresh();
+      myAttendance = await _groupService.getAttendance(
+        groupId: widget.groupId,
+        userId: myId,
+      );
     }
     if (!mounted) return;
     setState(() {
       _group = group;
       _members = members;
+      _myAttendance = myAttendance;
       _loading = false;
     });
+  }
+
+  Future<void> _checkIn(bool attended) async {
+    final myId = SupabaseService.currentUserId;
+    if (myId == null || _checkingIn) return;
+    setState(() => _checkingIn = true);
+    try {
+      await _groupService.checkIn(
+        groupId: widget.groupId,
+        userId: myId,
+        attended: attended,
+      );
+      await _profileService.recomputeReliabilityScore(myId);
+      if (!mounted) return;
+      setState(() {
+        _myAttendance = attended;
+        _checkingIn = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            attended
+                ? 'Cool, danke fürs Bestätigen! 🙌'
+                : 'Danke für die Rückmeldung.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _checkingIn = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Check-in fehlgeschlagen: $e')));
+    }
   }
 
   Future<void> _pickMeetingPoint() async {
@@ -307,6 +351,60 @@ class _GroupScreenState extends State<GroupScreen> {
                 ],
               ),
             ),
+            if (group.meetingTime != null &&
+                group.meetingTime!.isBefore(DateTime.now()) &&
+                _myAttendance == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Card(
+                  color: AppColors.secondaryLight,
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Hat das Treffen stattgefunden?',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Sag kurz Bescheid, ob du dabei warst — das hält deinen Zuverlässigkeits-Score aktuell.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _checkingIn
+                                    ? null
+                                    : () => _checkIn(false),
+                                icon: const Icon(Icons.close, size: 18),
+                                label: const Text('Konnte nicht'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _checkingIn
+                                    ? null
+                                    : () => _checkIn(true),
+                                icon: const Icon(Icons.check, size: 18),
+                                label: const Text('War da'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const Divider(height: 1),
             Expanded(child: _ChatView(groupId: widget.groupId)),
           ],

@@ -93,6 +93,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
             meetingPoint: activity.locationName,
             latitude: activity.latitude,
             longitude: activity.longitude,
+            meetingTime: activity.nextOccurrence,
             activityId: activity.id,
           )).id;
       for (final userId in _selectedUserIds) {

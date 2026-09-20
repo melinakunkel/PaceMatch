@@ -122,6 +122,26 @@ class ProfileService {
     return row?['theme_variant'] as String?;
   }
 
+  /// Recomputes reliability_score from how many past meetups the user
+  /// confirmed attending vs. not (see [GroupService.checkIn]), and persists
+  /// it. Falls back to the default 100 until they've checked in anywhere.
+  Future<double> recomputeReliabilityScore(String userId) async {
+    final rows = await _client
+        .from('group_members')
+        .select('attended')
+        .eq('user_id', userId)
+        .not('attended', 'is', null);
+    if (rows.isEmpty) return 100;
+    final total = rows.length;
+    final attended = rows.where((r) => r['attended'] == true).length;
+    final score = (attended / total * 100).clamp(0, 100).toDouble();
+    await _client
+        .from('profiles')
+        .update({'reliability_score': score})
+        .eq('id', userId);
+    return score;
+  }
+
   /// % of the last 7 days the user had an active (checked-in) session.
   Future<List<bool>> getActivityLast7Days(String userId) async {
     final since = DateTime.now().subtract(const Duration(days: 7));

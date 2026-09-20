@@ -264,6 +264,36 @@ class GroupService {
         .toList();
   }
 
+  /// Whether I confirmed attending this meetup — null means not checked in
+  /// yet.
+  Future<bool?> getAttendance({
+    required String groupId,
+    required String userId,
+  }) async {
+    final row = await _client
+        .from('group_members')
+        .select('attended')
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return row?['attended'] as bool?;
+  }
+
+  /// Records whether I actually showed up to a past meetup — feeds into my
+  /// reliability score (see [ProfileService.recomputeReliabilityScore]).
+  Future<void> checkIn({
+    required String groupId,
+    required String userId,
+    required bool attended,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('group_members')
+        .update({'attended': attended})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
   Future<Activity?> getActivity(String? activityId) async {
     if (activityId == null) return null;
     final map = await _client
