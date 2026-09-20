@@ -28,6 +28,10 @@ class Activity {
   final double? paceMin;
   final double? paceMax;
 
+  /// Set for a one-off activity on this exact calendar date; null for a
+  /// plain weekly recurrence on [dayOfWeek].
+  final DateTime? specificDate;
+
   Activity({
     required this.id,
     required this.userId,
@@ -43,7 +47,10 @@ class Activity {
     this.distanceMaxKm,
     this.paceMin,
     this.paceMax,
+    this.specificDate,
   });
+
+  bool get isRecurring => specificDate == null;
 
   factory Activity.fromMap(Map<String, dynamic> map) => Activity(
         id: map['id'] as String,
@@ -60,6 +67,9 @@ class Activity {
         distanceMaxKm: (map['distance_max_km'] as num?)?.toDouble(),
         paceMin: (map['pace_min'] as num?)?.toDouble(),
         paceMax: (map['pace_max'] as num?)?.toDouble(),
+        specificDate: map['specific_date'] == null
+            ? null
+            : DateTime.parse(map['specific_date'] as String),
       );
 
   static TimeOfDay _parseTime(String raw) {
@@ -75,4 +85,10 @@ class Activity {
 
   String get dayLabel => weekdayFullLabels[dayOfWeek - 1];
   String get dayShortLabel => weekdayLabels[dayOfWeek - 1];
+
+  String get specificDateLabel {
+    final d = specificDate!;
+    return '${weekdayLabels[d.weekday - 1]}, ${d.day.toString().padLeft(2, '0')}.'
+        '${d.month.toString().padLeft(2, '0')}.';
+  }
 }

@@ -58,6 +58,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ));
   late double? _paceMin = widget.existing?.paceMin;
   late double? _paceMax = widget.existing?.paceMax;
+  late bool _isRecurring = widget.existing?.isRecurring ?? true;
+  late DateTime? _specificDate = widget.existing?.specificDate;
   bool _saving = false;
 
   @override
@@ -77,6 +79,22 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     setState(() => isStart ? _start = picked : _end = picked);
   }
 
+  Future<void> _pickSpecificDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _specificDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    setState(() {
+      _specificDate = picked;
+      _selectedDays
+        ..clear()
+        ..add(picked.weekday);
+    });
+  }
+
   Future<void> _pickLocation() async {
     final picked = await Navigator.of(context).push<PickedLocation>(
       MaterialPageRoute(
@@ -88,11 +106,13 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
 
   Future<void> _save() async {
     if (_selectedDays.isEmpty) return;
+    if (!_isRecurring && _specificDate == null) return;
     setState(() => _saving = true);
     try {
       final radiusKm = double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3;
       final distanceMinKm = double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.'));
       final distanceMaxKm = double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.'));
+      final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
         final updated = await _activityService.updateActivity(
@@ -109,6 +129,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           distanceMaxKm: distanceMaxKm,
           paceMin: _paceMin,
           paceMax: _paceMax,
+          specificDate: specificDate,
         );
         if (!mounted) return;
         context.pushReplacement('/matches/${updated.id}');
@@ -133,6 +154,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           distanceMaxKm: distanceMaxKm,
           paceMin: _paceMin,
           paceMax: _paceMax,
+          specificDate: specificDate,
         ));
       }
       if (!mounted) return;
@@ -188,37 +210,76 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            _SectionLabel(widget.isEditing ? 'Wann?' : 'Wann? (mehrere Tage möglich)'),
+            const _SectionLabel('Wann?'),
             Wrap(
               spacing: 8,
-              runSpacing: 8,
-              children: List.generate(7, (i) {
-                final day = i + 1;
-                final selected = _selectedDays.contains(day);
-                if (widget.isEditing) {
-                  return ChoiceChip(
+              children: [
+                ChoiceChip(
+                  label: const Text('Jede Woche'),
+                  selected: _isRecurring,
+                  onSelected: (_) => setState(() => _isRecurring = true),
+                ),
+                ChoiceChip(
+                  label: const Text('Einmalig am...'),
+                  selected: !_isRecurring,
+                  onSelected: (_) => setState(() => _isRecurring = false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_isRecurring)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(7, (i) {
+                  final day = i + 1;
+                  final selected = _selectedDays.contains(day);
+                  if (widget.isEditing) {
+                    return ChoiceChip(
+                      label: Text(weekdayLabels[i]),
+                      selected: selected,
+                      onSelected: (_) => setState(() {
+                        _selectedDays
+                          ..clear()
+                          ..add(day);
+                      }),
+                    );
+                  }
+                  return FilterChip(
                     label: Text(weekdayLabels[i]),
                     selected: selected,
-                    onSelected: (_) => setState(() {
-                      _selectedDays
-                        ..clear()
-                        ..add(day);
+                    onSelected: (value) => setState(() {
+                      if (value) {
+                        _selectedDays.add(day);
+                      } else if (_selectedDays.length > 1) {
+                        _selectedDays.remove(day);
+                      }
                     }),
                   );
-                }
-                return FilterChip(
-                  label: Text(weekdayLabels[i]),
-                  selected: selected,
-                  onSelected: (value) => setState(() {
-                    if (value) {
-                      _selectedDays.add(day);
-                    } else if (_selectedDays.length > 1) {
-                      _selectedDays.remove(day);
-                    }
-                  }),
-                );
-              }),
-            ),
+                }),
+              )
+            else
+              InkWell(
+                onTap: _pickSpecificDate,
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    hintText: 'Datum auswählen',
+                    prefixIcon: Icon(Icons.event_outlined),
+                  ),
+                  child: Text(
+                    _specificDate == null
+                        ? 'Datum auswählen'
+                        : '${weekdayFullLabels[_specificDate!.weekday - 1]}, '
+                            '${_specificDate!.day.toString().padLeft(2, '0')}.'
+                            '${_specificDate!.month.toString().padLeft(2, '0')}.'
+                            '${_specificDate!.year}',
+                    style: _specificDate == null
+                        ? const TextStyle(color: AppColors.textSecondary)
+                        : null,
+                  ),
+                ),
+              ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -315,7 +376,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ),
             const SizedBox(height: 28),
             ElevatedButton(
-              onPressed: _saving ? null : _save,
+              onPressed: _saving || (!_isRecurring && _specificDate == null) ? null : _save,
               child: _saving
                   ? const SizedBox(
                       height: 20,

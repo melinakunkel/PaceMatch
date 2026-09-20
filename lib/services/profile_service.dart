@@ -27,6 +27,12 @@ class ProfileService {
         .eq('id', profile.id);
   }
 
+  Future<List<Profile>> getProfilesByIds(List<String> userIds) async {
+    if (userIds.isEmpty) return [];
+    final rows = await _client.from('profiles').select().inFilter('id', userIds);
+    return rows.map((m) => Profile.fromMap(m)).toList();
+  }
+
   Future<List<UserSport>> getUserSports(String userId) async {
     final rows = await _client
         .from('user_sports')

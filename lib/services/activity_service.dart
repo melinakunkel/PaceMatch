@@ -32,6 +32,28 @@ class ActivityService {
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
+  /// Every other user's activity that's actually happening on [date]: a
+  /// recurring one on that weekday, or a one-off with a matching
+  /// specific_date. Used by the "Entdecken" screen.
+  Future<List<Activity>> getActivitiesForDate({
+    required DateTime date,
+    required String excludeUserId,
+  }) async {
+    final dateStr = _formatDate(date);
+    final rows = await _client
+        .from('activities')
+        .select()
+        .eq('day_of_week', date.weekday)
+        .eq('is_active', true)
+        .neq('user_id', excludeUserId)
+        .or('specific_date.is.null,specific_date.eq.$dateStr')
+        .order('start_time');
+    return rows.map((m) => Activity.fromMap(m)).toList();
+  }
+
+  static String _formatDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   Future<Activity> createActivity({
     required String userId,
     required SportType sport,
@@ -46,6 +68,7 @@ class ActivityService {
     double? distanceMaxKm,
     double? paceMin,
     double? paceMax,
+    DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -64,6 +87,7 @@ class ActivityService {
           'distance_max_km': distanceMaxKm,
           'pace_min': paceMin,
           'pace_max': paceMax,
+          'specific_date': specificDate == null ? null : _formatDate(specificDate),
         })
         .select()
         .single();
@@ -89,6 +113,7 @@ class ActivityService {
     double? distanceMaxKm,
     double? paceMin,
     double? paceMax,
+    DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -106,6 +131,7 @@ class ActivityService {
           'distance_max_km': distanceMaxKm,
           'pace_min': paceMin,
           'pace_max': paceMax,
+          'specific_date': specificDate == null ? null : _formatDate(specificDate),
         })
         .eq('id', id)
         .select()

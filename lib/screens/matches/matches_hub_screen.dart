@@ -29,6 +29,13 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
     return AppScaffold(
       currentIndex: 2,
       title: 'Matches',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.explore_outlined),
+          tooltip: 'Entdecken',
+          onPressed: () => context.push('/discover'),
+        ),
+      ],
       body: FutureBuilder<List<Activity>>(
         future: _future,
         builder: (context, snapshot) {
