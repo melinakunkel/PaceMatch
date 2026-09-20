@@ -6,6 +6,8 @@ class SportGroup {
   final SportType sport;
   final String createdBy;
   final String? meetingPoint;
+  final double? latitude;
+  final double? longitude;
   final DateTime? meetingTime;
   final String? activityId;
   final int memberCount;
@@ -20,6 +22,8 @@ class SportGroup {
     required this.sport,
     required this.createdBy,
     this.meetingPoint,
+    this.latitude,
+    this.longitude,
     this.meetingTime,
     this.activityId,
     this.memberCount = 0,
@@ -29,12 +33,16 @@ class SportGroup {
     this.lastMessageAt,
   });
 
+  bool get hasMapLocation => latitude != null && longitude != null;
+
   factory SportGroup.fromMap(Map<String, dynamic> map) => SportGroup(
     id: map['id'] as String,
     name: map['name'] as String,
     sport: SportType.fromDb(map['sport'] as String),
     createdBy: map['created_by'] as String,
     meetingPoint: map['meeting_point'] as String?,
+    latitude: (map['latitude'] as num?)?.toDouble(),
+    longitude: (map['longitude'] as num?)?.toDouble(),
     meetingTime: map['meeting_time'] == null
         ? null
         : DateTime.parse(map['meeting_time'] as String),
@@ -60,6 +68,8 @@ class SportGroup {
     sport: sport,
     createdBy: createdBy,
     meetingPoint: meetingPoint,
+    latitude: latitude,
+    longitude: longitude,
     meetingTime: meetingTime,
     activityId: activityId,
     memberCount: memberCount,

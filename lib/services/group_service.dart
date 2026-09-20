@@ -16,6 +16,8 @@ class GroupService {
     required SportType sport,
     required String name,
     String? meetingPoint,
+    double? latitude,
+    double? longitude,
     DateTime? meetingTime,
     String? activityId,
   }) async {
@@ -27,6 +29,8 @@ class GroupService {
           'sport': sport.name,
           'created_by': createdBy,
           'meeting_point': meetingPoint,
+          'latitude': latitude,
+          'longitude': longitude,
           'meeting_time': meetingTime?.toIso8601String(),
           'activity_id': activityId,
         })
@@ -76,6 +80,8 @@ class GroupService {
   Future<void> updateMeetingPoint({
     required String groupId,
     required String meetingPoint,
+    double? latitude,
+    double? longitude,
     DateTime? meetingTime,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -83,6 +89,8 @@ class GroupService {
         .from('groups')
         .update({
           'meeting_point': meetingPoint,
+          'latitude': latitude,
+          'longitude': longitude,
           if (meetingTime != null)
             'meeting_time': meetingTime.toIso8601String(),
         })

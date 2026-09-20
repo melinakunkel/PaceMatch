@@ -183,11 +183,17 @@ class _DayList extends StatelessWidget {
               backgroundColor: AppColors.secondaryLight,
               child: Icon(a.sport.icon, color: AppColors.primary),
             ),
-            title: Text('${a.timeRangeLabel}  ·  ${a.sport.label}'),
+            title: Text(
+              '${a.timeRangeLabel}  ·  ${a.sport.label}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             subtitle: Text(
               a.isRecurring
                   ? (a.locationName ?? 'Ohne festen Ort')
                   : 'Einmalig, ${a.specificDateLabel}  ·  ${a.locationName ?? "Ohne festen Ort"}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,

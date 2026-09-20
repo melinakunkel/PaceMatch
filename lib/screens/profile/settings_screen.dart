@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../tutorial/tutorial_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -50,6 +51,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                const Text(
+                  'Hilfe',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Icon(Icons.help_outline, color: AppColors.primary),
+                    title: const Text('So funktioniert SAMEPACE'),
+                    subtitle: const Text('Kurzes Tutorial ansehen'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   'Chats',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),

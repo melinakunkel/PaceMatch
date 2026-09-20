@@ -182,6 +182,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           sport: entry.activity.sport,
           name: '${entry.activity.sport.label} mit ${entry.profile.fullName}',
           meetingPoint: entry.activity.locationName,
+          latitude: entry.activity.latitude,
+          longitude: entry.activity.longitude,
           activityId: entry.activity.id,
         );
         await _groupService.joinGroup(

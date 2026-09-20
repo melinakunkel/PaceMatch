@@ -91,6 +91,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
             name:
                 '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
             meetingPoint: activity.locationName,
+            latitude: activity.latitude,
+            longitude: activity.longitude,
             activityId: activity.id,
           )).id;
       for (final userId in _selectedUserIds) {

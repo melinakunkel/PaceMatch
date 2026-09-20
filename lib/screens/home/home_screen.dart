@@ -1,12 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/sport_type.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/stock_photos.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/network_photo.dart';
+import '../tutorial/tutorial_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  static const _seenTutorialKey = 'has_seen_tutorial';
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeShowTutorial();
+  }
+
+  Future<void> _maybeShowTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_seenTutorialKey) == true) return;
+    await prefs.setBool(_seenTutorialKey, true);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TutorialScreen(showSkip: true)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +47,7 @@ class HomeScreen extends StatelessWidget {
             Row(
               children: [
                 Icon(Icons.terrain, color: AppColors.primary, size: 28),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   'SAMEPACE',
                   style: TextStyle(
@@ -29,9 +56,59 @@ class HomeScreen extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                 ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(Icons.help_outline, color: AppColors.primary),
+                  tooltip: 'Tutorial',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                height: 150,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    NetworkPhoto(
+                      url: StockPhotos.teamHighFive,
+                      fallbackIcon: Icons.emoji_events_outlined,
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.55),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 14,
+                      child: Text(
+                        'Gemeinsam Sport machen, wenn es zeitlich passt.',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
               'Was möchtest du diese Woche machen?',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),

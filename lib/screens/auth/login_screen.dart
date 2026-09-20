@@ -5,6 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/stock_photos.dart';
+import '../../widgets/network_photo.dart';
+import '../tutorial/tutorial_screen.dart';
 import 'forgot_password_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -65,8 +68,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.terrain, size: 48, color: AppColors.primary),
-                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: SizedBox(
+                      height: 160,
+                      child: NetworkPhoto(
+                        url: StockPhotos.runningGroup,
+                        fallbackIcon: Icons.terrain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Icon(Icons.terrain, size: 32, color: AppColors.primary),
+                  const SizedBox(height: 4),
                   Text(
                     'SAMEPACE',
                     textAlign: TextAlign.center,
@@ -82,6 +96,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Gemeinsam Sport machen, wenn es zeitlich passt.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                    ),
+                    icon: const Icon(Icons.help_outline, size: 18),
+                    label: const Text('Wie funktioniert\'s?'),
                   ),
                   const SizedBox(height: 32),
                   TextFormField(

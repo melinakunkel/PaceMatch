@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/activity.dart' show weekdayLabels;
 import '../../models/group.dart';
 import '../../models/message.dart';
+import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
+import '../plan/location_picker_screen.dart';
 import 'report_user_dialog.dart';
 
 class GroupScreen extends StatefulWidget {
@@ -23,7 +28,6 @@ class GroupScreen extends StatefulWidget {
 
 class _GroupScreenState extends State<GroupScreen> {
   final _groupService = GroupService();
-  final _meetingPointCtrl = TextEditingController();
 
   SportGroup? _group;
   List<Profile> _members = [];
@@ -47,25 +51,113 @@ class _GroupScreenState extends State<GroupScreen> {
     setState(() {
       _group = group;
       _members = members;
-      _meetingPointCtrl.text = group.meetingPoint ?? '';
       _loading = false;
     });
   }
 
-  Future<void> _setMeetingPoint() async {
-    if (_meetingPointCtrl.text.trim().isEmpty) return;
+  Future<void> _pickMeetingPoint() async {
+    final group = _group;
+    if (group == null) return;
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initial: group.meetingPoint == null || !group.hasMapLocation
+              ? null
+              : PickedLocation(
+                  name: group.meetingPoint!,
+                  latitude: group.latitude!,
+                  longitude: group.longitude!,
+                ),
+        ),
+      ),
+    );
+    if (picked == null) return;
     await _groupService.updateMeetingPoint(
       groupId: widget.groupId,
-      meetingPoint: _meetingPointCtrl.text.trim(),
+      meetingPoint: picked.name,
+      latitude: picked.latitude,
+      longitude: picked.longitude,
     );
     _load();
-    if (mounted) FocusScope.of(context).unfocus();
   }
 
-  @override
-  void dispose() {
-    _meetingPointCtrl.dispose();
-    super.dispose();
+  Future<void> _showMeetingPointMap() async {
+    final group = _group;
+    if (group == null || !group.hasMapLocation) return;
+    final point = LatLng(group.latitude!, group.longitude!);
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      group.meetingPoint ?? 'Treffpunkt',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: FlutterMap(
+                options: MapOptions(initialCenter: point, initialZoom: 15),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.samepace.samepace',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.location_pin,
+                          color: AppColors.secondary,
+                          size: 44,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: OutlinedButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(
+                      'https://www.openstreetmap.org/?mlat=${point.latitude}'
+                      '&mlon=${point.longitude}#map=17/${point.latitude}/${point.longitude}',
+                    ),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('In OpenStreetMap öffnen'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -161,39 +253,56 @@ class _GroupScreenState extends State<GroupScreen> {
                   ),
                   const SizedBox(height: 12),
                   if (isCreator)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _meetingPointCtrl,
-                            decoration: const InputDecoration(
-                              hintText: 'Treffpunkt festlegen',
-                              prefixIcon: Icon(Icons.place_outlined),
-                              isDense: true,
-                            ),
-                          ),
+                    InkWell(
+                      onTap: _pickMeetingPoint,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          hintText: 'Treffpunkt auf der Karte festlegen',
+                          prefixIcon: const Icon(Icons.place_outlined),
+                          suffixIcon: const Icon(Icons.map_outlined),
+                          isDense: true,
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _setMeetingPoint,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(0, 48),
-                          ),
-                          child: const Text('Speichern'),
+                        child: Text(
+                          group.meetingPoint ??
+                              'Treffpunkt auf der Karte festlegen',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: group.meetingPoint == null
+                              ? TextStyle(color: AppColors.textSecondary)
+                              : null,
                         ),
-                      ],
+                      ),
                     )
                   else if (group.meetingPoint != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.place_outlined,
-                          size: 18,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(group.meetingPoint!),
-                      ],
+                    InkWell(
+                      onTap: group.hasMapLocation ? _showMeetingPointMap : null,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.place_outlined,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              group.meetingPoint!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (group.hasMapLocation) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.map_outlined,
+                              size: 16,
+                              color: AppColors.secondary,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                 ],
               ),
