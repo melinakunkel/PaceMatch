@@ -343,10 +343,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   if (_profile!.interests.isNotEmpty ||
-                      _profile!.language != null) ...[
+                      _profile!.languages.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     const Text(
-                      'Interessen & Sprache',
+                      'Interessen & Sprachen',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -357,14 +357,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        if (_profile!.language != null)
-                          Chip(
+                        ..._profile!.languages.map(
+                          (l) => Chip(
                             avatar: const Icon(Icons.language, size: 16),
-                            label: Text(
-                              kLanguageOptions[_profile!.language] ??
-                                  _profile!.language!,
-                            ),
+                            label: Text(kLanguageOptions[l] ?? l),
                           ),
+                        ),
                         ..._profile!.interests.map((i) => Chip(label: Text(i))),
                       ],
                     ),

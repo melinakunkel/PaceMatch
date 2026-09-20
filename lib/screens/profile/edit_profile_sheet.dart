@@ -37,7 +37,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     ),
   );
   final List<String> _interests = [];
-  late String? _language = widget.profile.language;
+  final List<String> _languages = [];
   bool _saving = false;
   String? _error;
 
@@ -47,6 +47,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   void initState() {
     super.initState();
     _interests.addAll(widget.profile.interests);
+    _languages.addAll(widget.profile.languages);
   }
 
   @override
@@ -83,7 +84,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
           ageRangeMax: noAgeLimit ? null : _ageRange.end.round(),
           isVerified: widget.profile.isVerified,
           interests: _interests,
-          language: _language,
+          languages: _languages,
           autoArchiveInactiveChats: widget.profile.autoArchiveInactiveChats,
         ),
       );
@@ -205,18 +206,25 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               onChanged: (v) => setState(() => _ageRange = v),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Sprache',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            const Text(
+              'Sprachen',
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: kLanguageOptions.entries.map((entry) {
-                return ChoiceChip(
+                final selected = _languages.contains(entry.key);
+                return FilterChip(
                   label: Text(entry.value),
-                  selected: entry.key == _language,
-                  onSelected: (_) => setState(() => _language = entry.key),
+                  selected: selected,
+                  onSelected: (_) => setState(() {
+                    if (selected) {
+                      _languages.remove(entry.key);
+                    } else {
+                      _languages.add(entry.key);
+                    }
+                  }),
                 );
               }).toList(),
             ),

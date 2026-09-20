@@ -19,8 +19,8 @@ class Profile {
   /// Up to 3 interests picked from the fixed list in interest.dart.
   final List<String> interests;
 
-  /// 'de', 'en', or 'other'.
-  final String? language;
+  /// Any of 'de', 'en', 'other' — multiple selectable.
+  final List<String> languages;
 
   /// Chats with no new message for 7 days get archived automatically.
   final bool autoArchiveInactiveChats;
@@ -39,7 +39,7 @@ class Profile {
     this.ageRangeMax,
     this.isVerified = false,
     this.interests = const [],
-    this.language,
+    this.languages = const [],
     this.autoArchiveInactiveChats = false,
   });
 
@@ -57,7 +57,7 @@ class Profile {
     ageRangeMax: map['age_range_max'] as int?,
     isVerified: map['is_verified'] as bool? ?? false,
     interests: (map['interests'] as List?)?.cast<String>() ?? const [],
-    language: map['language'] as String?,
+    languages: (map['languages'] as List?)?.cast<String>() ?? const [],
     autoArchiveInactiveChats:
         map['auto_archive_inactive_chats'] as bool? ?? false,
   );
@@ -76,7 +76,7 @@ class Profile {
     int? ageRangeMin,
     int? ageRangeMax,
     List<String>? interests,
-    String? language,
+    List<String>? languages,
     bool? autoArchiveInactiveChats,
   }) => Profile(
     id: id,
@@ -92,7 +92,7 @@ class Profile {
     ageRangeMax: ageRangeMax ?? this.ageRangeMax,
     isVerified: isVerified,
     interests: interests ?? this.interests,
-    language: language ?? this.language,
+    languages: languages ?? this.languages,
     autoArchiveInactiveChats:
         autoArchiveInactiveChats ?? this.autoArchiveInactiveChats,
   );
@@ -108,7 +108,7 @@ class Profile {
     'age_range_min': ageRangeMin,
     'age_range_max': ageRangeMax,
     'interests': interests,
-    'language': language,
+    'languages': languages,
     'auto_archive_inactive_chats': autoArchiveInactiveChats,
   };
 }

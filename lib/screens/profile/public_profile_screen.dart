@@ -215,10 +215,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ),
           ),
         ),
-        if (profile.interests.isNotEmpty || profile.language != null) ...[
+        if (profile.interests.isNotEmpty || profile.languages.isNotEmpty) ...[
           const SizedBox(height: 16),
           const Text(
-            'Interessen & Sprache',
+            'Interessen & Sprachen',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 8),
@@ -226,13 +226,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (profile.language != null)
-                Chip(
+              ...profile.languages.map(
+                (l) => Chip(
                   avatar: const Icon(Icons.language, size: 16),
-                  label: Text(
-                    kLanguageOptions[profile.language] ?? profile.language!,
-                  ),
+                  label: Text(kLanguageOptions[l] ?? l),
                 ),
+              ),
               ...profile.interests.map((i) => Chip(label: Text(i))),
             ],
           ),
