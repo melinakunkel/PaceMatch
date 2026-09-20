@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/activity.dart';
-import '../../models/buddy.dart';
 import '../../models/profile.dart';
-import '../../models/sport_type.dart';
 import '../../services/activity_service.dart';
 import '../../services/group_service.dart';
 import '../../services/like_service.dart';
@@ -14,17 +12,26 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
-import '../../widgets/verified_badge.dart';
 
-class _MatchedActivity {
-  _MatchedActivity({required this.activity, required this.matchCount});
+/// One of the user's own activities, with who they've mutually connected
+/// with for it (real Sportbuddys) and how many more candidates are still
+/// worth swiping through.
+class _ActivityGroup {
+  _ActivityGroup({
+    required this.activity,
+    required this.candidateCount,
+    required this.buddies,
+    required this.groupId,
+  });
   final Activity activity;
-  final int matchCount;
+  final int candidateCount;
+  final List<Profile> buddies;
+  final String? groupId;
 }
 
-/// Sportbuddys tab: an overview of people you've mutually connected with
-/// (see below), plus your own activities that currently have candidates
-/// worth swiping through.
+/// Sportbuddys tab: your own activities, each with its real next date and
+/// who you've actually connected with for it — the unit "Sportzeit" is the
+/// organizing principle, not the person.
 class MatchesHubScreen extends StatefulWidget {
   const MatchesHubScreen({super.key});
 
@@ -39,180 +46,135 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
   final _profileService = ProfileService();
   final _groupService = GroupService();
 
-  late Future<List<_MatchedActivity>> _future;
-  List<Profile> _buddies = [];
-  final Map<String, String?> _chatByBuddy = {};
-  bool _buddiesLoading = true;
+  late Future<List<_ActivityGroup>> _future;
 
   @override
   void initState() {
     super.initState();
     _future = _load();
-    _loadBuddies();
     MatchNotifier.markSeen();
   }
 
-  Future<List<_MatchedActivity>> _load() async {
-    final activities = await _activityService.getMyActivities(
-      SupabaseService.currentUserId!,
+  Future<List<_ActivityGroup>> _load() async {
+    final userId = SupabaseService.currentUserId!;
+    final activities = await _activityService.getMyActivities(userId);
+    final buddies = await _likeService.getBuddies(userId);
+    final buddyProfiles = await _profileService.getProfilesByIds(
+      buddies.map((b) => b.userId).toList(),
     );
-    final results = <_MatchedActivity>[];
-    for (final a in activities) {
-      final matches = await _matchService.findMatches(a);
-      if (matches.isNotEmpty) {
-        results.add(_MatchedActivity(activity: a, matchCount: matches.length));
-      }
+    final profilesById = {for (final p in buddyProfiles) p.id: p};
+    final buddiesByActivity = <String, List<Profile>>{};
+    for (final b in buddies) {
+      final activityId = b.activityId;
+      final profile = profilesById[b.userId];
+      if (activityId == null || profile == null) continue;
+      (buddiesByActivity[activityId] ??= []).add(profile);
     }
-    results.sort((a, b) => b.matchCount.compareTo(a.matchCount));
-    return results;
-  }
 
-  Future<void> _loadBuddies() async {
-    setState(() => _buddiesLoading = true);
-    try {
-      final userId = SupabaseService.currentUserId!;
-      final buddies = await _likeService.getBuddies(userId);
-      final profiles = await _profileService.getProfilesByIds(
-        buddies.map((b) => b.userId).toList(),
+    final results = <_ActivityGroup>[];
+    for (final a in activities) {
+      final candidates = await _matchService.findMatches(a);
+      final activityBuddies = buddiesByActivity[a.id] ?? [];
+      if (candidates.isEmpty && activityBuddies.isEmpty) continue;
+      final groupId = activityBuddies.isEmpty
+          ? null
+          : await _groupService.findGroupIdForActivity(a.id);
+      results.add(
+        _ActivityGroup(
+          activity: a,
+          candidateCount: candidates.length,
+          buddies: activityBuddies,
+          groupId: groupId,
+        ),
       );
-      final profilesById = {for (final p in profiles) p.id: p};
-      final ordered = buddies
-          .map((b) => profilesById[b.userId])
-          .whereType<Profile>()
-          .toList();
-      final chatMap = <String, String?>{};
-      for (final p in ordered) {
-        chatMap[p.id] = await _groupService.findSharedGroupId(p.id);
-      }
-      if (!mounted) return;
-      setState(() {
-        _buddies = ordered;
-        _chatByBuddy
-          ..clear()
-          ..addAll(chatMap);
-        _buddiesLoading = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _buddiesLoading = false);
     }
+    results.sort(
+      (x, y) => x.activity.nextOccurrence.compareTo(y.activity.nextOccurrence),
+    );
+    return results;
   }
 
   Future<void> _refresh() async {
     final future = _load();
     setState(() => _future = future);
-    await Future.wait([future, _loadBuddies()]);
+    await future;
   }
 
-  Future<void> _startChat(Profile buddy) async {
-    final existing = _chatByBuddy[buddy.id];
-    if (existing != null) {
-      context.push('/group/$existing');
-      return;
-    }
-    final me = SupabaseService.currentUserId!;
-    try {
-      final buddies = await _likeService.getBuddies(me);
-      final activityId = buddies
-          .firstWhere(
-            (b) => b.userId == buddy.id,
-            orElse: () => Buddy(userId: buddy.id, connectedAt: DateTime.now()),
-          )
-          .activityId;
-      final activity = await _groupService.getActivity(activityId);
-      final group = await _groupService.createGroup(
-        createdBy: me,
-        sport: activity?.sport ?? SportType.sonstige,
-        name: 'Sportbuddy: ${buddy.fullName}',
-        meetingPoint: activity?.locationName,
-        latitude: activity?.latitude,
-        longitude: activity?.longitude,
-        meetingTime: activity?.nextOccurrence,
-        activityId: activity?.id,
-        isMatch: true,
-      );
-      await _groupService.joinGroup(groupId: group.id, userId: buddy.id);
-      if (!mounted) return;
-      setState(() => _chatByBuddy[buddy.id] = group.id);
-      context.push('/group/${group.id}');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Chat konnte nicht erstellt werden: $e')));
-    }
+  static String _dateLabel(Activity a) {
+    final d = a.nextOccurrence;
+    return '${weekdayLabels[d.weekday - 1]}, '
+        '${d.day.toString().padLeft(2, '0')}.'
+        '${d.month.toString().padLeft(2, '0')}.${d.year}';
   }
 
-  Future<void> _openBuddySheet(Profile buddy) async {
-    final hasChat = _chatByBuddy[buddy.id] != null;
+  Future<void> _openGroupSheet(_ActivityGroup group) async {
+    final selected = {for (final b in group.buddies) b.id};
     await showModalBottomSheet(
       context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
+              Text(
+                '${group.activity.sport.label} · ${_dateLabel(group.activity)}',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                group.groupId == null
+                    ? 'Wähl aus, wen du zum Gruppenchat hinzufügen willst.'
+                    : 'Wähl aus, wen du zum bestehenden Chat hinzufügen willst.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              ...group.buddies.map(
+                (b) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: selected.contains(b.id),
+                  onChanged: (v) => setSheetState(() {
+                    if (v == true) {
+                      selected.add(b.id);
+                    } else {
+                      selected.remove(b.id);
+                    }
+                  }),
+                  secondary: CircleAvatar(
                     backgroundColor: AppColors.secondaryLight,
-                    backgroundImage: buddy.avatarUrl != null
-                        ? NetworkImage(buddy.avatarUrl!)
+                    backgroundImage: b.avatarUrl != null
+                        ? NetworkImage(b.avatarUrl!)
                         : null,
-                    child: buddy.avatarUrl != null
+                    child: b.avatarUrl != null
                         ? null
                         : Text(
-                            buddy.fullName.isNotEmpty
-                                ? buddy.fullName[0].toUpperCase()
+                            b.fullName.isNotEmpty
+                                ? b.fullName[0].toUpperCase()
                                 : '?',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TextStyle(color: AppColors.primary),
                           ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            buddy.fullName,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        if (buddy.isVerified) ...[
-                          const SizedBox(width: 4),
-                          const VerifiedBadge(size: 14),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+                  title: Text(b.fullName),
+                ),
               ),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  context.push('/profile/${buddy.id}');
-                },
-                icon: const Icon(Icons.person_outline),
-                label: const Text('Profil ansehen'),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  _startChat(buddy);
-                },
-                icon: const Icon(Icons.chat_bubble_outline),
-                label: Text(hasChat ? 'Chat öffnen' : 'Chat starten'),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: selected.isEmpty
+                    ? null
+                    : () {
+                        Navigator.of(sheetContext).pop();
+                        _createOrJoinGroup(group, selected.toList());
+                      },
+                child: Text(
+                  group.groupId == null ? 'Gruppenchat erstellen' : 'Chat öffnen',
+                ),
               ),
             ],
           ),
@@ -221,149 +183,230 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
     );
   }
 
+  Future<void> _createOrJoinGroup(
+    _ActivityGroup group,
+    List<String> buddyIds,
+  ) async {
+    try {
+      final me = SupabaseService.currentUserId!;
+      final activity = group.activity;
+      String groupId;
+      if (group.groupId != null) {
+        groupId = group.groupId!;
+      } else {
+        final created = await _groupService.createGroup(
+          createdBy: me,
+          sport: activity.sport,
+          name:
+              '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+          meetingPoint: activity.locationName,
+          latitude: activity.latitude,
+          longitude: activity.longitude,
+          meetingTime: activity.nextOccurrence,
+          activityId: activity.id,
+          isMatch: true,
+        );
+        groupId = created.id;
+      }
+      for (final id in buddyIds) {
+        await _groupService.joinGroup(groupId: groupId, userId: id);
+      }
+      if (!mounted) return;
+      context.push('/group/$groupId');
+      _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Chat konnte nicht erstellt werden: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
       currentIndex: 2,
       title: 'Sportbuddys',
-      body: FutureBuilder<List<_MatchedActivity>>(
+      body: FutureBuilder<List<_ActivityGroup>>(
         future: _future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting &&
-              _buddiesLoading) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final matched = snapshot.data ?? [];
+          final groups = snapshot.data ?? [];
+          if (groups.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView(
+                padding: const EdgeInsets.all(32),
+                children: [
+                  const SizedBox(height: 40),
+                  Icon(
+                    Icons.people_outline,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aktuell gibt es noch keine passenden Leute zu deinen '
+                    'Sportzeiten. Trag weitere Zeiten ein oder schau später nochmal vorbei.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => context.push('/new-activity'),
+                      child: const Text('Sportzeit eintragen'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return RefreshIndicator(
             onRefresh: _refresh,
-            child: ListView(
+            child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                if (_buddies.isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(
-                      'Deine Sportbuddys',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 92,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _buddies.length,
-                      itemBuilder: (context, index) {
-                        final b = _buddies[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 14),
-                          child: GestureDetector(
-                            onTap: () => _openBuddySheet(b),
-                            child: Column(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: AppColors.secondaryLight,
-                                  backgroundImage: b.avatarUrl != null
-                                      ? NetworkImage(b.avatarUrl!)
-                                      : null,
-                                  child: b.avatarUrl != null
-                                      ? null
-                                      : Text(
-                                          b.fullName.isNotEmpty
-                                              ? b.fullName[0].toUpperCase()
-                                              : '?',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w700,
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final g = groups[index];
+                final a = g.activity;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: AppColors.secondaryLight,
+                              child: Icon(a.sport.icon, color: AppColors.primary),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    a.sport.label,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_dateLabel(a)} · ${a.timeRangeLabel}',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (g.buddies.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              SizedBox(
+                                height: 36,
+                                child: Stack(
+                                  children: [
+                                    for (
+                                      var i = 0;
+                                      i < g.buddies.length.clamp(0, 4);
+                                      i++
+                                    )
+                                      Positioned(
+                                        left: i * 24.0,
+                                        child: CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: AppColors.surface,
+                                          child: CircleAvatar(
+                                            radius: 14,
+                                            backgroundColor:
+                                                AppColors.secondaryLight,
+                                            backgroundImage:
+                                                g.buddies[i].avatarUrl != null
+                                                ? NetworkImage(
+                                                    g.buddies[i].avatarUrl!,
+                                                  )
+                                                : null,
+                                            child: g.buddies[i].avatarUrl != null
+                                                ? null
+                                                : Text(
+                                                    g.buddies[i].fullName
+                                                            .isNotEmpty
+                                                        ? g
+                                                              .buddies[i]
+                                                              .fullName[0]
+                                                              .toUpperCase()
+                                                        : '?',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
                                           ),
                                         ),
+                                      ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  width: 64,
-                                  child: Text(
-                                    b.fullName,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12),
+                              ),
+                              SizedBox(
+                                width: g.buddies.length.clamp(0, 4) * 24.0 + 4,
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '${g.buddies.length} Sportbuddy${g.buddies.length == 1 ? '' : 's'}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              OutlinedButton(
+                                onPressed: () => _openGroupSheet(g),
+                                child: Text(
+                                  g.groupId == null ? 'Gruppenchat' : 'Chat',
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                const Padding(
-                  padding: EdgeInsets.only(left: 4, bottom: 8),
-                  child: Text(
-                    'Vorschläge zu deinen Sportzeiten',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                ),
-                if (matched.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 40,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Aktuell gibt es noch keine passenden Leute zu deinen '
-                          'Sportzeiten. Trag weitere Zeiten ein oder schau später nochmal vorbei.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => context.push('/new-activity'),
-                          child: const Text('Sportzeit eintragen'),
-                        ),
+                        ],
+                        if (g.candidateCount > 0) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.explore_outlined,
+                                size: 16,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '${g.candidateCount} weitere Vorschläge',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => context.push('/matches/${a.id}'),
+                                child: const Text('Ansehen'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
-                  )
-                else
-                  ...matched.map((m) {
-                    final a = m.activity;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.secondaryLight,
-                          child: Icon(a.sport.icon, color: AppColors.primary),
-                        ),
-                        title: Text('${a.sport.label} · ${a.dayLabel}'),
-                        subtitle: Text(a.timeRangeLabel),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondaryLight,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${m.matchCount}',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        onTap: () => context.push('/matches/${a.id}'),
-                      ),
-                    );
-                  }),
-              ],
+                  ),
+                );
+              },
             ),
           );
         },
