@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../../models/interest.dart';
 import '../../models/profile.dart';
+import '../../models/prompt.dart';
 import '../../services/profile_service.dart';
 import '../../theme/app_theme.dart';
 
 const _minAge = 16.0;
 const _maxAge = 90.0;
+
+class _PromptEntry {
+  _PromptEntry({required this.question, String initialAnswer = ''})
+    : controller = TextEditingController(text: initialAnswer);
+
+  final String question;
+  final TextEditingController controller;
+}
 
 class EditProfileSheet extends StatefulWidget {
   const EditProfileSheet({super.key, required this.profile});
@@ -36,8 +45,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       _maxAge,
     ),
   );
+  late final _bioCtrl = TextEditingController(text: widget.profile.bio ?? '');
   final List<String> _interests = [];
   final List<String> _languages = [];
+  final List<_PromptEntry> _prompts = [];
   bool _saving = false;
   String? _error;
 
@@ -48,6 +59,11 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     super.initState();
     _interests.addAll(widget.profile.interests);
     _languages.addAll(widget.profile.languages);
+    _prompts.addAll(
+      widget.profile.prompts.map(
+        (p) => _PromptEntry(question: p.question, initialAnswer: p.answer),
+      ),
+    );
   }
 
   @override
@@ -55,7 +71,22 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     _nameCtrl.dispose();
     _ageCtrl.dispose();
     _cityCtrl.dispose();
+    _bioCtrl.dispose();
+    for (final p in _prompts) {
+      p.controller.dispose();
+    }
     super.dispose();
+  }
+
+  void _togglePrompt(String question) {
+    setState(() {
+      final existing = _prompts.indexWhere((p) => p.question == question);
+      if (existing != -1) {
+        _prompts.removeAt(existing).controller.dispose();
+      } else if (_prompts.length < kMaxPrompts) {
+        _prompts.add(_PromptEntry(question: question));
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -75,7 +106,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
           gender: _gender,
           city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
           avatarUrl: widget.profile.avatarUrl,
-          bio: widget.profile.bio,
+          bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
           reliabilityScore: widget.profile.reliabilityScore,
           genderPreference: (_sameGenderOnly && _gender != null)
               ? 'same_only'
@@ -86,6 +117,15 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
           interests: _interests,
           languages: _languages,
           autoArchiveInactiveChats: widget.profile.autoArchiveInactiveChats,
+          prompts: _prompts
+              .where((p) => p.controller.text.trim().isNotEmpty)
+              .map(
+                (p) => ProfilePrompt(
+                  question: p.question,
+                  answer: p.controller.text.trim(),
+                ),
+              )
+              .toList(),
         ),
       );
       if (mounted) Navigator.of(context).pop();
@@ -120,6 +160,17 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               decoration: const InputDecoration(labelText: 'Name'),
             ),
             const SizedBox(height: 12),
+            TextField(
+              controller: _bioCtrl,
+              maxLines: 3,
+              maxLength: 150,
+              decoration: const InputDecoration(
+                labelText: 'Über mich',
+                hintText: 'Erzähl kurz, wer du bist und worauf du Lust hast...',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Expanded(
@@ -255,6 +306,40 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         }),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Prompts (max. $kMaxPrompts)',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Wähl ein paar Fragen und beantworte sie kurz — zeigt mehr von dir als nur Zahlen.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: kPromptQuestions.map((q) {
+                final selected = _prompts.any((p) => p.question == q);
+                final disabled = !selected && _prompts.length >= kMaxPrompts;
+                return ChoiceChip(
+                  label: Text(q),
+                  selected: selected,
+                  onSelected: disabled ? null : (_) => _togglePrompt(q),
+                );
+              }).toList(),
+            ),
+            ..._prompts.map(
+              (p) => Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: TextField(
+                  controller: p.controller,
+                  maxLength: kMaxPromptAnswerLength,
+                  decoration: InputDecoration(labelText: p.question),
+                ),
+              ),
             ),
             if (_error != null) ...[
               Text(_error!, style: TextStyle(color: AppColors.danger)),

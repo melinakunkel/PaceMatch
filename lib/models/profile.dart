@@ -1,3 +1,5 @@
+import 'prompt.dart';
+
 class Profile {
   final String id;
   final String fullName;
@@ -25,6 +27,9 @@ class Profile {
   /// Chats with no new message for 7 days get archived automatically.
   final bool autoArchiveInactiveChats;
 
+  /// Up to [kMaxPrompts] short Q&A prompts, Hinge-style.
+  final List<ProfilePrompt> prompts;
+
   Profile({
     required this.id,
     required this.fullName,
@@ -41,6 +46,7 @@ class Profile {
     this.interests = const [],
     this.languages = const [],
     this.autoArchiveInactiveChats = false,
+    this.prompts = const [],
   });
 
   factory Profile.fromMap(Map<String, dynamic> map) => Profile(
@@ -60,6 +66,11 @@ class Profile {
     languages: (map['languages'] as List?)?.cast<String>() ?? const [],
     autoArchiveInactiveChats:
         map['auto_archive_inactive_chats'] as bool? ?? false,
+    prompts:
+        (map['prompts'] as List?)
+            ?.map((p) => ProfilePrompt.fromMap(p as Map<String, dynamic>))
+            .toList() ??
+        const [],
   );
 
   /// Note: passing null for a nullable field keeps the current value — this
@@ -78,6 +89,7 @@ class Profile {
     List<String>? interests,
     List<String>? languages,
     bool? autoArchiveInactiveChats,
+    List<ProfilePrompt>? prompts,
   }) => Profile(
     id: id,
     fullName: fullName ?? this.fullName,
@@ -95,6 +107,7 @@ class Profile {
     languages: languages ?? this.languages,
     autoArchiveInactiveChats:
         autoArchiveInactiveChats ?? this.autoArchiveInactiveChats,
+    prompts: prompts ?? this.prompts,
   );
 
   Map<String, dynamic> toUpdateMap() => {
@@ -110,5 +123,6 @@ class Profile {
     'interests': interests,
     'languages': languages,
     'auto_archive_inactive_chats': autoArchiveInactiveChats,
+    'prompts': prompts.map((p) => p.toMap()).toList(),
   };
 }

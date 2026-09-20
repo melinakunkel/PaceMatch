@@ -266,6 +266,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                  if (_profile!.bio != null && _profile!.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(_profile!.bio!),
+                  ],
                   if (!_profile!.isVerified) ...[
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
@@ -358,6 +362,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         ..._profile!.interests.map((i) => Chip(label: Text(i))),
                       ],
+                    ),
+                  ],
+                  if (_profile!.prompts.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Meine Prompts',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._profile!.prompts.map(
+                      (p) => Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.question,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                p.answer,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 24),
