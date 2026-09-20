@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/activity.dart' show weekdayLabels;
 import '../../models/group.dart';
 import '../../models/message.dart';
 import '../../models/profile.dart';
@@ -281,31 +282,61 @@ class _ChatViewState extends State<_ChatView> {
                 itemBuilder: (context, index) {
                   final m = messages[index];
                   final mine = m.senderId == myId;
-                  return Align(
-                    alignment: mine
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      constraints: const BoxConstraints(maxWidth: 280),
-                      decoration: BoxDecoration(
-                        color: mine ? AppColors.secondary : AppColors.surface,
-                        border: mine
-                            ? null
-                            : Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        m.content,
-                        style: TextStyle(
-                          color: mine ? Colors.white : AppColors.textPrimary,
+                  final showDateDivider =
+                      index == 0 ||
+                      !_isSameDay(messages[index - 1].createdAt, m.createdAt);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (showDateDivider) _DateDivider(date: m.createdAt),
+                      Align(
+                        alignment: mine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Column(
+                          crossAxisAlignment: mine
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              constraints: const BoxConstraints(maxWidth: 280),
+                              decoration: BoxDecoration(
+                                color: mine
+                                    ? AppColors.secondary
+                                    : AppColors.surface,
+                                border: mine
+                                    ? null
+                                    : Border.all(color: AppColors.border),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                m.content,
+                                style: TextStyle(
+                                  color: mine
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                _formatMessageTime(m.createdAt),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    ],
                   );
                 },
               );
@@ -341,6 +372,55 @@ class _ChatViewState extends State<_ChatView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+bool _isSameDay(DateTime a, DateTime b) {
+  final la = a.toLocal();
+  final lb = b.toLocal();
+  return la.year == lb.year && la.month == lb.month && la.day == lb.day;
+}
+
+String _formatMessageTime(DateTime dt) {
+  final local = dt.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+String _formatDateDividerLabel(DateTime dt) {
+  final local = dt.toLocal();
+  final now = DateTime.now();
+  if (_isSameDay(local, now)) return 'Heute';
+  if (_isSameDay(local, now.subtract(const Duration(days: 1)))) {
+    return 'Gestern';
+  }
+  return '${weekdayLabels[local.weekday - 1]}, '
+      '${local.day.toString().padLeft(2, '0')}.'
+      '${local.month.toString().padLeft(2, '0')}.'
+      '${local.year}';
+}
+
+class _DateDivider extends StatelessWidget {
+  const _DateDivider({required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: AppColors.border)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              _formatDateDividerLabel(date),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ),
+          Expanded(child: Divider(color: AppColors.border)),
+        ],
+      ),
     );
   }
 }

@@ -34,6 +34,13 @@ class Activity {
   /// [SportType.usesVenueQuestion] is true.
   final String? venueStatus;
 
+  /// 'Anfänger' / 'Fortgeschritten' / 'Profi' — only set for sports where
+  /// [SportType.usesPace] is false.
+  final String? level;
+
+  /// Only set for [SportType.radfahren].
+  final String? bikeType;
+
   /// Set for a one-off activity on this exact calendar date; null for a
   /// plain weekly recurrence on [dayOfWeek].
   final DateTime? specificDate;
@@ -54,6 +61,8 @@ class Activity {
     this.paceMin,
     this.paceMax,
     this.venueStatus,
+    this.level,
+    this.bikeType,
     this.specificDate,
   });
 
@@ -75,6 +84,8 @@ class Activity {
     paceMin: (map['pace_min'] as num?)?.toDouble(),
     paceMax: (map['pace_max'] as num?)?.toDouble(),
     venueStatus: map['venue_status'] as String?,
+    level: map['level'] as String?,
+    bikeType: map['bike_type'] as String?,
     specificDate: map['specific_date'] == null
         ? null
         : DateTime.parse(map['specific_date'] as String),
@@ -99,6 +110,11 @@ class Activity {
     'needs_venue' => 'Sucht noch einen Platz',
     _ => null,
   };
+
+  String? get bikeTypeLabel => BikeType.fromDb(bikeType)?.label;
+
+  bool get hasVenue => venueStatus == 'has_venue';
+  bool get needsVenue => venueStatus == 'needs_venue';
 
   String get specificDateLabel {
     final d = specificDate!;

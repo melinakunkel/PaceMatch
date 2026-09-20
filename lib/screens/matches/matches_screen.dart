@@ -11,6 +11,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
+import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -257,24 +258,33 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                 c.theirActivity.locationName ?? 'Ort flexibel',
                               ].join(' · '),
                             ),
-                            Builder(
-                              builder: (context) {
-                                final stats = activityStatsLabel(
-                                  c.theirActivity,
-                                  _theirSports[c.profile.id],
-                                );
-                                if (stats == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Text(
-                                  stats,
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                );
-                              },
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                VenueStatusBadge(activity: c.theirActivity),
+                                Builder(
+                                  builder: (context) {
+                                    final stats = activityStatsLabel(
+                                      c.theirActivity,
+                                      _theirSports[c.profile.id],
+                                    );
+                                    if (stats == null) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Text(
+                                      stats,
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),

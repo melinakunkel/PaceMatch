@@ -103,6 +103,25 @@ class ProfileService {
     return '$url?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 
+  /// Syncs the chosen design across devices/logins — kept separate from
+  /// [updateProfile] so saving other profile fields never overwrites it.
+  Future<void> updateThemeVariant(String userId, String variant) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'theme_variant': variant})
+        .eq('id', userId);
+  }
+
+  Future<String?> getThemeVariant(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('theme_variant')
+        .eq('id', userId)
+        .maybeSingle();
+    return row?['theme_variant'] as String?;
+  }
+
   /// % of the last 7 days the user had an active (checked-in) session.
   Future<List<bool>> getActivityLast7Days(String userId) async {
     final since = DateTime.now().subtract(const Duration(days: 7));

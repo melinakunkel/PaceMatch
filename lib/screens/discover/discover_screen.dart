@@ -15,6 +15,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/matching_preferences.dart';
+import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 
 class _DiscoverEntry {
@@ -463,25 +464,33 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       ],
                     ),
                   ],
-                  Builder(
-                    builder: (context) {
-                      final stats = activityStatsLabel(
-                        e.activity,
-                        _theirSports['${e.activity.sport.name}:${e.profile.id}'],
-                      );
-                      if (stats == null) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          stats,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        VenueStatusBadge(activity: e.activity),
+                        Builder(
+                          builder: (context) {
+                            final stats = activityStatsLabel(
+                              e.activity,
+                              _theirSports['${e.activity.sport.name}:${e.profile.id}'],
+                            );
+                            if (stats == null) return const SizedBox.shrink();
+                            return Text(
+                              stats,
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
                   SizedBox(

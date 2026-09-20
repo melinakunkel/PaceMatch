@@ -86,7 +86,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () => ThemeController.setVariant(variant),
+                      onTap: () async {
+                        await ThemeController.setVariant(variant);
+                        await _profileService.updateThemeVariant(
+                          SupabaseService.currentUserId!,
+                          variant.name,
+                        );
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(

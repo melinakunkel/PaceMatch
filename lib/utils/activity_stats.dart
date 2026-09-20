@@ -4,16 +4,18 @@ import 'pace_format.dart';
 
 /// A short summary of an activity's pace/distance (or skill level, for
 /// sports where pace doesn't apply), e.g. "4:15 - 4:45 /km · 8 - 10 km" or
-/// "Fortgeschritten".
+/// "Fortgeschritten". The venue question (has/needs a court) is shown
+/// separately as a badge, not folded in here.
 String? activityStatsLabel(Activity activity, UserSport? theirSport) {
   final sport = activity.sport;
   final parts = <String>[];
+  final level = activity.level ?? theirSport?.level;
   if (sport.usesPace && activity.paceMin != null && activity.paceMax != null) {
     parts.add(
       paceRangeLabel(activity.paceMin!, activity.paceMax!, sport.defaultUnit),
     );
-  } else if (!sport.usesPace && theirSport?.level != null) {
-    parts.add(theirSport!.level!);
+  } else if (!sport.usesPace && level != null) {
+    parts.add(level);
   }
   if (sport.usesDistance &&
       activity.distanceMinKm != null &&
@@ -22,8 +24,8 @@ String? activityStatsLabel(Activity activity, UserSport? theirSport) {
       '${_formatKm(activity.distanceMinKm!)} - ${_formatKm(activity.distanceMaxKm!)} km',
     );
   }
-  if (activity.venueStatusLabel != null) {
-    parts.add(activity.venueStatusLabel!);
+  if (activity.bikeTypeLabel != null) {
+    parts.add(activity.bikeTypeLabel!);
   }
   return parts.isEmpty ? null : parts.join(' · ');
 }

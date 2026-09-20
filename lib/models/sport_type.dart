@@ -6,6 +6,7 @@ enum SportType {
   schwimmen,
   wandern,
   tennis,
+  schwangerschaftssport,
   sonstige;
 
   static SportType fromDb(String value) => SportType.values.firstWhere(
@@ -25,6 +26,8 @@ enum SportType {
         return 'Wandern';
       case SportType.tennis:
         return 'Tennis';
+      case SportType.schwangerschaftssport:
+        return 'Schwangerschafts-/Rückbildungssport';
       case SportType.sonstige:
         return 'Weitere';
     }
@@ -42,6 +45,8 @@ enum SportType {
         return Icons.terrain;
       case SportType.tennis:
         return Icons.sports_tennis;
+      case SportType.schwangerschaftssport:
+        return Icons.pregnant_woman;
       case SportType.sonstige:
         return Icons.more_horiz;
     }
@@ -60,16 +65,54 @@ enum SportType {
     }
   }
 
-  /// Whether a pace/speed makes sense for this sport. False for tennis and
-  /// hiking, where a skill level fits better than a numeric pace.
-  bool get usesPace => this != SportType.tennis && this != SportType.wandern;
+  /// Whether a pace/speed makes sense for this sport. False for sports where
+  /// a skill level fits better than a numeric pace.
+  bool get usesPace =>
+      this != SportType.tennis &&
+      this != SportType.wandern &&
+      this != SportType.schwangerschaftssport;
 
   /// Whether a distance range makes sense for this sport. False for tennis,
   /// which isn't measured in km.
-  bool get usesDistance => this != SportType.tennis;
+  bool get usesDistance =>
+      this != SportType.tennis && this != SportType.schwangerschaftssport;
 
   /// Whether this sport typically needs a reserved venue (a court, a
   /// booked slot), so activities should ask whether the creator already
   /// has one or is still looking for one.
   bool get usesVenueQuestion => this == SportType.tennis;
+
+  /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
+  bool get usesBikeType => this == SportType.radfahren;
+}
+
+enum BikeType {
+  rennrad,
+  mountainbike,
+  gravel,
+  trekking,
+  ebike;
+
+  static BikeType? fromDb(String? value) {
+    if (value == null) return null;
+    for (final b in BikeType.values) {
+      if (b.name == value) return b;
+    }
+    return null;
+  }
+
+  String get label {
+    switch (this) {
+      case BikeType.rennrad:
+        return 'Rennrad';
+      case BikeType.mountainbike:
+        return 'Mountainbike';
+      case BikeType.gravel:
+        return 'Gravelbike';
+      case BikeType.trekking:
+        return 'Trekkingrad';
+      case BikeType.ebike:
+        return 'E-Bike';
+    }
+  }
 }

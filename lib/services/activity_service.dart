@@ -69,6 +69,8 @@ class ActivityService {
     double? paceMin,
     double? paceMax,
     String? venueStatus,
+    String? level,
+    String? bikeType,
     DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -89,6 +91,8 @@ class ActivityService {
           'pace_min': paceMin,
           'pace_max': paceMax,
           'venue_status': venueStatus,
+          'level': level,
+          'bike_type': bikeType,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),
@@ -118,6 +122,8 @@ class ActivityService {
     double? paceMin,
     double? paceMax,
     String? venueStatus,
+    String? level,
+    String? bikeType,
     DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -137,6 +143,8 @@ class ActivityService {
           'pace_min': paceMin,
           'pace_max': paceMax,
           'venue_status': venueStatus,
+          'level': level,
+          'bike_type': bikeType,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),

@@ -34,6 +34,8 @@ class NewActivityScreen extends StatefulWidget {
 }
 
 class _NewActivityScreenState extends State<NewActivityScreen> {
+  static const _levels = ['Anfänger', 'Fortgeschritten', 'Profi'];
+
   final _activityService = ActivityService();
   late final _radiusCtrl = TextEditingController(
     text: '${widget.existing?.radiusKm ?? 3}',
@@ -65,6 +67,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late double? _paceMin = widget.existing?.paceMin;
   late double? _paceMax = widget.existing?.paceMax;
   late String? _venueStatus = widget.existing?.venueStatus;
+  late String? _level = widget.existing?.level;
+  late String? _bikeType = widget.existing?.bikeType;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
   bool _saving = false;
@@ -83,18 +87,21 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     if (!mounted) return;
     setState(() {
       _mySports = {for (final s in sports) s.sport: s};
-      _applyPaceFromProfile(_sport);
+      _applyProfileDefaults(_sport);
     });
   }
 
-  /// Prefills the pace fields from the saved pace for [sport] on the user's
+  /// Prefills the pace (or level, for sports without one) from the user's
   /// profile, when creating a new activity (never overrides while editing).
-  void _applyPaceFromProfile(SportType sport) {
-    if (!sport.usesPace) return;
+  void _applyProfileDefaults(SportType sport) {
     final saved = _mySports[sport];
     if (saved == null) return;
-    _paceMin = saved.valueLow;
-    _paceMax = saved.valueHigh;
+    if (sport.usesPace) {
+      _paceMin = saved.valueLow;
+      _paceMax = saved.valueHigh;
+    } else {
+      _level = saved.level;
+    }
   }
 
   @override
@@ -155,6 +162,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final paceMin = _sport.usesPace ? _paceMin : null;
       final paceMax = _sport.usesPace ? _paceMax : null;
       final venueStatus = _sport.usesVenueQuestion ? _venueStatus : null;
+      final level = _sport.usesPace ? null : _level;
+      final bikeType = _sport.usesBikeType ? _bikeType : null;
       final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
@@ -173,6 +182,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           paceMin: paceMin,
           paceMax: paceMax,
           venueStatus: venueStatus,
+          level: level,
+          bikeType: bikeType,
           specificDate: specificDate,
         );
         if (!mounted) return;
@@ -200,6 +211,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             paceMin: paceMin,
             paceMax: paceMax,
             venueStatus: venueStatus,
+            level: level,
+            bikeType: bikeType,
             specificDate: specificDate,
           ),
         );
@@ -252,7 +265,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   selected: selected,
                   onSelected: (_) => setState(() {
                     _sport = sport;
-                    if (!widget.isEditing) _applyPaceFromProfile(sport);
+                    if (!widget.isEditing) _applyProfileDefaults(sport);
                   }),
                   avatar: Icon(
                     sport.icon,
@@ -283,6 +296,35 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                         setState(() => _venueStatus = 'needs_venue'),
                   ),
                 ],
+              ),
+            ],
+            if (_sport.usesBikeType) ...[
+              const SizedBox(height: 20),
+              const _SectionLabel('Rad-Typ'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: BikeType.values.map((b) {
+                  return ChoiceChip(
+                    label: Text(b.label),
+                    selected: _bikeType == b.name,
+                    onSelected: (_) => setState(() => _bikeType = b.name),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (!_sport.usesPace) ...[
+              const SizedBox(height: 20),
+              const _SectionLabel('Level'),
+              Wrap(
+                spacing: 8,
+                children: _levels.map((l) {
+                  return ChoiceChip(
+                    label: Text(l),
+                    selected: _level == l,
+                    onSelected: (_) => setState(() => _level = l),
+                  );
+                }).toList(),
               ),
             ],
             const SizedBox(height: 20),
