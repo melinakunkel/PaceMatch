@@ -2,6 +2,24 @@
 <html>
 <head>
   <!--
+    Flutter's web build ships with a service worker that can keep serving an
+    older cached version of the app even after a normal reload — self-clean
+    it on every load so updates always take effect without the user having
+    to manually clear site data.
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        for (var i = 0; i < regs.length; i++) regs[i].unregister();
+      });
+    }
+    if (window.caches && caches.keys) {
+      caches.keys().then(function (names) {
+        for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+      });
+    }
+  </script>
+  <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
