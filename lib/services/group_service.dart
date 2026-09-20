@@ -93,13 +93,18 @@ class GroupService {
     return SportGroup.fromMap({...map, 'member_count': count});
   }
 
-  Future<List<SportGroup>> getMyGroups(String userId) async {
+  Future<List<SportGroup>> getMyGroups(
+    String userId, {
+    bool archived = false,
+  }) async {
     final rows = await _client
         .from('group_members')
-        .select('groups(*, group_members(count))')
-        .eq('user_id', userId);
+        .select('last_read_at, groups(*, group_members(count))')
+        .eq('user_id', userId)
+        .eq('archived', archived);
 
     final groups = <SportGroup>[];
+    final lastReadByGroupId = <String, DateTime?>{};
     for (final row in rows) {
       final g = row['groups'] as Map<String, dynamic>?;
       if (g == null) continue;
@@ -107,11 +112,87 @@ class GroupService {
       final count = countRows != null && countRows.isNotEmpty
           ? (countRows.first['count'] as int? ?? 0)
           : 0;
-      groups.add(SportGroup.fromMap({...g, 'member_count': count}));
+      final group = SportGroup.fromMap({...g, 'member_count': count, 'archived': archived});
+      groups.add(group);
+      lastReadByGroupId[group.id] = row['last_read_at'] == null
+          ? null
+          : DateTime.parse(row['last_read_at'] as String);
     }
-    groups.sort((a, b) =>
+    if (groups.isEmpty) return groups;
+
+    final latestMessageByGroupId = await _latestMessageTimes(groups.map((g) => g.id).toList());
+    final withUnread = groups.map((g) {
+      final lastMessageAt = latestMessageByGroupId[g.id];
+      final lastReadAt = lastReadByGroupId[g.id];
+      final unread = lastMessageAt != null &&
+          (lastReadAt == null || lastMessageAt.isAfter(lastReadAt));
+      return g.copyWith(hasUnread: unread, archived: archived);
+    }).toList();
+
+    withUnread.sort((a, b) =>
         (b.meetingTime ?? DateTime(2100)).compareTo(a.meetingTime ?? DateTime(2100)));
-    return groups;
+    return withUnread;
+  }
+
+  Future<Map<String, DateTime>> _latestMessageTimes(List<String> groupIds) async {
+    if (groupIds.isEmpty) return {};
+    final rows = await _client
+        .from('messages')
+        .select('group_id, created_at')
+        .inFilter('group_id', groupIds)
+        .order('created_at', ascending: false);
+    final result = <String, DateTime>{};
+    for (final row in rows) {
+      final groupId = row['group_id'] as String;
+      result.putIfAbsent(groupId, () => DateTime.parse(row['created_at'] as String));
+    }
+    return result;
+  }
+
+  /// Whether any of my (non-archived) groups has a message I haven't seen —
+  /// drives the unread dot on the Chat tab.
+  Future<bool> hasAnyUnread(String userId) async {
+    final groups = await getMyGroups(userId);
+    return groups.any((g) => g.hasUnread);
+  }
+
+  Future<void> markGroupRead({required String groupId, required String userId}) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('group_members')
+        .update({'last_read_at': DateTime.now().toIso8601String()})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
+  Future<void> setArchived({
+    required String groupId,
+    required String userId,
+    required bool archived,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('group_members')
+        .update({'archived': archived})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
+  /// Removes me from the group without affecting other members.
+  Future<void> leaveGroup({required String groupId, required String userId}) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
+  /// Permanently deletes the group for everyone — only the creator can do
+  /// this (enforced by RLS).
+  Future<void> deleteGroup(String groupId) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.from('groups').delete().eq('id', groupId);
   }
 
   Future<List<Profile>> getGroupMembers(String groupId) async {

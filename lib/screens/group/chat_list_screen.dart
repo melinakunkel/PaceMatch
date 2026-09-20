@@ -5,6 +5,7 @@ import '../../models/activity.dart';
 import '../../models/group.dart';
 import '../../services/group_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
 
@@ -23,19 +24,96 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
+  final _groupService = GroupService();
+  bool _showArchived = false;
   late Future<List<SportGroup>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = GroupService().getMyGroups(SupabaseService.currentUserId!);
+    _future = _groupService.getMyGroups(SupabaseService.currentUserId!);
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _groupService.getMyGroups(
+        SupabaseService.currentUserId!,
+        archived: _showArchived,
+      );
+    });
+  }
+
+  Future<void> _archive(SportGroup g, bool archived) async {
+    await _groupService.setArchived(
+      groupId: g.id,
+      userId: SupabaseService.currentUserId!,
+      archived: archived,
+    );
+    _reload();
+  }
+
+  Future<void> _leave(SportGroup g) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chat verlassen?'),
+        content: Text('Du verlässt die Gruppe "${g.name}".'),
+        actions: [
+          TextButton(
+              onPressed: () => context.pop(false), child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => context.pop(true),
+              child: const Text('Verlassen')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _groupService.leaveGroup(
+      groupId: g.id,
+      userId: SupabaseService.currentUserId!,
+    );
+    _reload();
+    UnreadController.refresh();
+  }
+
+  Future<void> _delete(SportGroup g) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chat löschen?'),
+        content: Text(
+            'Die Gruppe "${g.name}" wird für alle Teilnehmer unwiderruflich gelöscht.'),
+        actions: [
+          TextButton(
+              onPressed: () => context.pop(false), child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => context.pop(true),
+              child: const Text('Löschen')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _groupService.deleteGroup(g.id);
+    _reload();
+    UnreadController.refresh();
   }
 
   @override
   Widget build(BuildContext context) {
+    final myId = SupabaseService.currentUserId;
     return AppScaffold(
       currentIndex: 3,
-      title: 'Gruppen & Chats',
+      title: _showArchived ? 'Archivierte Chats' : 'Gruppen & Chats',
+      actions: [
+        IconButton(
+          tooltip: _showArchived ? 'Aktive Chats anzeigen' : 'Archivierte Chats anzeigen',
+          icon: Icon(_showArchived ? Icons.chat_bubble_outline : Icons.archive_outlined),
+          onPressed: () {
+            setState(() => _showArchived = !_showArchived);
+            _reload();
+          },
+        ),
+      ],
       body: FutureBuilder<List<SportGroup>>(
         future: _future,
         builder: (context, snapshot) {
@@ -48,7 +126,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
+                  _showArchived
+                      ? 'Keine archivierten Chats.'
+                      : 'Noch keine Gruppen. Erstelle eine Gruppe über deine Matches.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -60,14 +140,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemCount: groups.length,
             itemBuilder: (context, index) {
               final g = groups[index];
+              final isCreator = g.createdBy == myId;
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.secondaryLight,
-                    child: Icon(g.sport.icon, color: AppColors.primary),
+                  leading: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColors.secondaryLight,
+                        child: Icon(g.sport.icon, color: AppColors.primary),
+                      ),
+                      if (g.hasUnread)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: AppColors.danger,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.surface, width: 2),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  title: Text(g.name),
+                  title: Text(
+                    g.name,
+                    style: TextStyle(
+                        fontWeight: g.hasUnread ? FontWeight.bold : FontWeight.normal),
+                  ),
                   subtitle: Text(
                     [
                       if (g.meetingTime != null) _formatMeetingTime(g.meetingTime!),
@@ -75,8 +179,48 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       '${g.memberCount} Teilnehmer',
                     ].join(' · '),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/group/${g.id}'),
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'archive':
+                          _archive(g, true);
+                          break;
+                        case 'unarchive':
+                          _archive(g, false);
+                          break;
+                        case 'leave':
+                          _leave(g);
+                          break;
+                        case 'delete':
+                          _delete(g);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      if (!_showArchived)
+                        const PopupMenuItem(
+                          value: 'archive',
+                          child: Text('Archivieren'),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'unarchive',
+                          child: Text('Wiederherstellen'),
+                        ),
+                      if (isCreator)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Löschen'),
+                        )
+                      else
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Verlassen'),
+                        ),
+                    ],
+                  ),
+                  onTap: () => context.push('/group/${g.id}').then((_) => _reload()),
                 ),
               );
             },

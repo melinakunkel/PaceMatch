@@ -7,6 +7,7 @@ import '../../models/profile.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
 import '../../services/supabase_service.dart';
+import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import 'report_user_dialog.dart';
 
@@ -36,6 +37,11 @@ class _GroupScreenState extends State<GroupScreen> {
   Future<void> _load() async {
     final group = await _groupService.getGroup(widget.groupId);
     final members = await _groupService.getGroupMembers(widget.groupId);
+    final myId = SupabaseService.currentUserId;
+    if (myId != null) {
+      await _groupService.markGroupRead(groupId: widget.groupId, userId: myId);
+      UnreadController.refresh();
+    }
     if (!mounted) return;
     setState(() {
       _group = group;
@@ -188,8 +194,10 @@ class _ChatView extends StatefulWidget {
 
 class _ChatViewState extends State<_ChatView> {
   final _messageService = MessageService();
+  final _groupService = GroupService();
   final _textCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  String? _lastSeenMessageId;
 
   @override
   void dispose() {
@@ -227,6 +235,15 @@ class _ChatViewState extends State<_ChatView> {
                   child: Text('Noch keine Nachrichten. Sag hallo!',
                       style: TextStyle(color: AppColors.textSecondary)),
                 );
+              }
+              final lastMessage = messages.last;
+              if (lastMessage.id != _lastSeenMessageId) {
+                _lastSeenMessageId = lastMessage.id;
+                if (myId != null) {
+                  _groupService
+                      .markGroupRead(groupId: widget.groupId, userId: myId)
+                      .then((_) => UnreadController.refresh());
+                }
               }
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_scrollCtrl.hasClients) {

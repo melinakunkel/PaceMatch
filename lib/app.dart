@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
 import 'services/supabase_service.dart';
+import 'services/unread_controller.dart';
 import 'theme/app_theme.dart';
 
 class SamepaceApp extends StatefulWidget {
@@ -29,12 +30,23 @@ class _SamepaceAppState extends State<SamepaceApp> {
       if (data.event == AuthChangeEvent.passwordRecovery) {
         _router.go('/reset-password');
       }
+      if (data.session != null) {
+        UnreadController.startListening();
+        UnreadController.refresh();
+      } else {
+        UnreadController.stopListening();
+      }
     });
+    if (SupabaseService.currentUserId != null) {
+      UnreadController.startListening();
+      UnreadController.refresh();
+    }
   }
 
   @override
   void dispose() {
     _authSub?.cancel();
+    UnreadController.stopListening();
     super.dispose();
   }
 

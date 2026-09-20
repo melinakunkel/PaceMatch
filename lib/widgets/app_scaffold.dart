@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../services/unread_controller.dart';
+import '../theme/app_theme.dart';
+
 /// Shared bottom-nav scaffold for the 5 main tabs (Home, Plan, Matches,
 /// Chat, Profil), matching the footer icons in the SAMEPACE mockup.
 class AppScaffold extends StatelessWidget {
@@ -35,16 +38,41 @@ class AppScaffold extends StatelessWidget {
           if (index == currentIndex) return;
           context.go(_routes[index]);
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+          const BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today_outlined), label: 'Plan'),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
               icon: Icon(Icons.people_outline), label: 'Matches'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profil'),
+            icon: ValueListenableBuilder<bool>(
+              valueListenable: UnreadController.hasUnread,
+              builder: (context, unread, _) {
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.chat_bubble_outline),
+                    if (unread)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.surface, width: 1),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            label: 'Chat',
+          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
         ],
       ),
     );

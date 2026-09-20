@@ -1,4 +1,5 @@
 import '../models/message.dart';
+import 'group_service.dart';
 import 'supabase_service.dart';
 
 class MessageService {
@@ -24,5 +25,7 @@ class MessageService {
       'sender_id': senderId,
       'content': content,
     });
+    // Don't count my own message as unread for me.
+    await GroupService().markGroupRead(groupId: groupId, userId: senderId);
   }
 }
