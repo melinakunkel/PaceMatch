@@ -5,12 +5,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/activity.dart';
 import '../../models/community_event.dart';
 import '../../models/profile.dart';
+import '../../models/sport_type.dart';
+import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/activity_stats.dart';
 import '../../utils/matching_preferences.dart';
 import '../../widgets/verified_badge.dart';
 
@@ -48,6 +51,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<CommunityEvent> _communityEvents = [];
   final Set<String> _contacting = {};
 
+  /// Level/pace for sports without a numeric pace (tennis, wandern), keyed
+  /// by "sportName:userId" since a user can have a level per sport.
+  Map<String, UserSport> _theirSports = {};
+
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   @override
@@ -77,7 +84,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       for (final a in activities) {
         final p = profilesById[a.userId];
         if (p == null) continue;
-        if (myProfile != null && !isAllowedByPreferences(myProfile, p)) continue;
+        if (myProfile != null && !isAllowedByPreferences(myProfile, p)) {
+          continue;
+        }
         entries.add(_DiscoverEntry(profile: p, activity: a));
       }
 
@@ -86,10 +95,28 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         date: _selectedDate,
       );
 
+      final byNonPaceSport = <SportType, List<String>>{};
+      for (final e in entries) {
+        if (!e.activity.sport.usesPace) {
+          (byNonPaceSport[e.activity.sport] ??= []).add(e.profile.id);
+        }
+      }
+      final theirSports = <String, UserSport>{};
+      for (final sportEntry in byNonPaceSport.entries) {
+        final map = await _profileService.getUserSportsForUsers(
+          sportEntry.value,
+          sportEntry.key,
+        );
+        map.forEach(
+          (userId, us) => theirSports['${sportEntry.key.name}:$userId'] = us,
+        );
+      }
+
       if (!mounted) return;
       setState(() {
         _entries = entries;
         _communityEvents = communityEvents;
+        _theirSports = theirSports;
         _loading = false;
       });
     } catch (e) {
@@ -105,7 +132,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     setState(() => _contacting.add(entry.activity.id));
     try {
       final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findSharedGroupId(entry.profile.id);
+      final existingId = await _groupService.findSharedGroupId(
+        entry.profile.id,
+      );
       String groupId;
       if (existingId != null) {
         groupId = existingId;
@@ -117,16 +146,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           meetingPoint: entry.activity.locationName,
           activityId: entry.activity.id,
         );
-        await _groupService.joinGroup(groupId: group.id, userId: entry.profile.id);
+        await _groupService.joinGroup(
+          groupId: group.id,
+          userId: entry.profile.id,
+        );
         groupId = group.id;
       }
       if (!mounted) return;
       context.push('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kontakt fehlgeschlagen: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Kontakt fehlgeschlagen: $e')));
     } finally {
       if (mounted) setState(() => _contacting.remove(entry.activity.id));
     }
@@ -172,9 +203,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             children: [
               Icon(Icons.error_outline, color: AppColors.danger, size: 40),
               const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.danger)),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.danger),
+              ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: const Text('Erneut versuchen')),
+              ElevatedButton(
+                onPressed: _load,
+                child: const Text('Erneut versuchen'),
+              ),
             ],
           ),
         ),
@@ -204,9 +242,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 children: [
                   const Icon(Icons.star, size: 16, color: Colors.amber),
                   const SizedBox(width: 6),
-                  Text('Events in der Nähe',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                  Text(
+                    'Events in der Nähe',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -216,9 +258,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           if (_entries.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 4),
-              child: Text('Passende Leute',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+              child: Text(
+                'Passende Leute',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
           ..._entries.map(_buildEntryCard),
         ],
@@ -241,18 +287,34 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    event.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   if (event.source != null)
-                    Text(event.source!,
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text(
+                      event.source!,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(event.sport.icon, size: 16, color: AppColors.primary),
+                      Icon(
+                        event.sport.icon,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 4),
                       Text(event.sport.label),
                       const SizedBox(width: 10),
-                      Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
+                      Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Text(event.timeRangeLabel),
                     ],
@@ -260,11 +322,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.place_outlined, size: 16, color: AppColors.textSecondary),
+                      Icon(
+                        Icons.place_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: Text(event.locationName,
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          event.locationName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -273,8 +342,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     SizedBox(
                       height: 32,
                       child: OutlinedButton(
-                        onPressed: () => launchUrl(Uri.parse(event.url!),
-                            mode: LaunchMode.externalApplication),
+                        onPressed: () => launchUrl(
+                          Uri.parse(event.url!),
+                          mode: LaunchMode.externalApplication,
+                        ),
                         child: const Text('Mehr Infos'),
                       ),
                     ),
@@ -291,111 +362,169 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget _buildEntryCard(_DiscoverEntry e) {
     final contacting = _contacting.contains(e.activity.id);
     return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.secondaryLight,
+              backgroundImage: e.profile.avatarUrl != null
+                  ? NetworkImage(e.profile.avatarUrl!)
+                  : null,
+              child: e.profile.avatarUrl != null
+                  ? null
+                  : Text(
+                      e.profile.fullName.isNotEmpty
+                          ? e.profile.fullName[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.secondaryLight,
-                    backgroundImage:
-                        e.profile.avatarUrl != null ? NetworkImage(e.profile.avatarUrl!) : null,
-                    child: e.profile.avatarUrl != null
-                        ? null
-                        : Text(
-                            e.profile.fullName.isNotEmpty
-                                ? e.profile.fullName[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
-                          ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          [
+                            e.profile.fullName,
+                            if (e.profile.age != null) '${e.profile.age}',
+                          ].join(', '),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      if (e.profile.isVerified) ...[
+                        const SizedBox(width: 4),
+                        const VerifiedBadge(size: 14),
+                      ],
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  if (e.profile.gender != null)
+                    Text(
+                      e.profile.gender!,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        e.activity.sport.icon,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(e.activity.sport.label),
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(e.activity.timeRangeLabel),
+                    ],
+                  ),
+                  if (e.activity.locationName != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                [
-                                  e.profile.fullName,
-                                  if (e.profile.age != null) '${e.profile.age}',
-                                ].join(', '),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            if (e.profile.isVerified) ...[
-                              const SizedBox(width: 4),
-                              const VerifiedBadge(size: 14),
-                            ],
-                          ],
+                        Icon(
+                          Icons.place_outlined,
+                          size: 16,
+                          color: AppColors.textSecondary,
                         ),
-                        if (e.profile.gender != null)
-                          Text(e.profile.gender!,
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(e.activity.sport.icon, size: 16, color: AppColors.primary),
-                            const SizedBox(width: 4),
-                            Text(e.activity.sport.label),
-                            const SizedBox(width: 10),
-                            Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(e.activity.timeRangeLabel),
-                          ],
-                        ),
-                        if (e.activity.locationName != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(Icons.place_outlined, size: 16, color: AppColors.textSecondary),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(e.activity.locationName!,
-                                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 36,
-                          child: OutlinedButton(
-                            onPressed: contacting ? null : () => _contact(e),
-                            child: contacting
-                                ? const SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Text('Kontaktieren'),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            e.activity.locationName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                  Builder(
+                    builder: (context) {
+                      final stats = activityStatsLabel(
+                        e.activity,
+                        _theirSports['${e.activity.sport.name}:${e.profile.id}'],
+                      );
+                      if (stats == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          stats,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 36,
+                    child: OutlinedButton(
+                      onPressed: contacting ? null : () => _contact(e),
+                      child: contacting
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Kontaktieren'),
                     ),
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _DateStrip extends StatelessWidget {
-  const _DateStrip({required this.dates, required this.selected, required this.onSelect});
+  const _DateStrip({
+    required this.dates,
+    required this.selected,
+    required this.onSelect,
+  });
 
   final List<DateTime> dates;
   final DateTime selected;
   final ValueChanged<DateTime> onSelect;
 
   static const _monthLabels = [
-    'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+    'Jan',
+    'Feb',
+    'Mär',
+    'Apr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dez',
   ];
 
   @override
@@ -408,8 +537,12 @@ class _DateStrip extends StatelessWidget {
         itemCount: dates.length,
         itemBuilder: (context, index) {
           final d = dates[index];
-          final isSelected = d.year == selected.year && d.month == selected.month && d.day == selected.day;
-          final isToday = d.year == DateTime.now().year &&
+          final isSelected =
+              d.year == selected.year &&
+              d.month == selected.month &&
+              d.day == selected.day;
+          final isToday =
+              d.year == DateTime.now().year &&
               d.month == DateTime.now().month &&
               d.day == DateTime.now().day;
           return GestureDetector(
@@ -434,7 +567,9 @@ class _DateStrip extends StatelessWidget {
                     weekdayLabels[d.weekday - 1],
                     style: TextStyle(
                       fontSize: 12,
-                      color: isSelected ? Colors.white70 : AppColors.textSecondary,
+                      color: isSelected
+                          ? Colors.white70
+                          : AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -450,7 +585,9 @@ class _DateStrip extends StatelessWidget {
                     _monthLabels[d.month - 1],
                     style: TextStyle(
                       fontSize: 11,
-                      color: isSelected ? Colors.white70 : AppColors.textSecondary,
+                      color: isSelected
+                          ? Colors.white70
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ],

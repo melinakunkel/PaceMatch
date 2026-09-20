@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/profile_service.dart';
+import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
 
 class EditSportSheet extends StatefulWidget {
@@ -33,8 +34,8 @@ class _EditSportSheetState extends State<EditSportSheet> {
         sport: _sport,
         level: _level,
         unit: _sport.defaultUnit,
-        valueLow: _valueLow,
-        valueHigh: _valueHigh,
+        valueLow: _sport.usesPace ? _valueLow : null,
+        valueHigh: _sport.usesPace ? _valueHigh : null,
       );
       if (mounted) Navigator.of(context).pop();
     } finally {
@@ -44,7 +45,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final unitLabel = _sport.defaultUnit == 'km_per_h' ? 'km/h' : 'min/km';
+    final unitLabel = paceUnitLabel(_sport.defaultUnit);
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -56,8 +57,10 @@ class _EditSportSheetState extends State<EditSportSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Sportart & Level',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          const Text(
+            'Sportart & Level',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -81,31 +84,35 @@ class _EditSportSheetState extends State<EditSportSheet> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 16),
-          Text('Pace-Bereich ($unitLabel)',
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: PacePickerField(
-                  label: 'von',
-                  unit: _sport.defaultUnit,
-                  value: _valueLow,
-                  onChanged: (v) => setState(() => _valueLow = v),
+          if (_sport.usesPace) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Pace-Bereich ($unitLabel)',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: PacePickerField(
+                    label: 'von',
+                    unit: _sport.defaultUnit,
+                    value: _valueLow,
+                    onChanged: (v) => setState(() => _valueLow = v),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: PacePickerField(
-                  label: 'bis',
-                  unit: _sport.defaultUnit,
-                  value: _valueHigh,
-                  onChanged: (v) => setState(() => _valueHigh = v),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PacePickerField(
+                    label: 'bis',
+                    unit: _sport.defaultUnit,
+                    value: _valueHigh,
+                    onChanged: (v) => setState(() => _valueHigh = v),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _saving ? null : _save,
@@ -113,7 +120,10 @@ class _EditSportSheetState extends State<EditSportSheet> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('Speichern'),
           ),

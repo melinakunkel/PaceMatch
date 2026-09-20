@@ -9,6 +9,7 @@ import '../../services/activity_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
 import 'location_picker_screen.dart';
 
@@ -34,16 +35,19 @@ class NewActivityScreen extends StatefulWidget {
 
 class _NewActivityScreenState extends State<NewActivityScreen> {
   final _activityService = ActivityService();
-  late final _radiusCtrl =
-      TextEditingController(text: '${widget.existing?.radiusKm ?? 3}');
-  late final _distanceMinCtrl =
-      TextEditingController(text: widget.existing?.distanceMinKm?.toString() ?? '');
-  late final _distanceMaxCtrl =
-      TextEditingController(text: widget.existing?.distanceMaxKm?.toString() ?? '');
+  late final _radiusCtrl = TextEditingController(
+    text: '${widget.existing?.radiusKm ?? 3}',
+  );
+  late final _distanceMinCtrl = TextEditingController(
+    text: widget.existing?.distanceMinKm?.toString() ?? '',
+  );
+  late final _distanceMaxCtrl = TextEditingController(
+    text: widget.existing?.distanceMaxKm?.toString() ?? '',
+  );
 
   late SportType _sport = widget.existing?.sport ?? widget.initialSport;
   late final Set<int> _selectedDays = {
-    widget.existing?.dayOfWeek ?? DateTime.now().weekday
+    widget.existing?.dayOfWeek ?? DateTime.now().weekday,
   };
   late TimeOfDay _start =
       widget.existing?.startTime ?? const TimeOfDay(hour: 18, minute: 0);
@@ -52,12 +56,12 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late PickedLocation? _location = widget.existing == null
       ? null
       : (widget.existing!.locationName == null
-          ? null
-          : PickedLocation(
-              name: widget.existing!.locationName!,
-              latitude: widget.existing!.latitude ?? 0,
-              longitude: widget.existing!.longitude ?? 0,
-            ));
+            ? null
+            : PickedLocation(
+                name: widget.existing!.locationName!,
+                latitude: widget.existing!.latitude ?? 0,
+                longitude: widget.existing!.longitude ?? 0,
+              ));
   late double? _paceMin = widget.existing?.paceMin;
   late double? _paceMax = widget.existing?.paceMax;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
@@ -72,7 +76,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   }
 
   Future<void> _loadMySports() async {
-    final sports = await ProfileService().getUserSports(SupabaseService.currentUserId!);
+    final sports = await ProfileService().getUserSports(
+      SupabaseService.currentUserId!,
+    );
     if (!mounted) return;
     setState(() {
       _mySports = {for (final s in sports) s.sport: s};
@@ -83,6 +89,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   /// Prefills the pace fields from the saved pace for [sport] on the user's
   /// profile, when creating a new activity (never overrides while editing).
   void _applyPaceFromProfile(SportType sport) {
+    if (!sport.usesPace) return;
     final saved = _mySports[sport];
     if (saved == null) return;
     _paceMin = saved.valueLow;
@@ -136,9 +143,16 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     if (!_isRecurring && _specificDate == null) return;
     setState(() => _saving = true);
     try {
-      final radiusKm = double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3;
-      final distanceMinKm = double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.'));
-      final distanceMaxKm = double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.'));
+      final radiusKm =
+          double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3;
+      final distanceMinKm = _sport.usesDistance
+          ? double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.'))
+          : null;
+      final distanceMaxKm = _sport.usesDistance
+          ? double.tryParse(_distanceMaxCtrl.text.replaceAll(',', '.'))
+          : null;
+      final paceMin = _sport.usesPace ? _paceMin : null;
+      final paceMax = _sport.usesPace ? _paceMax : null;
       final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
@@ -154,8 +168,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           radiusKm: radiusKm,
           distanceMinKm: distanceMinKm,
           distanceMaxKm: distanceMaxKm,
-          paceMin: _paceMin,
-          paceMax: _paceMax,
+          paceMin: paceMin,
+          paceMax: paceMax,
           specificDate: specificDate,
         );
         if (!mounted) return;
@@ -167,22 +181,24 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final days = _selectedDays.toList()..sort();
       final created = <Activity>[];
       for (final day in days) {
-        created.add(await _activityService.createActivity(
-          userId: userId,
-          sport: _sport,
-          dayOfWeek: day,
-          startTime: _start,
-          endTime: _end,
-          locationName: _location?.name,
-          latitude: _location?.latitude,
-          longitude: _location?.longitude,
-          radiusKm: radiusKm,
-          distanceMinKm: distanceMinKm,
-          distanceMaxKm: distanceMaxKm,
-          paceMin: _paceMin,
-          paceMax: _paceMax,
-          specificDate: specificDate,
-        ));
+        created.add(
+          await _activityService.createActivity(
+            userId: userId,
+            sport: _sport,
+            dayOfWeek: day,
+            startTime: _start,
+            endTime: _end,
+            locationName: _location?.name,
+            latitude: _location?.latitude,
+            longitude: _location?.longitude,
+            radiusKm: radiusKm,
+            distanceMinKm: distanceMinKm,
+            distanceMaxKm: distanceMaxKm,
+            paceMin: paceMin,
+            paceMax: paceMax,
+            specificDate: specificDate,
+          ),
+        );
       }
       if (!mounted) return;
       if (created.length == 1) {
@@ -195,9 +211,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Speichern fehlgeschlagen: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -205,8 +221,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final paceUnitLabel =
-        _sport.defaultUnit == 'km_per_h' ? 'km/h' : 'min/km';
+    final unitLabel = paceUnitLabel(_sport.defaultUnit);
 
     return Scaffold(
       appBar: AppBar(
@@ -214,7 +229,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(widget.isEditing ? 'Aktivität bearbeiten' : 'Neue Aktivität'),
+        title: Text(
+          widget.isEditing ? 'Aktivität bearbeiten' : 'Neue Aktivität',
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -233,9 +250,13 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     _sport = sport;
                     if (!widget.isEditing) _applyPaceFromProfile(sport);
                   }),
-                  avatar: Icon(sport.icon,
-                      size: 18,
-                      color: selected ? AppColors.primary : AppColors.textSecondary),
+                  avatar: Icon(
+                    sport.icon,
+                    size: 18,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
                 );
               }).toList(),
             ),
@@ -301,9 +322,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     _specificDate == null
                         ? 'Datum auswählen'
                         : '${weekdayFullLabels[_specificDate!.weekday - 1]}, '
-                            '${_specificDate!.day.toString().padLeft(2, '0')}.'
-                            '${_specificDate!.month.toString().padLeft(2, '0')}.'
-                            '${_specificDate!.year}',
+                              '${_specificDate!.day.toString().padLeft(2, '0')}.'
+                              '${_specificDate!.month.toString().padLeft(2, '0')}.'
+                              '${_specificDate!.year}',
                     style: _specificDate == null
                         ? TextStyle(color: AppColors.textSecondary)
                         : null,
@@ -354,70 +375,87 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _radiusCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(
                 labelText: 'Umkreis (km)',
                 prefixIcon: Icon(Icons.social_distance_outlined),
               ),
             ),
-            const SizedBox(height: 20),
-            const _SectionLabel('Distanz (km)'),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _distanceMinCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'von'),
+            if (_sport.usesDistance) ...[
+              const SizedBox(height: 20),
+              const _SectionLabel('Distanz (km)'),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _distanceMinCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'von'),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _distanceMaxCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'bis'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _distanceMaxCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(labelText: 'bis'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _SectionLabel('Pace ($paceUnitLabel)'),
-            Row(
-              children: [
-                Expanded(
-                  child: PacePickerField(
-                    label: 'von',
-                    unit: _sport.defaultUnit,
-                    value: _paceMin,
-                    onChanged: (v) => setState(() => _paceMin = v),
+                ],
+              ),
+            ],
+            if (_sport.usesPace) ...[
+              const SizedBox(height: 20),
+              _SectionLabel('Pace ($unitLabel)'),
+              Row(
+                children: [
+                  Expanded(
+                    child: PacePickerField(
+                      label: 'von',
+                      unit: _sport.defaultUnit,
+                      value: _paceMin,
+                      onChanged: (v) => setState(() => _paceMin = v),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: PacePickerField(
-                    label: 'bis',
-                    unit: _sport.defaultUnit,
-                    value: _paceMax,
-                    onChanged: (v) => setState(() => _paceMax = v),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PacePickerField(
+                      label: 'bis',
+                      unit: _sport.defaultUnit,
+                      value: _paceMax,
+                      onChanged: (v) => setState(() => _paceMax = v),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: 28),
             ElevatedButton(
-              onPressed: _saving || (!_isRecurring && _specificDate == null) ? null : _save,
+              onPressed: _saving || (!_isRecurring && _specificDate == null)
+                  ? null
+                  : _save,
               child: _saving
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : Text(widget.isEditing
-                      ? 'Speichern'
-                      : _selectedDays.length > 1
+                  : Text(
+                      widget.isEditing
+                          ? 'Speichern'
+                          : _selectedDays.length > 1
                           ? 'Veröffentlichen (${_selectedDays.length} Tage)'
-                          : 'Veröffentlichen'),
+                          : 'Veröffentlichen',
+                    ),
             ),
           ],
         ),
@@ -443,7 +481,11 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _TimeField extends StatelessWidget {
-  const _TimeField({required this.label, required this.time, required this.onTap});
+  const _TimeField({
+    required this.label,
+    required this.time,
+    required this.onTap,
+  });
 
   final String label;
   final TimeOfDay time;
@@ -455,7 +497,10 @@ class _TimeField extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
-        decoration: InputDecoration(labelText: label, prefixIcon: const Icon(Icons.schedule)),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: const Icon(Icons.schedule),
+        ),
         child: Text(Activity.formatTime(time)),
       ),
     );

@@ -9,9 +9,9 @@ enum SportType {
   sonstige;
 
   static SportType fromDb(String value) => SportType.values.firstWhere(
-        (s) => s.name == value,
-        orElse: () => SportType.sonstige,
-      );
+    (s) => s.name == value,
+    orElse: () => SportType.sonstige,
+  );
 
   String get label {
     switch (this) {
@@ -47,13 +47,24 @@ enum SportType {
     }
   }
 
-  /// 'min_per_km' for pace-based sports, 'km_per_h' for speed-based ones.
+  /// 'min_per_km' for pace-based sports, 'km_per_h' for speed-based ones,
+  /// 'min_per_100m' for swimming.
   String get defaultUnit {
     switch (this) {
       case SportType.radfahren:
         return 'km_per_h';
+      case SportType.schwimmen:
+        return 'min_per_100m';
       default:
         return 'min_per_km';
     }
   }
+
+  /// Whether a pace/speed makes sense for this sport. False for tennis and
+  /// hiking, where a skill level fits better than a numeric pace.
+  bool get usesPace => this != SportType.tennis && this != SportType.wandern;
+
+  /// Whether a distance range makes sense for this sport. False for tennis,
+  /// which isn't measured in km.
+  bool get usesDistance => this != SportType.tennis;
 }

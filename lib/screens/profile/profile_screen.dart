@@ -86,26 +86,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked == null) return;
     setState(() => _uploadingAvatar = true);
     try {
       final bytes = await picked.readAsBytes();
-      final ext = picked.name.contains('.') ? picked.name.split('.').last : 'jpg';
+      final ext = picked.name.contains('.')
+          ? picked.name.split('.').last
+          : 'jpg';
       final url = await _profileService.uploadAvatar(
         userId: SupabaseService.currentUserId!,
         bytes: bytes,
         fileExtension: ext,
       );
-      await _profileService.updateProfile(Profile(
-        id: _profile!.id,
-        fullName: _profile!.fullName,
-        age: _profile!.age,
-        gender: _profile!.gender,
-        city: _profile!.city,
-        avatarUrl: url,
-        bio: _profile!.bio,
-      ));
+      await _profileService.updateProfile(
+        Profile(
+          id: _profile!.id,
+          fullName: _profile!.fullName,
+          age: _profile!.age,
+          gender: _profile!.gender,
+          city: _profile!.city,
+          avatarUrl: url,
+          bio: _profile!.bio,
+        ),
+      );
       await _load();
     } catch (e) {
       if (!mounted) return;
@@ -126,9 +133,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         IconButton(
           icon: const Icon(Icons.settings_outlined),
           tooltip: 'Einstellungen',
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+          onPressed: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
         ),
         IconButton(
           icon: const Icon(Icons.logout),
@@ -142,29 +148,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-                        const SizedBox(height: 12),
-                        Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.danger)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _load,
-                          child: const Text('Erneut versuchen'),
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: AppColors.danger,
+                      size: 40,
                     ),
-                  ),
-                )
-              : _profile == null
-                  ? const SizedBox.shrink()
-                  : RefreshIndicator(
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.danger),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _load,
+                      child: const Text('Erneut versuchen'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _profile == null
+          ? const SizedBox.shrink()
+          : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -184,23 +196,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: _profile!.avatarUrl != null
                                   ? null
                                   : (_uploadingAvatar
-                                      ? const CircularProgressIndicator(strokeWidth: 2)
-                                      : Text(
-                                          _profile!.fullName.isNotEmpty
-                                              ? _profile!.fullName[0].toUpperCase()
-                                              : '?',
-                                          style: TextStyle(
+                                        ? const CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          )
+                                        : Text(
+                                            _profile!.fullName.isNotEmpty
+                                                ? _profile!.fullName[0]
+                                                      .toUpperCase()
+                                                : '?',
+                                            style: TextStyle(
                                               fontSize: 28,
                                               color: AppColors.primary,
-                                              fontWeight: FontWeight.w700),
-                                        )),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          )),
                             ),
                             if (_uploadingAvatar && _profile!.avatarUrl != null)
                               const Positioned.fill(
                                 child: CircleAvatar(
                                   backgroundColor: Colors.black38,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             Positioned(
@@ -212,8 +230,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: AppColors.secondary,
                                   shape: BoxShape.circle,
                                 ),
-                                child:
-                                    const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ],
@@ -227,10 +248,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Row(
                               children: [
                                 Flexible(
-                                  child: Text(_profile!.fullName,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          fontSize: 20, fontWeight: FontWeight.w700)),
+                                  child: Text(
+                                    _profile!.fullName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ),
                                 if (_profile!.isVerified) ...[
                                   const SizedBox(width: 6),
@@ -240,7 +265,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             Text(
                               [
-                                if (_profile!.age != null) '${_profile!.age} Jahre',
+                                if (_profile!.age != null)
+                                  '${_profile!.age} Jahre',
                                 if (_profile!.gender != null) _profile!.gender!,
                                 if (_profile!.city != null) _profile!.city!,
                               ].join(' · '),
@@ -283,8 +309,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Meine Sportarten & Level',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      const Text(
+                        'Meine Sportarten & Level',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
                       TextButton.icon(
                         onPressed: () => _editSport(),
                         icon: const Icon(Icons.add, size: 18),
@@ -296,23 +327,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (_sports.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text('Noch keine Sportart hinterlegt.',
-                          style: TextStyle(color: AppColors.textSecondary)),
+                      child: Text(
+                        'Noch keine Sportart hinterlegt.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
                     ),
-                  ..._sports.map((s) => Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          leading: Icon(s.sport.icon, color: AppColors.primary),
-                          title: Text(s.sport.label),
-                          subtitle: s.level != null ? Text(s.level!) : null,
-                          trailing: Text(s.rangeLabel,
-                              style: const TextStyle(fontWeight: FontWeight.w600)),
-                          onTap: () => _editSport(s),
-                        ),
-                      )),
+                  ..._sports.map(
+                    (s) => Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: Icon(s.sport.icon, color: AppColors.primary),
+                        title: Text(s.sport.label),
+                        subtitle: s.level != null ? Text(s.level!) : null,
+                        trailing: s.sport.usesPace
+                            ? Text(
+                                s.rangeLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                        onTap: () => _editSport(s),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  const Text('Zuverlässigkeit',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const Text(
+                    'Zuverlässigkeit',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -328,13 +371,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text('${_profile!.reliabilityScore.round()}%',
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(
+                        '${_profile!.reliabilityScore.round()}%',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text('Aktiv in den letzten 7 Tagen',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const Text(
+                    'Aktiv in den letzten 7 Tagen',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -343,13 +390,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       return Column(
                         children: [
                           Icon(
-                            active ? Icons.check_circle : Icons.radio_button_unchecked,
-                            color: active ? AppColors.secondary : AppColors.border,
+                            active
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color: active
+                                ? AppColors.secondary
+                                : AppColors.border,
                           ),
                           const SizedBox(height: 4),
-                          Text(weekdayLabels[i],
-                              style: TextStyle(
-                                  fontSize: 12, color: AppColors.textSecondary)),
+                          Text(
+                            weekdayLabels[i],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ],
                       );
                     }),

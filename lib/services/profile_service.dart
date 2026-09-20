@@ -29,7 +29,10 @@ class ProfileService {
 
   Future<List<Profile>> getProfilesByIds(List<String> userIds) async {
     if (userIds.isEmpty) return [];
-    final rows = await _client.from('profiles').select().inFilter('id', userIds);
+    final rows = await _client
+        .from('profiles')
+        .select()
+        .inFilter('id', userIds);
     return rows.map((m) => Profile.fromMap(m)).toList();
   }
 
@@ -40,6 +43,24 @@ class ProfileService {
         .eq('user_id', userId)
         .order('sport');
     return rows.map((m) => UserSport.fromMap(m)).toList();
+  }
+
+  /// Each of [userIds]' saved level/pace for [sport], keyed by user id — used
+  /// to show a match candidate's level (tennis, wandern) alongside their
+  /// activity.
+  Future<Map<String, UserSport>> getUserSportsForUsers(
+    List<String> userIds,
+    SportType sport,
+  ) async {
+    if (userIds.isEmpty) return {};
+    final rows = await _client
+        .from('user_sports')
+        .select()
+        .inFilter('user_id', userIds)
+        .eq('sport', sport.name);
+    return {
+      for (final row in rows) row['user_id'] as String: UserSport.fromMap(row),
+    };
   }
 
   Future<void> upsertUserSport({
@@ -70,7 +91,9 @@ class ProfileService {
   }) async {
     await SupabaseService.ensureFreshSession();
     final path = '$userId/avatar.$fileExtension';
-    await _client.storage.from('avatars').uploadBinary(
+    await _client.storage
+        .from('avatars')
+        .uploadBinary(
           path,
           bytes,
           fileOptions: const FileOptions(upsert: true),

@@ -21,21 +21,18 @@ class UserSport {
   });
 
   factory UserSport.fromMap(Map<String, dynamic> map) => UserSport(
-        id: map['id'] as String,
-        userId: map['user_id'] as String,
-        sport: SportType.fromDb(map['sport'] as String),
-        level: map['level'] as String?,
-        unit: map['unit'] as String? ?? 'min_per_km',
-        valueLow: (map['value_low'] as num?)?.toDouble(),
-        valueHigh: (map['value_high'] as num?)?.toDouble(),
-      );
+    id: map['id'] as String,
+    userId: map['user_id'] as String,
+    sport: SportType.fromDb(map['sport'] as String),
+    level: map['level'] as String?,
+    unit: map['unit'] as String? ?? 'min_per_km',
+    valueLow: (map['value_low'] as num?)?.toDouble(),
+    valueHigh: (map['value_high'] as num?)?.toDouble(),
+  );
 
-  /// e.g. "5:15 - 5:45 /km" or "25 - 28 km/h"
+  /// e.g. "5:15 - 5:45 /km", "25 - 28 km/h" or "1:45 - 2:10 /100m"
   String get rangeLabel {
     if (valueLow == null || valueHigh == null) return '–';
-    if (unit == 'km_per_h') {
-      return '${formatSpeed(valueLow!)} - ${formatSpeed(valueHigh!)} km/h';
-    }
-    return '${formatPace(valueLow!)} - ${formatPace(valueHigh!)} /km';
+    return paceRangeLabel(valueLow!, valueHigh!, unit);
   }
 }

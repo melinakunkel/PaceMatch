@@ -3,11 +3,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/activity.dart';
 import '../../models/match_candidate.dart';
+import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/group_service.dart';
 import '../../services/match_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/activity_stats.dart';
 import '../../widgets/verified_badge.dart';
 
 class MatchesScreen extends StatefulWidget {
@@ -23,9 +26,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final _activityService = ActivityService();
   final _matchService = MatchService();
   final _groupService = GroupService();
+  final _profileService = ProfileService();
 
   Activity? _activity;
   List<MatchCandidate> _candidates = [];
+  Map<String, UserSport> _theirSports = {};
   final Set<String> _selectedUserIds = {};
   bool _loading = true;
   bool _creatingGroup = false;
@@ -43,11 +48,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
       _error = null;
     });
     try {
-      final activity = await _activityService.getActivityById(widget.activityId);
+      final activity = await _activityService.getActivityById(
+        widget.activityId,
+      );
       final candidates = await _matchService.findMatches(activity);
+      final theirSports = activity.sport.usesPace
+          ? <String, UserSport>{}
+          : await _profileService.getUserSportsForUsers(
+              candidates.map((c) => c.profile.id).toList(),
+              activity.sport,
+            );
       setState(() {
         _activity = activity;
         _candidates = candidates;
+        _theirSports = theirSports;
         _selectedUserIds
           ..clear()
           ..addAll(candidates.map((c) => c.profile.id));
@@ -65,16 +79,19 @@ class _MatchesScreenState extends State<MatchesScreen> {
     setState(() => _creatingGroup = true);
     try {
       final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findGroupIdForActivity(activity.id);
-      final groupId = existingId ??
+      final existingId = await _groupService.findGroupIdForActivity(
+        activity.id,
+      );
+      final groupId =
+          existingId ??
           (await _groupService.createGroup(
             createdBy: me,
             sport: activity.sport,
-            name: '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+            name:
+                '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
             meetingPoint: activity.locationName,
             activityId: activity.id,
-          ))
-              .id;
+          )).id;
       for (final userId in _selectedUserIds) {
         if (userId == me) continue;
         await _groupService.joinGroup(groupId: groupId, userId: userId);
@@ -99,16 +116,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(_activity == null
-            ? 'Passende Leute'
-            : '${_activity!.sport.label} · ${_activity!.dayLabel}'),
+        title: Text(
+          _activity == null
+              ? 'Passende Leute'
+              : '${_activity!.sport.label} · ${_activity!.dayLabel}',
+        ),
       ),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text(_error!, style: TextStyle(color: AppColors.danger)))
-                : _buildBody(),
+            ? Center(
+                child: Text(_error!, style: TextStyle(color: AppColors.danger)),
+              )
+            : _buildBody(),
       ),
     );
   }
@@ -125,7 +146,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
               const SizedBox(width: 6),
               Text(activity.timeRangeLabel),
               const SizedBox(width: 16),
-              Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
+              Icon(
+                Icons.place_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Expanded(child: Text(activity.locationName ?? 'Ort flexibel')),
             ],
@@ -199,7 +224,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                     child: Text(
                                       [
                                         c.profile.fullName,
-                                        if (c.profile.age != null) '${c.profile.age}',
+                                        if (c.profile.age != null)
+                                          '${c.profile.age}',
                                       ].join(', '),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -214,12 +240,36 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             _MatchBadge(percent: c.matchPercent),
                           ],
                         ),
-                        subtitle: Text(
-                          [
-                            if (c.profile.gender != null) c.profile.gender!,
-                            c.theirActivity.timeRangeLabel,
-                            c.theirActivity.locationName ?? 'Ort flexibel',
-                          ].join(' · '),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              [
+                                if (c.profile.gender != null) c.profile.gender!,
+                                c.theirActivity.timeRangeLabel,
+                                c.theirActivity.locationName ?? 'Ort flexibel',
+                              ].join(' · '),
+                            ),
+                            Builder(
+                              builder: (context) {
+                                final stats = activityStatsLabel(
+                                  c.theirActivity,
+                                  _theirSports[c.profile.id],
+                                );
+                                if (stats == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Text(
+                                  stats,
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -230,13 +280,17 @@ class _MatchesScreenState extends State<MatchesScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: ElevatedButton(
-              onPressed:
-                  (_creatingGroup || _selectedUserIds.isEmpty) ? null : _createGroup,
+              onPressed: (_creatingGroup || _selectedUserIds.isEmpty)
+                  ? null
+                  : _createGroup,
               child: _creatingGroup
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text('Gruppe erstellen'),
             ),

@@ -23,7 +23,11 @@ class PacePickerField extends StatelessWidget {
   Future<void> _open(BuildContext context) async {
     final picked = unit == 'km_per_h'
         ? await _showSpeedPicker(context, value ?? 25)
-        : await _showPacePicker(context, value ?? 6.0);
+        : await _showPacePicker(
+            context,
+            value ?? (unit == 'min_per_100m' ? 2.0 : 6.0),
+            unit: unit,
+          );
     if (picked != null) onChanged(picked);
   }
 
@@ -31,9 +35,7 @@ class PacePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = value == null
         ? '–'
-        : unit == 'km_per_h'
-            ? '${formatSpeed(value!)} km/h'
-            : '${formatPace(value!)} /km';
+        : '${formatPaceOrSpeed(value!, unit)} ${paceUnitSuffix(unit)}';
     return InkWell(
       onTap: () => _open(context),
       borderRadius: BorderRadius.circular(12),
@@ -48,9 +50,20 @@ class PacePickerField extends StatelessWidget {
   }
 }
 
-Future<double?> _showPacePicker(BuildContext context, double initial) {
-  int minutes = initial.floor().clamp(2, 12);
-  int seconds = (((initial - initial.floor()) * 60).round() ~/ 5 * 5).clamp(0, 55);
+Future<double?> _showPacePicker(
+  BuildContext context,
+  double initial, {
+  required String unit,
+}) {
+  // Swim pace is per 100m and commonly under a minute; running/cycling pace
+  // per km is not.
+  final minMinutes = unit == 'min_per_100m' ? 0 : 2;
+  final maxMinutes = unit == 'min_per_100m' ? 4 : 12;
+  int minutes = initial.floor().clamp(minMinutes, maxMinutes);
+  int seconds = (((initial - initial.floor()) * 60).round() ~/ 5 * 5).clamp(
+    0,
+    55,
+  );
 
   return showModalBottomSheet<double>(
     context: context,
@@ -68,25 +81,31 @@ Future<double?> _showPacePicker(BuildContext context, double initial) {
                   children: [
                     Expanded(
                       child: CupertinoPicker(
-                        scrollController:
-                            FixedExtentScrollController(initialItem: minutes - 2),
+                        scrollController: FixedExtentScrollController(
+                          initialItem: minutes - minMinutes,
+                        ),
                         itemExtent: 40,
-                        onSelectedItemChanged: (i) => minutes = i + 2,
+                        onSelectedItemChanged: (i) => minutes = i + minMinutes,
                         children: [
-                          for (var m = 2; m <= 12; m++)
+                          for (var m = minMinutes; m <= maxMinutes; m++)
                             Center(child: Text('$m min')),
                         ],
                       ),
                     ),
                     Expanded(
                       child: CupertinoPicker(
-                        scrollController:
-                            FixedExtentScrollController(initialItem: seconds ~/ 5),
+                        scrollController: FixedExtentScrollController(
+                          initialItem: seconds ~/ 5,
+                        ),
                         itemExtent: 40,
                         onSelectedItemChanged: (i) => seconds = i * 5,
                         children: [
                           for (var s = 0; s <= 55; s += 5)
-                            Center(child: Text('${s.toString().padLeft(2, '0')} sek')),
+                            Center(
+                              child: Text(
+                                '${s.toString().padLeft(2, '0')} sek',
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -117,11 +136,14 @@ Future<double?> _showSpeedPicker(BuildContext context, double initial) {
               ),
               Expanded(
                 child: CupertinoPicker(
-                  scrollController: FixedExtentScrollController(initialItem: speed - 3),
+                  scrollController: FixedExtentScrollController(
+                    initialItem: speed - 3,
+                  ),
                   itemExtent: 40,
                   onSelectedItemChanged: (i) => speed = i + 3,
                   children: [
-                    for (var s = 3; s <= 60; s++) Center(child: Text('$s km/h')),
+                    for (var s = 3; s <= 60; s++)
+                      Center(child: Text('$s km/h')),
                   ],
                 ),
               ),
