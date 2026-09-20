@@ -134,6 +134,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         ],
       ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -166,35 +167,38 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: Row(
-                children: [
-                  if (_step > 0)
-                    TextButton(
-                      onPressed: _saving ? null : _back,
-                      child: const Text('Zurück'),
-                    ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _saving ? null : _next,
-                    child: _saving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            _step == _stepCount - 1 ? 'Fertig' : 'Weiter',
-                          ),
-                  ),
-                ],
-              ),
-            ),
           ],
+        ),
+      ),
+      // A Scaffold-managed bottom bar (rather than the last item in the
+      // body's Column) so it's always pinned above the safe area
+      // regardless of how tall the step content ends up being.
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Row(
+            children: [
+              if (_step > 0)
+                TextButton(
+                  onPressed: _saving ? null : _back,
+                  child: const Text('Zurück'),
+                ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: _saving ? null : _next,
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(_step == _stepCount - 1 ? 'Fertig' : 'Weiter'),
+              ),
+            ],
+          ),
         ),
       ),
     );
