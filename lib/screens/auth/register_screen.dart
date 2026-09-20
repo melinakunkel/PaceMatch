@@ -35,7 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordCtrl.text,
         fullName: _nameCtrl.text.trim(),
       );
-      if (mounted) context.go('/');
+      if (mounted) context.go('/onboarding');
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {

@@ -11,6 +11,7 @@ import '../screens/group/group_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/matches/matches_hub_screen.dart';
 import '../screens/matches/matches_screen.dart';
+import '../screens/onboarding/onboarding_wizard_screen.dart';
 import '../screens/plan/new_activity_screen.dart';
 import '../screens/plan/plan_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -41,6 +42,10 @@ GoRouter buildRouter() {
         builder: (_, _) => const ResetPasswordScreen(),
       ),
       GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, _) => const OnboardingWizardScreen(),
+      ),
       GoRoute(path: '/plan', builder: (_, _) => const PlanScreen()),
       GoRoute(
         path: '/new-activity',
