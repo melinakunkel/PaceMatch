@@ -105,7 +105,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                         .map(
                           (m) => DropdownMenuItem(
                             value: m,
-                            child: Text(m.fullName),
+                            child: Text(m.firstName),
                           ),
                         )
                         .toList(),

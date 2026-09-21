@@ -220,7 +220,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           sport: entry.activity.sport,
           name: t('discover.groupNameWith', {
             'sport': entry.activity.sport.label,
-            'name': entry.profile.fullName,
+            'name': entry.profile.firstName,
           }),
           meetingPoint: entry.activity.locationName,
           latitude: entry.activity.latitude,
@@ -911,7 +911,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         Flexible(
                           child: Text(
                             [
-                              e.profile.fullName,
+                              e.profile.firstName,
                               if (e.profile.age != null) '${e.profile.age}',
                             ].join(', '),
                             overflow: TextOverflow.ellipsis,

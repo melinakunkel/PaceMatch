@@ -229,7 +229,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                             style: TextStyle(color: AppColors.primary),
                           ),
                   ),
-                  title: Text(b.fullName),
+                  title: Text(b.firstName),
                 ),
               ),
               const SizedBox(height: 8),
@@ -305,7 +305,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
         final created = await _groupService.createGroup(
           createdBy: me,
           sport: SportType.sonstige,
-          name: t('matchesHub.sportbuddyChatName', {'name': buddy.fullName}),
+          name: t('matchesHub.sportbuddyChatName', {'name': buddy.firstName}),
           isMatch: true,
         );
         await _groupService.joinGroup(groupId: created.id, userId: buddy.id);
@@ -424,7 +424,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                             ),
                     ),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(b.fullName)),
+                    Expanded(child: Text(b.firstName)),
                     OutlinedButton(
                       // Theme's default minimumSize is full-width
                       // (Size.fromHeight) — inside a Row that gets unbounded

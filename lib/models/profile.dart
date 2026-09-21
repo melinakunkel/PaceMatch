@@ -34,6 +34,10 @@ class Profile {
   /// Up to [kMaxPrompts] short Q&A prompts, Hinge-style.
   final List<ProfilePrompt> prompts;
 
+  /// [fullName] minus the last name — shown to everyone except the profile's
+  /// own owner, since a stranger from a match doesn't need your surname.
+  String get firstName => fullName.trim().split(RegExp(r'\s+')).first;
+
   Profile({
     required this.id,
     required this.fullName,

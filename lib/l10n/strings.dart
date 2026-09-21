@@ -547,6 +547,43 @@ const _de = <String, String>{
   'runType.normal': 'Normaler Lauf',
   'runType.longRun': 'Long Run',
   'runType.speedRun': 'Speed Run',
+
+  // Settings: legal & support section.
+  'settings.legal': 'Rechtliches & Support',
+  'settings.faq': 'Häufige Fragen',
+  'settings.faqSubtitle': 'Antworten auf die wichtigsten Fragen',
+  'settings.privacyPolicy': 'Datenschutzerklärung',
+  'settings.privacyPolicySubtitle': 'Wie wir mit deinen Daten umgehen',
+  'settings.imprint': 'Impressum',
+  'settings.imprintSubtitle': 'Anbieterkennzeichnung',
+  'settings.feedback': 'Feedback geben',
+  'settings.feedbackSubtitle': 'Sag uns, was wir besser machen können',
+  'settings.contact': 'Kontakt',
+  'settings.contactSubtitle': 'Frage oder Problem? Schreib uns',
+  'settings.mailFailed': 'E-Mail-App konnte nicht geöffnet werden.',
+
+  // FAQ screen.
+  'faq.title': 'Häufige Fragen',
+  'faq.q1': 'Ist SAMEPACE eine Dating-App?',
+  'faq.a1': 'Nein. SAMEPACE matcht dich ausschließlich nach Trainingszeit, Tempo und Sportart mit anderen — es geht um Trainingspartner, nicht um Dating.',
+  'faq.q2': 'Wie funktioniert das Matching?',
+  'faq.a2': 'Du trägst deine geplanten Trainingszeiten ein. SAMEPACE zeigt dir Leute mit überschneidendem Zeitfenster und ähnlichem Tempo für dieselbe Sportart. Gefällt euch beiden das Match, entsteht automatisch ein Gruppen-Chat.',
+  'faq.q3': 'Wie sicher ist ein Treffen mit einer fremden Person?',
+  'faq.a3': 'Du kannst jederzeit ein Profil blockieren oder melden. Nach mehreren Meldungen wird ein Konto automatisch gesperrt. Trotzdem gilt: Trefft euch beim ersten Mal an einem öffentlichen Ort und gebt keine sensiblen Daten weiter.',
+  'faq.q4': 'Was ist der Zuverlässigkeits-Score?',
+  'faq.a4': 'Nach einem Treffen kannst du bestätigen, ob dein Trainingspartner erschienen ist. Daraus ergibt sich ein Score, der anderen zeigt, wie verlässlich jemand ist.',
+  'faq.q5': 'Was sind Circles?',
+  'faq.a5': 'Circles sind private Trainingsgruppen, z. B. für Freunde oder eine feste Laufgruppe — getrennt vom offenen Matching.',
+  'faq.q6': 'Warum sehe ich nur den Vornamen von anderen?',
+  'faq.a6': 'Aus Datenschutz- und Sicherheitsgründen zeigen wir anderen Nutzer:innen nur deinen Vornamen. Deinen vollständigen Namen siehst nur du selbst in deinem Profil.',
+  'faq.q7': 'Wie lösche ich mein Konto?',
+  'faq.a7': 'Schreib uns eine E-Mail über den Kontakt-Button in den Einstellungen — wir löschen dein Konto und alle zugehörigen Daten.',
+  'faq.q8': 'Ist SAMEPACE kostenlos?',
+  'faq.a8': 'Ja, die App ist aktuell komplett kostenlos nutzbar.',
+
+  // Privacy policy / imprint screens (content itself is German-only for now).
+  'privacy.title': 'Datenschutzerklärung',
+  'imprint.title': 'Impressum',
 };
 
 const _en = <String, String>{
@@ -1033,4 +1070,41 @@ const _en = <String, String>{
   'runType.normal': 'Normal Run',
   'runType.longRun': 'Long Run',
   'runType.speedRun': 'Speed Run',
+
+  // Settings: legal & support section.
+  'settings.legal': 'Legal & support',
+  'settings.faq': 'FAQ',
+  'settings.faqSubtitle': 'Answers to the most common questions',
+  'settings.privacyPolicy': 'Privacy policy',
+  'settings.privacyPolicySubtitle': 'How we handle your data',
+  'settings.imprint': 'Imprint',
+  'settings.imprintSubtitle': 'Legal notice',
+  'settings.feedback': 'Send feedback',
+  'settings.feedbackSubtitle': 'Tell us what we could do better',
+  'settings.contact': 'Contact',
+  'settings.contactSubtitle': 'Question or issue? Get in touch',
+  'settings.mailFailed': 'Could not open your email app.',
+
+  // FAQ screen.
+  'faq.title': 'FAQ',
+  'faq.q1': 'Is SAMEPACE a dating app?',
+  'faq.a1': 'No. SAMEPACE only matches you with others by training time, pace and sport — it\'s about training partners, not dating.',
+  'faq.q2': 'How does matching work?',
+  'faq.a2': 'You enter your planned training times. SAMEPACE shows you people with an overlapping time window and similar pace for the same sport. If you both like the match, a group chat is created automatically.',
+  'faq.q3': 'How safe is meeting up with a stranger?',
+  'faq.a3': 'You can block or report any profile at any time. After several reports, an account is automatically suspended. Still: meet in a public place the first time and don\'t share sensitive personal details.',
+  'faq.q4': 'What is the reliability score?',
+  'faq.a4': 'After a meetup you can confirm whether your training partner actually showed up. This builds a score that shows others how reliable someone is.',
+  'faq.q5': 'What are Circles?',
+  'faq.a5': 'Circles are private training groups, e.g. for friends or a fixed running group — separate from open matching.',
+  'faq.q6': 'Why do I only see other people\'s first name?',
+  'faq.a6': 'For privacy and safety, other users only ever see your first name. Your full name is only visible to you, in your own profile.',
+  'faq.q7': 'How do I delete my account?',
+  'faq.a7': 'Email us via the Contact button in Settings — we\'ll delete your account and all associated data.',
+  'faq.q8': 'Is SAMEPACE free?',
+  'faq.a8': 'Yes, the app is currently completely free to use.',
+
+  // Privacy policy / imprint screens (content itself is German-only for now).
+  'privacy.title': 'Privacy policy',
+  'imprint.title': 'Imprint',
 };

@@ -98,7 +98,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            profile.fullName,
+                            profile.firstName,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 15,

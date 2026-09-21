@@ -73,7 +73,7 @@ class MatchNotifier {
       final profile = await ProfileService().getProfile(otherUserId);
       await BrowserNotificationService.showIfEnabled(
         title: 'Neuer Sportbuddy! 🎉',
-        body: '${profile.fullName} und du wollt beide trainieren.',
+        body: '${profile.firstName} und du wollt beide trainieren.',
       );
     } catch (_) {
       // Best-effort — never let a notification failure break buddy state.

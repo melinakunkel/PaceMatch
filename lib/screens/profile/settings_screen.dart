@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../constants/app_info.dart';
 import '../../l10n/app_language.dart';
 import '../../l10n/strings.dart';
 import '../../services/browser_notification_service.dart';
@@ -7,6 +9,9 @@ import '../../services/locale_controller.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../legal/faq_screen.dart';
+import '../legal/imprint_screen.dart';
+import '../legal/privacy_policy_screen.dart';
 import '../tutorial/tutorial_screen.dart';
 import 'blocked_users_screen.dart';
 
@@ -58,6 +63,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _profileService.updateProfile(
       profile.copyWith(autoArchiveInactiveChats: value),
     );
+  }
+
+  Future<void> _openMail(String subject) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: AppInfo.contactEmail,
+      query: 'subject=${Uri.encodeComponent(subject)}',
+    );
+    final launched = await launchUrl(uri);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('settings.mailFailed'))));
+    }
   }
 
   @override
@@ -282,6 +300,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   );
                 }),
+                const SizedBox(height: 24),
+                Text(
+                  t('settings.legal'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.help_outline,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(t('settings.faq')),
+                        subtitle: Text(t('settings.faqSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const FaqScreen()),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.privacy_tip_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(t('settings.privacyPolicy')),
+                        subtitle: Text(t('settings.privacyPolicySubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const PrivacyPolicyScreen(),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.description_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(t('settings.imprint')),
+                        subtitle: Text(t('settings.imprintSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ImprintScreen(),
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.feedback_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(t('settings.feedback')),
+                        subtitle: Text(t('settings.feedbackSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openMail('Feedback'),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.mail_outline,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(t('settings.contact')),
+                        subtitle: Text(t('settings.contactSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openMail('Kontakt'),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             );
           },

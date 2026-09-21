@@ -720,7 +720,7 @@ class _MatchCard extends StatelessWidget {
                           onTap: () => context.push('/profile/${profile.id}'),
                           child: Text(
                             [
-                              profile.fullName,
+                              profile.firstName,
                               if (profile.age != null) '${profile.age}',
                             ].join(', '),
                             overflow: TextOverflow.ellipsis,
@@ -869,7 +869,7 @@ class _CandidateListTile extends StatelessWidget {
                         Flexible(
                           child: Text(
                             [
-                              profile.fullName,
+                              profile.firstName,
                               if (profile.age != null) '${profile.age}',
                             ].join(', '),
                             overflow: TextOverflow.ellipsis,
@@ -950,7 +950,7 @@ class _MatchCelebrationDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              t('matches.celebration.subtitle', {'name': profile.fullName}),
+              t('matches.celebration.subtitle', {'name': profile.firstName}),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),

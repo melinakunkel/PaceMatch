@@ -80,7 +80,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final group = await _groupService.createGroup(
           createdBy: me,
           sport: _sports.isNotEmpty ? _sports.first.sport : SportType.sonstige,
-          name: t('publicProfile.chatWith', {'name': _profile?.fullName ?? ''}),
+          name: t('publicProfile.chatWith', {
+            'name': _profile?.firstName ?? '',
+          }),
         );
         await _groupService.joinGroup(groupId: group.id, userId: widget.userId);
         groupId = group.id;
@@ -103,7 +105,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       builder: (context) => AlertDialog(
         title: Text(t('publicProfile.blockTitle')),
         content: Text(
-          t('publicProfile.blockBody', {'name': _profile?.fullName ?? ''}),
+          t('publicProfile.blockBody', {'name': _profile?.firstName ?? ''}),
         ),
         actions: [
           TextButton(
@@ -164,7 +166,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ],
           ),
         ],
-        title: Text(_profile?.fullName ?? t('publicProfile.title')),
+        title: Text(_profile?.firstName ?? t('publicProfile.title')),
       ),
       body: SafeArea(
         child: _loading
@@ -220,7 +222,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          profile.fullName,
+                          profile.firstName,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 20,
