@@ -426,6 +426,13 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                     const SizedBox(width: 10),
                     Expanded(child: Text(b.fullName)),
                     OutlinedButton(
+                      // Theme's default minimumSize is full-width
+                      // (Size.fromHeight) — inside a Row that gets unbounded
+                      // incoming width and silently breaks layout, so this
+                      // needs its own compact minimumSize.
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 36),
+                      ),
                       onPressed: () => _startChatWithUnassignedBuddy(b),
                       child: Text(
                         _chatByUnassignedBuddy[b.id] == null
@@ -529,6 +536,12 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                     ),
                   ),
                   OutlinedButton(
+                    // Same fix as above: force a compact minimumSize instead
+                    // of the theme's full-width default, which breaks inside
+                    // a Row's unbounded width constraints.
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                    ),
                     onPressed: () => _openGroupSheet(g),
                     child: Text(
                       g.groupId == null

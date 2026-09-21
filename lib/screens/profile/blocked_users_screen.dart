@@ -108,6 +108,16 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton(
+                          // The app-wide OutlinedButton theme sets a
+                          // full-width minimumSize (Size.fromHeight), which
+                          // only resolves sanely inside a bounded-width
+                          // parent like a Column. Inside a Row it gets
+                          // unbounded incoming width and silently breaks
+                          // layout (button and everything after it renders
+                          // blank in release builds) — override it here.
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                          ),
                           onPressed: busy ? null : () => _unblock(profile),
                           child: busy
                               ? const SizedBox(
