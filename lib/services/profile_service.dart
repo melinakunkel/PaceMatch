@@ -122,6 +122,25 @@ class ProfileService {
     return row?['theme_variant'] as String?;
   }
 
+  /// Syncs the chosen display language across devices/logins, same as
+  /// [updateThemeVariant] does for the design.
+  Future<void> updateUiLanguage(String userId, String language) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'ui_language': language})
+        .eq('id', userId);
+  }
+
+  Future<String?> getUiLanguage(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('ui_language')
+        .eq('id', userId)
+        .maybeSingle();
+    return row?['ui_language'] as String?;
+  }
+
   /// Recomputes reliability_score from how many past meetups the user
   /// confirmed attending vs. not (see [GroupService.checkIn]), and persists
   /// it. Falls back to the default 100 until they've checked in anywhere.

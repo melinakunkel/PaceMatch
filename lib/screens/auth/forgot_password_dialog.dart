@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../../services/auth_service.dart';
 
 class ForgotPasswordDialog extends StatefulWidget {
@@ -26,7 +27,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   Future<void> _send() async {
     final email = _emailCtrl.text.trim();
     if (!email.contains('@')) {
-      setState(() => _error = 'Gültige E-Mail eingeben');
+      setState(() => _error = t('login.emailInvalid'));
       return;
     }
     setState(() {
@@ -37,7 +38,11 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       await AuthService().sendPasswordResetEmail(email);
       if (mounted) setState(() => _sent = true);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Konnte nicht gesendet werden: $e');
+      if (mounted) {
+        setState(
+          () => _error = t('forgotPassword.sendFailed', {'error': '$e'}),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -46,24 +51,18 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Passwort vergessen?'),
+      title: Text(t('forgotPassword.title')),
       content: _sent
-          ? const Text(
-              'Falls ein Konto mit dieser E-Mail existiert, haben wir dir einen Link zum '
-              'Zurücksetzen des Passworts geschickt. Schau auch im Spam-Ordner nach.',
-            )
+          ? Text(t('forgotPassword.sentMessage'))
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, '
-                  'mit dem du ein neues Passwort festlegen kannst.',
-                ),
+                Text(t('forgotPassword.instructions')),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'E-Mail'),
+                  decoration: InputDecoration(labelText: t('login.email')),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
@@ -74,7 +73,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(_sent ? 'Schließen' : 'Abbrechen'),
+          child: Text(_sent ? t('common.close') : t('common.cancel')),
         ),
         if (!_sent)
           FilledButton(
@@ -85,7 +84,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
                     width: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Link senden'),
+                : Text(t('forgotPassword.send')),
           ),
       ],
     );

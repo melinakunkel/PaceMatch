@@ -6,10 +6,8 @@ class ProfilePrompt {
 
   const ProfilePrompt({required this.question, required this.answer});
 
-  factory ProfilePrompt.fromMap(Map<String, dynamic> map) => ProfilePrompt(
-    question: map['q'] as String,
-    answer: map['a'] as String,
-  );
+  factory ProfilePrompt.fromMap(Map<String, dynamic> map) =>
+      ProfilePrompt(question: map['q'] as String, answer: map['a'] as String);
 
   Map<String, dynamic> toMap() => {'q': question, 'a': answer};
 }

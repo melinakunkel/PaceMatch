@@ -93,9 +93,8 @@ class _GroupScreenState extends State<GroupScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _checkingIn = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Check-in fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Check-in fehlgeschlagen: $e')));
     }
   }
 

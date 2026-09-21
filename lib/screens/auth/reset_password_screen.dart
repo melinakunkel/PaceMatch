@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../l10n/strings.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -38,12 +39,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       await AuthService().updatePassword(_passwordCtrl.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Passwort geändert.')));
+          .showSnackBar(SnackBar(content: Text(t('resetPassword.changed'))));
       context.go('/');
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Änderung fehlgeschlagen: $e');
+      setState(() => _error = t('resetPassword.changeFailed', {'error': '$e'}));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -52,7 +53,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Neues Passwort')),
+      appBar: AppBar(title: Text(t('resetPassword.title'))),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -64,7 +65,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Bitte lege ein neues Passwort fest.',
+                    t('resetPassword.instructions'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
@@ -72,21 +73,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   TextFormField(
                     controller: _passwordCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Neues Passwort',
+                    decoration: InputDecoration(
+                      labelText: t('resetPassword.newPassword'),
                     ),
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? 'Mind. 6 Zeichen' : null,
+                    validator: (v) => (v == null || v.length < 6)
+                        ? t('login.passwordTooShort')
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _confirmCtrl,
                     obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Passwort bestätigen',
+                    decoration: InputDecoration(
+                      labelText: t('resetPassword.confirmPassword'),
                     ),
                     validator: (v) => v != _passwordCtrl.text
-                        ? 'Passwörter stimmen nicht überein'
+                        ? t('resetPassword.mismatch')
                         : null,
                   ),
                   if (_error != null) ...[
@@ -105,7 +107,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Passwort ändern'),
+                        : Text(t('resetPassword.submit')),
                   ),
                 ],
               ),

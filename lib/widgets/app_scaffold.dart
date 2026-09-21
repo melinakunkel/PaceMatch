@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/strings.dart';
 import '../screens/profile/settings_screen.dart';
 import '../services/match_notifier.dart';
 import '../services/unread_controller.dart';
@@ -48,12 +49,12 @@ class AppScaffold extends StatelessWidget {
                 const CircleSwitcherButton(),
                 IconButton(
                   icon: const Icon(Icons.home_outlined),
-                  tooltip: 'Home',
+                  tooltip: t('appbar.home'),
                   onPressed: () => context.go('/'),
                 ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
-                  tooltip: 'Einstellungen',
+                  tooltip: t('appbar.settings'),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   ),
@@ -80,13 +81,13 @@ class AppScaffold extends StatelessWidget {
             context.go(_routes[index]);
           },
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined),
-              label: 'Entdecken',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.explore_outlined),
+              label: t('nav.discover'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              label: 'Plan',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.calendar_today_outlined),
+              label: t('nav.plan'),
             ),
             BottomNavigationBarItem(
               icon: ValueListenableBuilder<bool>(
@@ -117,7 +118,7 @@ class AppScaffold extends StatelessWidget {
                   );
                 },
               ),
-              label: 'Buddys',
+              label: t('nav.buddies'),
             ),
             BottomNavigationBarItem(
               icon: ValueListenableBuilder<bool>(
@@ -148,11 +149,11 @@ class AppScaffold extends StatelessWidget {
                   );
                 },
               ),
-              label: 'Chat',
+              label: t('nav.chat'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: 'Profil',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              label: t('nav.profile'),
             ),
           ],
         ),

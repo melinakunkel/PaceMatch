@@ -17,11 +17,12 @@ class AuthService {
     required String email,
     required String password,
     required String fullName,
+    String uiLanguage = 'de',
   }) async {
     await _client.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': fullName},
+      data: {'full_name': fullName, 'ui_language': uiLanguage},
     );
   }
 

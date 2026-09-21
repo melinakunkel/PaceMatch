@@ -49,10 +49,9 @@ class OpenEvent {
       maxParticipants != null && participantCount >= maxParticipants!;
   bool get hasMapLocation => latitude != null && longitude != null;
 
-  String get timeRangeLabel =>
-      endTime == null
-          ? Activity.formatTime(startTime)
-          : '${Activity.formatTime(startTime)} - ${Activity.formatTime(endTime!)}';
+  String get timeRangeLabel => endTime == null
+      ? Activity.formatTime(startTime)
+      : '${Activity.formatTime(startTime)} - ${Activity.formatTime(endTime!)}';
 
   String get dateLabel =>
       '${weekdayLabels[eventDate.weekday - 1]}, ${eventDate.day.toString().padLeft(2, '0')}.'

@@ -478,10 +478,7 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
     }
 
     final dates = List.generate(7, (i) => _weekStart.add(Duration(days: i)));
-    final byDay = List.generate(
-      7,
-      (i) => _activitiesForDate(dates[i], i + 1),
-    );
+    final byDay = List.generate(7, (i) => _activitiesForDate(dates[i], i + 1));
     final weekActivities = byDay.expand((l) => l).toList();
     final today = DateTime.now();
     final isCurrentWeek = _isSameDate(_weekStart, _mondayOf(today));
@@ -640,11 +637,12 @@ class _LanedActivity {
 /// used to hide all but the last one drawn). Non-overlapping activities
 /// each still get the full column width.
 List<_LanedActivity> _layoutLanes(List<Activity> activities) {
-  final sorted = [...activities]..sort((a, b) {
-    final aStart = a.startTime.hour * 60 + a.startTime.minute;
-    final bStart = b.startTime.hour * 60 + b.startTime.minute;
-    return aStart.compareTo(bStart);
-  });
+  final sorted = [...activities]
+    ..sort((a, b) {
+      final aStart = a.startTime.hour * 60 + a.startTime.minute;
+      final bStart = b.startTime.hour * 60 + b.startTime.minute;
+      return aStart.compareTo(bStart);
+    });
 
   final result = <_LanedActivity>[];
   final active = <(Activity, int, int)>[]; // (activity, column, endMinutes)

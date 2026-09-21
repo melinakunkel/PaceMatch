@@ -102,9 +102,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Da ging etwas schief: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Da ging etwas schief: $e')));
     } finally {
       _celebrating = false;
     }
@@ -223,11 +222,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         if (i == _topIndex)
                           _SwipeCard(
                             key: ValueKey(_candidates[i].profile.id),
-                            onSwiped: (liked) =>
-                                _swipe(_candidates[i], liked),
+                            onSwiped: (liked) => _swipe(_candidates[i], liked),
                             child: _MatchCard(
                               candidate: _candidates[i],
-                              theirSport: _theirSports[_candidates[i].profile.id],
+                              theirSport:
+                                  _theirSports[_candidates[i].profile.id],
                             ),
                           )
                         else
@@ -450,8 +449,7 @@ class _MatchCard extends StatelessWidget {
                     children: [
                       Flexible(
                         child: GestureDetector(
-                          onTap: () =>
-                              context.push('/profile/${profile.id}'),
+                          onTap: () => context.push('/profile/${profile.id}'),
                           child: Text(
                             [
                               profile.fullName,
@@ -484,7 +482,11 @@ class _MatchCard extends StatelessWidget {
                   ),
                   if (profile.bio != null && profile.bio!.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(profile.bio!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(
+                      profile.bio!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                   const SizedBox(height: 6),
                   Wrap(

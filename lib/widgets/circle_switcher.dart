@@ -24,7 +24,9 @@ class CircleSwitcherButton extends StatelessWidget {
           icon: Stack(
             clipBehavior: Clip.none,
             children: [
-              Icon(circle == null ? Icons.public_outlined : Icons.groups_outlined),
+              Icon(
+                circle == null ? Icons.public_outlined : Icons.groups_outlined,
+              ),
               if (circle != null)
                 Positioned(
                   right: -2,
@@ -150,9 +152,7 @@ class _CircleSheetState extends State<_CircleSheet> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

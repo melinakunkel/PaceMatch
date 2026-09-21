@@ -106,10 +106,8 @@ class OpenEventService {
     }).toList();
   }
 
-  Future<void> joinEvent({
-    required String groupId,
-    required String userId,
-  }) => _groupService.joinGroup(groupId: groupId, userId: userId);
+  Future<void> joinEvent({required String groupId, required String userId}) =>
+      _groupService.joinGroup(groupId: groupId, userId: userId);
 
   static String _dateStr(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

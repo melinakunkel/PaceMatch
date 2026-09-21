@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/sport_type.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/stock_photos.dart';
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
                 IconButton(
                   icon: Icon(Icons.help_outline, color: AppColors.primary),
-                  tooltip: 'Tutorial',
+                  tooltip: t('home.tutorialTooltip'),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const TutorialScreen()),
                   ),
@@ -96,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       right: 16,
                       bottom: 14,
                       child: Text(
-                        'Gemeinsam Sport machen, wenn es zeitlich passt.',
+                        t('app.tagline'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -109,9 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Was möchtest du diese Woche machen?',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            Text(
+              t('home.question'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 24),
             Expanded(

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_language.dart';
+import '../../l10n/strings.dart';
 import '../../services/browser_notification_service.dart';
+import '../../services/locale_controller.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -39,13 +42,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() => _browserNotifications = granted);
     if (!granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Berechtigung nicht erteilt. Du kannst sie in den Browser-Einstellungen ändern.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t('settings.permissionDenied'))));
     }
   }
 
@@ -67,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Einstellungen'),
+        title: Text(t('settings.title')),
       ),
       body: SafeArea(
         child: ValueListenableBuilder<AppThemeVariant>(
@@ -76,17 +75,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                const Text(
-                  'Hilfe',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('settings.help'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Card(
                   margin: EdgeInsets.zero,
                   child: ListTile(
                     leading: Icon(Icons.help_outline, color: AppColors.primary),
-                    title: const Text('So funktioniert SAMEPACE'),
-                    subtitle: const Text('Kurzes Tutorial ansehen'),
+                    title: Text(t('settings.howItWorks')),
+                    subtitle: Text(t('settings.tutorialSubtitle')),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const TutorialScreen()),
@@ -94,40 +96,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Chats',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('settings.chats'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Chats ohne neue Nachricht seit 7 Tagen automatisch archivieren.',
+                  t('settings.autoArchiveDesc'),
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Automatisch archivieren'),
+                  title: Text(t('settings.autoArchive')),
                   value: _autoArchive ?? false,
                   onChanged: _autoArchive == null
                       ? null
                       : (v) => _setAutoArchive(v),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Benachrichtigungen',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('settings.notifications'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   BrowserNotificationService.isSupported
-                      ? 'Erhalte eine Browser-Benachrichtigung für neue Nachrichten und Sportbuddys, solange SAMEPACE in einem Tab offen ist.'
-                      : 'Dein Browser unterstützt keine Benachrichtigungen.',
+                      ? t('settings.notificationsDescSupported')
+                      : t('settings.notificationsDescUnsupported'),
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Browser-Benachrichtigungen'),
+                  title: Text(t('settings.browserNotifications')),
                   value: _browserNotifications ?? false,
                   onChanged:
                       (_browserNotifications == null ||
@@ -136,13 +144,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : (v) => _setBrowserNotifications(v),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Design',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('settings.language'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Wähle den Look, der am besten zu dir passt.',
+                  t('settings.languageDesc'),
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                ValueListenableBuilder<AppLanguage>(
+                  valueListenable: LocaleController.language,
+                  builder: (context, activeLanguage, _) {
+                    return Wrap(
+                      spacing: 8,
+                      children: AppLanguage.values.map((lang) {
+                        return ChoiceChip(
+                          label: Text(lang.label),
+                          selected: lang == activeLanguage,
+                          onSelected: (_) async {
+                            await LocaleController.setLanguage(lang);
+                            await _profileService.updateUiLanguage(
+                              SupabaseService.currentUserId!,
+                              lang.name,
+                            );
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  t('settings.design'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  t('settings.designDesc'),
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),

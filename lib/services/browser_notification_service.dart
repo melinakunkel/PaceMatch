@@ -34,7 +34,10 @@ class BrowserNotificationService {
     await prefs.setBool(_prefKey, false);
   }
 
-  static Future<void> showIfEnabled({required String title, String? body}) async {
+  static Future<void> showIfEnabled({
+    required String title,
+    String? body,
+  }) async {
     if (!await isEnabled()) return;
     impl.showBrowserNotification(title: title, body: body);
   }

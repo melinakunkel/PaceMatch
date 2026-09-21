@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../l10n/strings.dart';
 import '../../services/auth_service.dart';
+import '../../services/locale_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/stock_photos.dart';
+import '../../widgets/language_toggle.dart';
 import '../../widgets/network_photo.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -34,12 +37,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text,
         fullName: _nameCtrl.text.trim(),
+        uiLanguage: LocaleController.language.value.name,
       );
       if (mounted) context.go('/onboarding');
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Registrierung fehlgeschlagen: $e');
+      setState(() => _error = t('register.signUpFailed', {'error': '$e'}));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -56,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Konto erstellen')),
+      appBar: AppBar(title: Text(t('register.title'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -76,28 +80,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Text(
+                      t('register.language'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    const LanguageToggle(),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Name eingeben' : null,
+                  decoration: InputDecoration(labelText: t('register.name')),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? t('register.nameRequired')
+                      : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'E-Mail'),
+                  decoration: InputDecoration(labelText: t('login.email')),
                   validator: (v) => (v == null || !v.contains('@'))
-                      ? 'Gültige E-Mail eingeben'
+                      ? t('login.emailInvalid')
                       : null,
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _passwordCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Passwort'),
-                  validator: (v) =>
-                      (v == null || v.length < 6) ? 'Mind. 6 Zeichen' : null,
+                  decoration: InputDecoration(labelText: t('login.password')),
+                  validator: (v) => (v == null || v.length < 6)
+                      ? t('login.passwordTooShort')
+                      : null,
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -115,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Registrieren'),
+                      : Text(t('register.submit')),
                 ),
               ],
             ),

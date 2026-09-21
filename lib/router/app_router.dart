@@ -60,10 +60,7 @@ GoRouter buildRouter() {
       ),
       GoRoute(path: '/matches', builder: (_, _) => const MatchesHubScreen()),
       GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
-      GoRoute(
-        path: '/host-event',
-        builder: (_, _) => const HostEventScreen(),
-      ),
+      GoRoute(path: '/host-event', builder: (_, _) => const HostEventScreen()),
       GoRoute(
         path: '/matches/:activityId',
         builder: (context, state) =>

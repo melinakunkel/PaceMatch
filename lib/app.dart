@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'l10n/app_language.dart';
 import 'router/app_router.dart';
 import 'services/circle_controller.dart';
+import 'services/locale_controller.dart';
 import 'services/match_notifier.dart';
 import 'services/profile_service.dart';
 import 'services/supabase_service.dart';
@@ -39,6 +42,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
         MatchNotifier.startListening();
         MatchNotifier.refresh();
         _syncThemeFromProfile();
+        _syncLanguageFromProfile();
         CircleController.loadSaved();
       } else {
         UnreadController.stopListening();
@@ -52,6 +56,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
       MatchNotifier.startListening();
       MatchNotifier.refresh();
       _syncThemeFromProfile();
+      _syncLanguageFromProfile();
       CircleController.loadSaved();
     }
   }
@@ -76,6 +81,24 @@ class _SamepaceAppState extends State<SamepaceApp> {
     }
   }
 
+  /// Applies the language saved on the account (chosen at registration or
+  /// in Settings), so a login on a different device/browser shows the same
+  /// language instead of whatever this browser's local storage has.
+  Future<void> _syncLanguageFromProfile() async {
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    try {
+      final saved = await ProfileService().getUiLanguage(userId);
+      if (saved == null) return;
+      final lang = AppLanguage.fromCode(saved);
+      if (lang != LocaleController.language.value) {
+        await LocaleController.setLanguage(lang);
+      }
+    } catch (_) {
+      // Offline or transient error — local language stays as-is.
+    }
+  }
+
   @override
   void dispose() {
     _authSub?.cancel();
@@ -89,12 +112,24 @@ class _SamepaceAppState extends State<SamepaceApp> {
     return ValueListenableBuilder<AppThemeVariant>(
       valueListenable: ThemeController.variant,
       builder: (context, variant, _) {
-        return MaterialApp.router(
-          key: ValueKey(variant),
-          title: 'SAMEPACE',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          routerConfig: _router,
+        return ValueListenableBuilder<AppLanguage>(
+          valueListenable: LocaleController.language,
+          builder: (context, language, _) {
+            return MaterialApp.router(
+              key: ValueKey((variant, language)),
+              title: 'SAMEPACE',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              locale: Locale(language.name),
+              supportedLocales: AppLanguage.values.map((l) => Locale(l.name)),
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              routerConfig: _router,
+            );
+          },
         );
       },
     );

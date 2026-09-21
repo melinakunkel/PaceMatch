@@ -19,8 +19,7 @@ class OnboardingWizardScreen extends StatefulWidget {
   const OnboardingWizardScreen({super.key});
 
   @override
-  State<OnboardingWizardScreen> createState() =>
-      _OnboardingWizardScreenState();
+  State<OnboardingWizardScreen> createState() => _OnboardingWizardScreenState();
 }
 
 class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
@@ -368,7 +367,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          const Text('Geschlecht', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Geschlecht',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
