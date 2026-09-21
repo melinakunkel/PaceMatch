@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/strings.dart';
+import '../../services/profile_service.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 
 class _TutorialSlide {
@@ -66,6 +68,7 @@ class TutorialScreen extends StatefulWidget {
 class _TutorialScreenState extends State<TutorialScreen> {
   final _pageController = PageController();
   int _page = 0;
+  bool _dontShowAgain = false;
 
   @override
   void dispose() {
@@ -73,9 +76,20 @@ class _TutorialScreenState extends State<TutorialScreen> {
     super.dispose();
   }
 
+  Future<void> _dismiss() async {
+    if (widget.showSkip && _dontShowAgain) {
+      final userId = SupabaseService.currentUserId;
+      if (userId != null) {
+        await ProfileService().updateHasSeenTutorial(userId, true);
+      }
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
   void _next() {
     if (_page == _slides.length - 1) {
-      Navigator.of(context).pop();
+      _dismiss();
       return;
     }
     _pageController.nextPage(
@@ -89,16 +103,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
     final isLast = _page == _slides.length - 1;
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: IconButton(icon: const Icon(Icons.close), onPressed: _dismiss),
         actions: [
           if (widget.showSkip && !isLast)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(t('tutorial.skip')),
-            ),
+            TextButton(onPressed: _dismiss, child: Text(t('tutorial.skip'))),
         ],
       ),
       body: SafeArea(
@@ -198,6 +206,28 @@ class _TutorialScreenState extends State<TutorialScreen> {
                   );
                 }),
               ),
+              if (widget.showSkip) ...[
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => setState(() => _dontShowAgain = !_dontShowAgain),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: _dontShowAgain,
+                          onChanged: (v) =>
+                              setState(() => _dontShowAgain = v ?? false),
+                        ),
+                        Text(t('tutorial.dontShowAgain')),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,

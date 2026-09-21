@@ -151,6 +151,7 @@ const _de = <String, String>{
   // Tutorial slides.
   'tutorial.skip': 'Überspringen',
   'tutorial.done': 'Los geht\'s',
+  'tutorial.dontShowAgain': 'Nicht mehr anzeigen',
   'tutorial.welcome.title': 'Willkommen bei SAMEPACE',
   'tutorial.welcome.description':
       'Finde Leute, die zur gleichen Zeit und im gleichen Tempo Sport '
@@ -629,6 +630,7 @@ const _en = <String, String>{
 
   'tutorial.skip': 'Skip',
   'tutorial.done': 'Let\'s go',
+  'tutorial.dontShowAgain': 'Don\'t show again',
   'tutorial.welcome.title': 'Welcome to SAMEPACE',
   'tutorial.welcome.description':
       'Find people who want to do sport at the same time and pace as you '

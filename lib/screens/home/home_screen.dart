@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/sport_type.dart';
+import '../../services/profile_service.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/stock_photos.dart';
 import '../../widgets/app_scaffold.dart';
@@ -18,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _seenTutorialKey = 'has_seen_tutorial';
+  final _profileService = ProfileService();
 
   @override
   void initState() {
@@ -26,11 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _maybeShowTutorial();
   }
 
+  // Checked against the account, not local browser storage: an in-app or
+  // webview browser can wipe local storage between sessions, which used to
+  // bring the tutorial back every login even after the user dismissed it.
   Future<void> _maybeShowTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_seenTutorialKey) == true) return;
-    await prefs.setBool(_seenTutorialKey, true);
-    if (!mounted) return;
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    final seen = await _profileService.getHasSeenTutorial(userId);
+    if (seen || !mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const TutorialScreen(showSkip: true)),
     );

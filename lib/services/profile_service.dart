@@ -141,6 +141,26 @@ class ProfileService {
     return row?['ui_language'] as String?;
   }
 
+  /// Persisted server-side (not just local browser storage) so an in-app or
+  /// webview browser wiping local storage between sessions doesn't bring the
+  /// tutorial back every login.
+  Future<bool> getHasSeenTutorial(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('has_seen_tutorial')
+        .eq('id', userId)
+        .maybeSingle();
+    return row?['has_seen_tutorial'] as bool? ?? false;
+  }
+
+  Future<void> updateHasSeenTutorial(String userId, bool value) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'has_seen_tutorial': value})
+        .eq('id', userId);
+  }
+
   /// Recomputes reliability_score from how many past meetups the user
   /// confirmed attending vs. not (see [GroupService.checkIn]), and persists
   /// it. Falls back to the default 100 until they've checked in anywhere.
