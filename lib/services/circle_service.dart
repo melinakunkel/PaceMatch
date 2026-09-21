@@ -12,7 +12,8 @@ class CircleService {
         .from('circle_members')
         .select('joined_at, circles(*)')
         .eq('user_id', userId)
-        .order('joined_at', ascending: false);
+        .order('joined_at', ascending: false)
+        .limit(100);
     return rows
         .map((row) => row['circles'] as Map<String, dynamic>?)
         .whereType<Map<String, dynamic>>()
@@ -52,6 +53,11 @@ class CircleService {
     } on PostgrestException catch (e) {
       if (e.message.contains('invite code not found')) {
         throw Exception('Dieser Einladungscode wurde nicht gefunden.');
+      }
+      if (e.message.contains('too many attempts')) {
+        throw Exception(
+          'Zu viele Versuche. Bitte warte ein paar Minuten und versuch es erneut.',
+        );
       }
       rethrow;
     }

@@ -120,7 +120,8 @@ class GroupService {
         .from('group_members')
         .select('last_read_at, groups(*, group_members(count))')
         .eq('user_id', userId)
-        .eq('archived', archived);
+        .eq('archived', archived)
+        .limit(300);
 
     final groups = <SportGroup>[];
     final lastReadByGroupId = <String, DateTime?>{};
@@ -260,7 +261,8 @@ class GroupService {
     final rows = await _client
         .from('group_members')
         .select('profiles(*)')
-        .eq('group_id', groupId);
+        .eq('group_id', groupId)
+        .limit(300);
     return rows
         .map((row) => Profile.fromMap(row['profiles'] as Map<String, dynamic>))
         .toList();

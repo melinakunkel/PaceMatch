@@ -91,6 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
+      maxWidth: 1080,
+      maxHeight: 1080,
     );
     if (picked == null) return;
     setState(() => _uploadingAvatar = true);

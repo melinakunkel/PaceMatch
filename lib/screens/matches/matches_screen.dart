@@ -11,7 +11,6 @@ import '../../services/like_service.dart';
 import '../../services/match_service.dart';
 import '../../services/match_notifier.dart';
 import '../../services/profile_service.dart';
-import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/display_labels.dart';
@@ -86,9 +85,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
     // second swipe never got recorded and a mutual connection could never
     // fire.
     try {
-      final me = SupabaseService.currentUserId!;
       final mutual = await _likeService.like(
-        fromUser: me,
         toUser: candidate.profile.id,
         activityId: _activity?.id,
       );

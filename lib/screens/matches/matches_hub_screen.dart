@@ -107,7 +107,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       circleId: CircleController.active.value?.id,
     );
     final activityIds = activities.map((a) => a.id).toSet();
-    final buddies = await _likeService.getBuddies(userId);
+    final buddies = await _likeService.getBuddies();
     final buddyProfiles = await _profileService.getProfilesByIds(
       buddies.map((b) => b.userId).toList(),
     );

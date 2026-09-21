@@ -8,6 +8,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../tutorial/tutorial_screen.dart';
+import 'blocked_users_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -93,6 +94,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const TutorialScreen()),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  t('settings.privacy'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: ListTile(
+                    leading: Icon(Icons.block, color: AppColors.primary),
+                    title: Text(t('settings.blockedUsers')),
+                    subtitle: Text(t('settings.blockedUsersSubtitle')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const BlockedUsersScreen(),
+                      ),
                     ),
                   ),
                 ),

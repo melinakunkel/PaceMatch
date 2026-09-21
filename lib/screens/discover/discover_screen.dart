@@ -10,6 +10,7 @@ import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
+import '../../services/block_service.dart';
 import '../../services/circle_controller.dart';
 import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
@@ -44,6 +45,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final _activityService = ActivityService();
   final _profileService = ProfileService();
   final _groupService = GroupService();
+  final _blockService = BlockService();
   final _communityEventService = CommunityEventService();
   final _openEventService = OpenEventService();
 
@@ -144,11 +146,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final userIds = activities.map((a) => a.userId).toSet().toList();
       final profiles = await _profileService.getProfilesByIds(userIds);
       final profilesById = {for (final p in profiles) p.id: p};
+      final blockedIds = await _blockService.blockedUserIds();
 
       final entries = <_DiscoverEntry>[];
       for (final a in activities) {
         final p = profilesById[a.userId];
         if (p == null) continue;
+        if (p.isSuspended) continue;
+        if (blockedIds.contains(p.id)) continue;
         if (myProfile != null && !isAllowedByPreferences(myProfile, p)) {
           continue;
         }

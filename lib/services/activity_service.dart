@@ -42,7 +42,7 @@ class ActivityService {
     query = circleId == null
         ? query.isFilter('circle_id', null)
         : query.eq('circle_id', circleId);
-    final rows = await query;
+    final rows = await query.limit(300);
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
@@ -67,7 +67,8 @@ class ActivityService {
         : query.eq('circle_id', circleId);
     final rows = await query
         .or('specific_date.is.null,specific_date.eq.$dateStr')
-        .order('start_time');
+        .order('start_time')
+        .limit(300);
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 

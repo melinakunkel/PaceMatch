@@ -70,6 +70,9 @@ const _de = <String, String>{
   'settings.help': 'Hilfe',
   'settings.howItWorks': 'So funktioniert SAMEPACE',
   'settings.tutorialSubtitle': 'Kurzes Tutorial ansehen',
+  'settings.privacy': 'Privatsphäre & Sicherheit',
+  'settings.blockedUsers': 'Blockierte Nutzer',
+  'settings.blockedUsersSubtitle': 'Blockierungen verwalten',
   'settings.chats': 'Chats',
   'settings.autoArchiveDesc':
       'Chats ohne neue Nachricht seit 7 Tagen automatisch archivieren.',
@@ -427,6 +430,8 @@ const _de = <String, String>{
   'report.whoToReport': 'Wen möchtest du melden?',
   'report.reason': 'Grund',
   'report.detailsOptional': 'Details (optional)',
+  'report.alsoBlock': 'Diese Person auch blockieren',
+  'report.alsoBlockSubtitle': 'Kein Kontakt/Matching mehr möglich. Die Person wird nicht benachrichtigt.',
   'report.submit': 'Melden',
 
   // Languages (kLanguageOptions).
@@ -474,6 +479,18 @@ const _de = <String, String>{
   'publicProfile.title': 'Profil',
   'publicProfile.sportsAndLevel': 'Sportarten & Level',
   'publicProfile.sendMessage': 'Nachricht senden',
+  'publicProfile.block': 'Blockieren',
+  'publicProfile.blockTitle': 'Nutzer blockieren?',
+  'publicProfile.blockBody': '{name} kann dich danach nicht mehr kontaktieren und wird dir nicht mehr als Match/Vorschlag angezeigt. {name} wird nicht benachrichtigt.',
+  'publicProfile.blockConfirm': 'Blockieren',
+  'publicProfile.blocked': 'Nutzer blockiert.',
+  'publicProfile.blockFailed': 'Blockieren fehlgeschlagen: {error}',
+
+  // Blocked users screen (Settings > Privatsphäre & Sicherheit).
+  'blockedUsers.title': 'Blockierte Nutzer',
+  'blockedUsers.empty': 'Du hast noch niemanden blockiert.',
+  'blockedUsers.unblock': 'Entsperren',
+  'blockedUsers.unblockFailed': 'Entsperren fehlgeschlagen: {error}',
 
   // Profile prompts (kPromptQuestions).
   'prompt.favoriteSpot': 'Mein Lieblings-Trainingsort ist...',
@@ -558,6 +575,9 @@ const _en = <String, String>{
   'settings.help': 'Help',
   'settings.howItWorks': 'How SAMEPACE works',
   'settings.tutorialSubtitle': 'Watch a short tutorial',
+  'settings.privacy': 'Privacy & Safety',
+  'settings.blockedUsers': 'Blocked users',
+  'settings.blockedUsersSubtitle': 'Manage who you\'ve blocked',
   'settings.chats': 'Chats',
   'settings.autoArchiveDesc':
       'Automatically archive chats with no new message for 7 days.',
@@ -883,6 +903,9 @@ const _en = <String, String>{
   'report.whoToReport': 'Who do you want to report?',
   'report.reason': 'Reason',
   'report.detailsOptional': 'Details (optional)',
+  'report.alsoBlock': 'Also block this person',
+  'report.alsoBlockSubtitle':
+      'No more contact/matching. They won\'t be notified.',
   'report.submit': 'Report',
 
   'language.de': 'German',
@@ -926,6 +949,18 @@ const _en = <String, String>{
   'publicProfile.title': 'Profile',
   'publicProfile.sportsAndLevel': 'Sports & level',
   'publicProfile.sendMessage': 'Send message',
+  'publicProfile.block': 'Block',
+  'publicProfile.blockTitle': 'Block this user?',
+  'publicProfile.blockBody': '{name} won\'t be able to contact you and won\'t show up as a match/suggestion anymore. {name} won\'t be notified.',
+  'publicProfile.blockConfirm': 'Block',
+  'publicProfile.blocked': 'User blocked.',
+  'publicProfile.blockFailed': 'Blocking failed: {error}',
+
+  // Blocked users screen (Settings > Privacy & Safety).
+  'blockedUsers.title': 'Blocked users',
+  'blockedUsers.empty': 'You haven\'t blocked anyone yet.',
+  'blockedUsers.unblock': 'Unblock',
+  'blockedUsers.unblockFailed': 'Unblocking failed: {error}',
 
   'prompt.favoriteSpot': 'My favorite place to train is...',
   'prompt.youllFindMe': 'You\'ll definitely find me...',

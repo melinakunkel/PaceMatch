@@ -18,6 +18,10 @@ class Profile {
   final int? ageRangeMax;
   final bool isVerified;
 
+  /// Hidden from matching/discovery once enough reports have come in
+  /// against this account — see handle_new_report() in the DB.
+  final bool isSuspended;
+
   /// Up to 3 interests picked from the fixed list in interest.dart.
   final List<String> interests;
 
@@ -43,6 +47,7 @@ class Profile {
     this.ageRangeMin,
     this.ageRangeMax,
     this.isVerified = false,
+    this.isSuspended = false,
     this.interests = const [],
     this.languages = const [],
     this.autoArchiveInactiveChats = false,
@@ -62,6 +67,7 @@ class Profile {
     ageRangeMin: map['age_range_min'] as int?,
     ageRangeMax: map['age_range_max'] as int?,
     isVerified: map['is_verified'] as bool? ?? false,
+    isSuspended: map['is_suspended'] as bool? ?? false,
     interests: (map['interests'] as List?)?.cast<String>() ?? const [],
     languages: (map['languages'] as List?)?.cast<String>() ?? const [],
     autoArchiveInactiveChats:
@@ -103,6 +109,7 @@ class Profile {
     ageRangeMin: ageRangeMin ?? this.ageRangeMin,
     ageRangeMax: ageRangeMax ?? this.ageRangeMax,
     isVerified: isVerified,
+    isSuspended: isSuspended,
     interests: interests ?? this.interests,
     languages: languages ?? this.languages,
     autoArchiveInactiveChats:

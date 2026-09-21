@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/profile.dart';
+import '../../services/block_service.dart';
 import '../../services/report_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -30,6 +31,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
   Profile? _selectedMember;
   String _reason = _reasons.first;
   final _detailsCtrl = TextEditingController();
+  bool _alsoBlock = true;
   bool _sending = false;
   bool _sent = false;
   String? _error;
@@ -62,6 +64,9 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
             ? null
             : _detailsCtrl.text.trim(),
       );
+      if (_alsoBlock) {
+        await BlockService().blockUser(_selectedMember!.id);
+      }
       if (mounted) setState(() => _sent = true);
     } catch (e) {
       if (mounted) {
@@ -125,6 +130,14 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                       labelText: t('report.detailsOptional'),
                       border: const OutlineInputBorder(),
                     ),
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _alsoBlock,
+                    onChanged: (v) => setState(() => _alsoBlock = v ?? true),
+                    title: Text(t('report.alsoBlock')),
+                    subtitle: Text(t('report.alsoBlockSubtitle')),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 8),

@@ -24,7 +24,7 @@ class MatchNotifier {
     }
     try {
       final seenAt = await ProfileService().getMatchesSeenAt(userId);
-      final buddies = await LikeService().getBuddies(userId);
+      final buddies = await LikeService().getBuddies();
       hasNewMatch.value = seenAt == null
           ? buddies.isNotEmpty
           : buddies.any((b) => b.connectedAt.isAfter(seenAt));
@@ -45,15 +45,19 @@ class MatchNotifier {
     }
   }
 
-  /// Call once after login so a new mutual like updates the dot live.
+  /// Call once after login so a new mutual match updates the dot live.
+  /// Listens on match_events rather than likes directly — RLS on match_events
+  /// only ever delivers rows for a completed mutual match involving this
+  /// user, so (unlike the old likes-based subscription) every event received
+  /// here is guaranteed to be a real, fresh connection.
   static void startListening() {
     if (_channel != null) return;
     _channel = SupabaseService.client
-        .channel('buddy-likes')
+        .channel('match-events')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
-          table: 'likes',
+          table: 'match_events',
           callback: (payload) {
             refresh();
             _maybeNotify(payload.newRecord);
@@ -62,24 +66,11 @@ class MatchNotifier {
         .subscribe();
   }
 
-  /// The realtime subscription above isn't filtered to my rows, so before
-  /// notifying, confirm this like involves me, then check whether it just
-  /// completed a mutual connection.
   static Future<void> _maybeNotify(Map<String, dynamic> row) async {
-    final myId = SupabaseService.currentUserId;
-    if (myId == null) return;
-    final fromUser = row['from_user'] as String?;
-    final toUser = row['to_user'] as String?;
-    if (fromUser != myId && toUser != myId) return;
+    final otherUserId = row['other_user_id'] as String?;
+    if (otherUserId == null) return;
     try {
-      final buddies = await LikeService().getBuddies(myId);
-      if (buddies.isEmpty) return;
-      final newest = buddies.first;
-      if (DateTime.now().difference(newest.connectedAt) >
-          const Duration(seconds: 10)) {
-        return; // not a fresh connection, just some other like event
-      }
-      final profile = await ProfileService().getProfile(newest.userId);
+      final profile = await ProfileService().getProfile(otherUserId);
       await BrowserNotificationService.showIfEnabled(
         title: 'Neuer Sportbuddy! 🎉',
         body: '${profile.fullName} und du wollt beide trainieren.',

@@ -6,6 +6,7 @@ import '../../models/interest.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
+import '../../services/block_service.dart';
 import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
@@ -28,10 +29,12 @@ class PublicProfileScreen extends StatefulWidget {
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   final _profileService = ProfileService();
   final _groupService = GroupService();
+  final _blockService = BlockService();
   Profile? _profile;
   List<UserSport> _sports = [];
   bool _loading = true;
   bool _contacting = false;
+  bool _blocking = false;
   String? _error;
 
   @override
@@ -94,6 +97,47 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
+  Future<void> _blockUser() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('publicProfile.blockTitle')),
+        content: Text(
+          t('publicProfile.blockBody', {'name': _profile?.fullName ?? ''}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: Text(t('publicProfile.blockConfirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _blocking = true);
+    try {
+      await _blockService.blockUser(widget.userId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('publicProfile.blocked'))));
+      safeBack(context, '/');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('publicProfile.blockFailed', {'error': '$e'})),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _blocking = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,6 +146,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => safeBack(context, '/'),
         ),
+        actions: [
+          PopupMenuButton<int>(
+            enabled: !_blocking,
+            onSelected: (_) => _blockUser(),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 0,
+                child: Row(
+                  children: [
+                    Icon(Icons.block, color: AppColors.danger, size: 20),
+                    const SizedBox(width: 8),
+                    Text(t('publicProfile.block')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
         title: Text(_profile?.fullName ?? t('publicProfile.title')),
       ),
       body: SafeArea(
