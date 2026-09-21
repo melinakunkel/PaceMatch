@@ -9,6 +9,7 @@ import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
+import '../../services/circle_controller.dart';
 import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
 import '../../services/open_event_service.dart';
@@ -113,7 +114,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void initState() {
     super.initState();
     _load();
+    CircleController.active.addListener(_onCircleChanged);
   }
+
+  @override
+  void dispose() {
+    CircleController.active.removeListener(_onCircleChanged);
+    super.dispose();
+  }
+
+  void _onCircleChanged() => _load();
 
   Future<void> _load() async {
     setState(() {
@@ -125,6 +135,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final activities = await _activityService.getActivitiesForDate(
         date: _selectedDate,
         excludeUserId: myId,
+        circleId: CircleController.active.value?.id,
       );
       final myProfiles = await _profileService.getProfilesByIds([myId]);
       final myProfile = myProfiles.isEmpty ? null : myProfiles.first;

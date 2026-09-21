@@ -7,45 +7,65 @@ import 'supabase_service.dart';
 class ActivityService {
   final _client = SupabaseService.client;
 
-  Future<List<Activity>> getMyActivities(String userId) async {
-    final rows = await _client
+  /// [circleId] scopes the result to one "Kreis" (or, when null, to the
+  /// public pool) — the active context from [CircleController].
+  Future<List<Activity>> getMyActivities(
+    String userId, {
+    String? circleId,
+  }) async {
+    var query = _client
         .from('activities')
         .select()
         .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('day_of_week')
-        .order('start_time');
+        .eq('is_active', true);
+    query = circleId == null
+        ? query.isFilter('circle_id', null)
+        : query.eq('circle_id', circleId);
+    final rows = await query.order('day_of_week').order('start_time');
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
   /// All other users' active activities for a sport, used for matching.
+  /// [circleId] restricts candidates to the same "Kreis" as the activity
+  /// being matched (or, when null, to the public pool).
   Future<List<Activity>> getActivitiesForSport({
     required SportType sport,
     required String excludeUserId,
+    String? circleId,
   }) async {
-    final rows = await _client
+    var query = _client
         .from('activities')
         .select()
         .eq('sport', sport.name)
         .eq('is_active', true)
         .neq('user_id', excludeUserId);
+    query = circleId == null
+        ? query.isFilter('circle_id', null)
+        : query.eq('circle_id', circleId);
+    final rows = await query;
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
   /// Every other user's activity that's actually happening on [date]: a
   /// recurring one on that weekday, or a one-off with a matching
-  /// specific_date. Used by the "Entdecken" screen.
+  /// specific_date. Used by the "Entdecken" screen. [circleId] scopes it to
+  /// the active "Kreis" context (or, when null, the public pool).
   Future<List<Activity>> getActivitiesForDate({
     required DateTime date,
     required String excludeUserId,
+    String? circleId,
   }) async {
     final dateStr = _formatDate(date);
-    final rows = await _client
+    var query = _client
         .from('activities')
         .select()
         .eq('day_of_week', date.weekday)
         .eq('is_active', true)
-        .neq('user_id', excludeUserId)
+        .neq('user_id', excludeUserId);
+    query = circleId == null
+        ? query.isFilter('circle_id', null)
+        : query.eq('circle_id', circleId);
+    final rows = await query
         .or('specific_date.is.null,specific_date.eq.$dateStr')
         .order('start_time');
     return rows.map((m) => Activity.fromMap(m)).toList();
@@ -72,6 +92,7 @@ class ActivityService {
     String? level,
     String? bikeType,
     DateTime? specificDate,
+    String? circleId,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -96,6 +117,7 @@ class ActivityService {
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),
+          'circle_id': circleId,
         })
         .select()
         .single();

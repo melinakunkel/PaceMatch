@@ -5,6 +5,7 @@ import '../../models/activity.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../services/activity_service.dart';
+import '../../services/circle_controller.dart';
 import '../../services/group_service.dart';
 import '../../services/like_service.dart';
 import '../../services/match_notifier.dart';
@@ -68,7 +69,10 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     super.initState();
     _future = _load();
     MatchNotifier.markSeen();
+    CircleController.active.addListener(_onCircleChanged);
   }
+
+  void _onCircleChanged() => _refresh();
 
   @override
   void didChangeDependencies() {
@@ -80,6 +84,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
+    CircleController.active.removeListener(_onCircleChanged);
     super.dispose();
   }
 
@@ -96,7 +101,10 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
 
   Future<_HubData> _load() async {
     final userId = SupabaseService.currentUserId!;
-    final activities = await _activityService.getMyActivities(userId);
+    final activities = await _activityService.getMyActivities(
+      userId,
+      circleId: CircleController.active.value?.id,
+    );
     final activityIds = activities.map((a) => a.id).toSet();
     final buddies = await _likeService.getBuddies(userId);
     final buddyProfiles = await _profileService.getProfilesByIds(

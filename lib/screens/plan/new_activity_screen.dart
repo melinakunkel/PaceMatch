@@ -6,6 +6,7 @@ import '../../models/picked_location.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
+import '../../services/circle_controller.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -214,6 +215,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             level: level,
             bikeType: bikeType,
             specificDate: specificDate,
+            circleId: CircleController.active.value?.id,
           ),
         );
       }
@@ -254,6 +256,34 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
           children: [
+            if (!widget.isEditing)
+              ValueListenableBuilder(
+                valueListenable: CircleController.active,
+                builder: (context, circle, _) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        circle == null
+                            ? Icons.public_outlined
+                            : Icons.groups_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        circle == null
+                            ? 'Wird veröffentlicht: Öffentlich'
+                            : 'Wird veröffentlicht in: ${circle.name}',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const _SectionLabel('Sportart'),
             Wrap(
               spacing: 8,

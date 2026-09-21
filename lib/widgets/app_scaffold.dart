@@ -5,6 +5,7 @@ import '../screens/profile/settings_screen.dart';
 import '../services/match_notifier.dart';
 import '../services/unread_controller.dart';
 import '../theme/app_theme.dart';
+import 'circle_switcher.dart';
 
 /// Shared bottom-nav scaffold for the 5 main tabs (Entdecken, Plan, Matches,
 /// Chat, Profil). Home and Settings aren't tabs — they're reached via the
@@ -44,6 +45,7 @@ class AppScaffold extends StatelessWidget {
               title: Text(title!),
               actions: [
                 ...?actions,
+                const CircleSwitcherButton(),
                 IconButton(
                   icon: const Icon(Icons.home_outlined),
                   tooltip: 'Home',

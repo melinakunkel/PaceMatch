@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'router/app_router.dart';
+import 'services/circle_controller.dart';
 import 'services/match_notifier.dart';
 import 'services/profile_service.dart';
 import 'services/supabase_service.dart';
@@ -38,9 +39,11 @@ class _SamepaceAppState extends State<SamepaceApp> {
         MatchNotifier.startListening();
         MatchNotifier.refresh();
         _syncThemeFromProfile();
+        CircleController.loadSaved();
       } else {
         UnreadController.stopListening();
         MatchNotifier.stopListening();
+        CircleController.reset();
       }
     });
     if (SupabaseService.currentUserId != null) {
@@ -49,6 +52,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
       MatchNotifier.startListening();
       MatchNotifier.refresh();
       _syncThemeFromProfile();
+      CircleController.loadSaved();
     }
   }
 

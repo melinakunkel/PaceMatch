@@ -17,6 +17,7 @@ class MatchService {
     final candidates = await _activityService.getActivitiesForSport(
       sport: myActivity.sport,
       excludeUserId: myActivity.userId,
+      circleId: myActivity.circleId,
     );
 
     final sameDay = candidates

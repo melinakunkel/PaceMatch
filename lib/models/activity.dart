@@ -45,6 +45,10 @@ class Activity {
   /// plain weekly recurrence on [dayOfWeek].
   final DateTime? specificDate;
 
+  /// The private "Kreis" this activity belongs to, if any — null means it's
+  /// part of the public pool, visible and matchable for everyone.
+  final String? circleId;
+
   Activity({
     required this.id,
     required this.userId,
@@ -64,6 +68,7 @@ class Activity {
     this.level,
     this.bikeType,
     this.specificDate,
+    this.circleId,
   });
 
   bool get isRecurring => specificDate == null;
@@ -115,6 +120,7 @@ class Activity {
     specificDate: map['specific_date'] == null
         ? null
         : DateTime.parse(map['specific_date'] as String),
+    circleId: map['circle_id'] as String?,
   );
 
   static TimeOfDay _parseTime(String raw) {

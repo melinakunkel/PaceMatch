@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/activity.dart';
 import '../../services/activity_service.dart';
+import '../../services/circle_controller.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
@@ -35,7 +36,16 @@ class _PlanScreenState extends State<PlanScreen> {
     _load();
     _loadViewMode();
     _loadHourRange();
+    CircleController.active.addListener(_onCircleChanged);
   }
+
+  @override
+  void dispose() {
+    CircleController.active.removeListener(_onCircleChanged);
+    super.dispose();
+  }
+
+  void _onCircleChanged() => _refresh();
 
   Future<void> _loadViewMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -126,7 +136,10 @@ class _PlanScreenState extends State<PlanScreen> {
 
   void _load() {
     final userId = SupabaseService.currentUserId!;
-    _future = _activityService.getMyActivities(userId);
+    _future = _activityService.getMyActivities(
+      userId,
+      circleId: CircleController.active.value?.id,
+    );
   }
 
   Future<void> _refresh() async {
