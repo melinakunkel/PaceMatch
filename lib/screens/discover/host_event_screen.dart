@@ -10,6 +10,7 @@ import '../../services/open_event_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/safe_pop.dart';
 import '../plan/location_picker_screen.dart';
 
 /// Lets a user host a publicly joinable open event — distinct from a 1:1
@@ -112,7 +113,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => safeBack(context, '/discover'),
         ),
         title: Text(t('hostEvent.title')),
       ),

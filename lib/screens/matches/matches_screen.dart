@@ -15,6 +15,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/safe_pop.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 
@@ -120,7 +121,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => safeBack(context, '/matches'),
         ),
         title: Text(
           _activity == null

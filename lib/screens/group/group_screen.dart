@@ -16,6 +16,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/safe_pop.dart';
 import '../plan/location_picker_screen.dart';
 import 'report_user_dialog.dart';
 
@@ -218,7 +219,7 @@ class _GroupScreenState extends State<GroupScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => safeBack(context, '/chat'),
         ),
         title: Text(group.name),
         actions: [

@@ -13,6 +13,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
+import '../../utils/safe_pop.dart';
 import '../../widgets/pace_picker_field.dart';
 import 'location_picker_screen.dart';
 
@@ -256,7 +257,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => safeBack(context, '/plan'),
         ),
         title: Text(
           widget.isEditing

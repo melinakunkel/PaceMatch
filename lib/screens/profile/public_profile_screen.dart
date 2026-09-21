@@ -11,6 +11,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/safe_pop.dart';
 import '../../widgets/verified_badge.dart';
 
 /// Read-only view of another user's profile, reachable by tapping their
@@ -99,7 +100,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => safeBack(context, '/'),
         ),
         title: Text(_profile?.fullName ?? t('publicProfile.title')),
       ),
