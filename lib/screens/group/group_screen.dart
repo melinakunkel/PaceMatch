@@ -16,6 +16,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/calendar_export.dart';
 import '../../utils/safe_pop.dart';
 import '../plan/location_picker_screen.dart';
 import 'report_user_dialog.dart';
@@ -206,6 +207,52 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 
+  Future<void> _addToCalendar() async {
+    final group = _group;
+    final meetingTime = group?.meetingTime;
+    if (group == null || meetingTime == null) return;
+    final end = meetingTime.add(const Duration(hours: 1));
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: Text(t('group.addToCalendarGoogle')),
+              onTap: () => Navigator.of(context).pop('google'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.event),
+              title: Text(t('group.addToCalendarIcs')),
+              onTap: () => Navigator.of(context).pop('ics'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) return;
+    final uri = choice == 'google'
+        ? Uri.parse(
+            buildGoogleCalendarUrl(
+              title: group.name,
+              start: meetingTime,
+              end: end,
+              location: group.meetingPoint,
+            ),
+          )
+        : Uri.parse(
+            buildIcsDataUri(
+              title: group.name,
+              start: meetingTime,
+              end: end,
+              location: group.meetingPoint,
+            ),
+          );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading || _group == null) {
@@ -349,6 +396,24 @@ class _GroupScreenState extends State<GroupScreen> {
                             ),
                           ],
                         ],
+                      ),
+                    ),
+                  if (group.meetingTime != null &&
+                      group.meetingTime!.isAfter(DateTime.now()))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: _addToCalendar,
+                          icon: const Icon(Icons.calendar_month, size: 18),
+                          label: Text(t('group.addToCalendar')),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
                       ),
                     ),
                 ],

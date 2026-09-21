@@ -17,6 +17,14 @@ class LikeService {
     return result as bool;
   }
 
+  /// Undoes a like sent by mistake (swipe "rewind") — a no-op if the other
+  /// side has already liked back, since that's a completed match and can't
+  /// be silently undone.
+  Future<void> unlike(String toUser) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.rpc('unlike_user', params: {'target': toUser});
+  }
+
   /// Everyone the current user has mutually liked — a "Sportbuddy"
   /// connection — newest first. A mutual pair "connects" at whichever of the
   /// two likes came second.

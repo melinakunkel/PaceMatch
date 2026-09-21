@@ -267,6 +267,9 @@ const _de = <String, String>{
   'locationPicker.title': 'Ort auswählen',
   'locationPicker.search': 'Ort suchen, z.B. Prater',
   'locationPicker.confirm': 'Diesen Ort übernehmen',
+  'locationPicker.saveFavorite': 'Als Favorit merken',
+  'locationPicker.favoriteSaved': 'Als Favorit gespeichert.',
+  'locationPicker.favoriteSaveFailed': 'Fehlgeschlagen: {error}',
 
   // Discover screen (Entdecken).
   'discover.contactFailed': 'Kontakt fehlgeschlagen: {error}',
@@ -351,6 +354,7 @@ const _de = <String, String>{
   'matches.emptyHint': 'Sobald jemand eine ähnliche Sportzeit einträgt, erscheint er oder sie hier.',
   'matches.noMoreSuggestions':
       'Keine weiteren Vorschläge — schau später nochmal vorbei.',
+  'matches.undoLast': 'Letztes rückgängig machen',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',
   'matches.celebration.title': 'Ihr seid jetzt Sportbuddys!',
@@ -408,6 +412,9 @@ const _de = <String, String>{
   'group.openInOsm': 'In OpenStreetMap öffnen',
   'group.reportUser': 'Person melden',
   'group.setMeetingPoint': 'Treffpunkt auf der Karte festlegen',
+  'group.addToCalendar': 'Zum Kalender hinzufügen',
+  'group.addToCalendarGoogle': 'Google Kalender',
+  'group.addToCalendarIcs': 'Andere Kalender-App (.ics)',
   'group.didMeetingHappen': 'Hat das Treffen stattgefunden?',
   'group.checkinHint': 'Sag kurz Bescheid, ob du dabei warst — das hält deinen Zuverlässigkeits-Score aktuell.',
   'group.couldNotMake': 'Konnte nicht',
@@ -754,6 +761,9 @@ const _en = <String, String>{
   'locationPicker.title': 'Pick a location',
   'locationPicker.search': 'Search for a place, e.g. Central Park',
   'locationPicker.confirm': 'Use this location',
+  'locationPicker.saveFavorite': 'Save as favorite',
+  'locationPicker.favoriteSaved': 'Saved as favorite.',
+  'locationPicker.favoriteSaveFailed': 'Failed: {error}',
 
   'discover.contactFailed': 'Contact failed: {error}',
   'discover.groupNameWith': '{sport} with {name}',
@@ -829,6 +839,7 @@ const _en = <String, String>{
   'matches.emptyHint':
       'As soon as someone adds a similar sport time, they\'ll show up here.',
   'matches.noMoreSuggestions': 'No more suggestions — check back later.',
+  'matches.undoLast': 'Undo last swipe',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',
   'matches.celebration.title': 'You\'re Sportbuddys now!',
@@ -882,6 +893,9 @@ const _en = <String, String>{
   'group.openInOsm': 'Open in OpenStreetMap',
   'group.reportUser': 'Report user',
   'group.setMeetingPoint': 'Set a meeting point on the map',
+  'group.addToCalendar': 'Add to calendar',
+  'group.addToCalendarGoogle': 'Google Calendar',
+  'group.addToCalendarIcs': 'Other calendar app (.ics)',
   'group.didMeetingHappen': 'Did the meetup happen?',
   'group.checkinHint': 'Let us know if you made it — this keeps your reliability score up to date.',
   'group.couldNotMake': 'Couldn\'t make it',

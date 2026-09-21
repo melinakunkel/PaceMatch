@@ -6,11 +6,14 @@ import 'package:latlong2/latlong.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/picked_location.dart';
+import '../../models/saved_location.dart';
 import '../../services/geocoding_service.dart';
+import '../../services/saved_location_service.dart';
 import '../../theme/app_theme.dart';
 
 /// Full-screen OpenStreetMap picker: search a place, tap the map to fine-tune
-/// the pin, confirm to return a [PickedLocation].
+/// the pin, confirm to return a [PickedLocation]. Also offers the user's
+/// saved "favorite" locations as a shortcut past the search.
 class LocationPickerScreen extends StatefulWidget {
   const LocationPickerScreen({super.key, this.initial});
 
@@ -24,6 +27,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   static const _viennaFallback = LatLng(48.2082, 16.3738);
 
   final _geocoding = GeocodingService();
+  final _savedLocationService = SavedLocationService();
   final _searchCtrl = TextEditingController();
   final _mapController = MapController();
 
@@ -33,6 +37,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   LatLng? _picked;
   String? _pickedName;
+  bool _saving = false;
+
+  late Future<List<SavedLocation>> _savedFuture = _savedLocationService
+      .getSavedLocations();
 
   @override
   void initState() {
@@ -95,6 +103,57 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
       _searchCtrl.text = _pickedName!;
     });
+  }
+
+  Future<void> _saveFavorite() async {
+    if (_picked == null || _saving) return;
+    final name = _searchCtrl.text.trim().isNotEmpty
+        ? _searchCtrl.text.trim()
+        : (_pickedName ??
+              '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}');
+    setState(() => _saving = true);
+    try {
+      await _savedLocationService.saveLocation(
+        PickedLocation(
+          name: name,
+          latitude: _picked!.latitude,
+          longitude: _picked!.longitude,
+        ),
+      );
+      if (!mounted) return;
+      setState(() => _savedFuture = _savedLocationService.getSavedLocations());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('locationPicker.favoriteSaved'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t('locationPicker.favoriteSaveFailed', {'error': '$e'}),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _deleteFavorite(SavedLocation saved) async {
+    try {
+      await _savedLocationService.deleteSavedLocation(saved.id);
+      if (!mounted) return;
+      setState(() => _savedFuture = _savedLocationService.getSavedLocations());
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t('locationPicker.favoriteSaveFailed', {'error': '$e'}),
+          ),
+        ),
+      );
+    }
   }
 
   void _confirm() {
@@ -222,6 +281,45 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         );
                       },
                     ),
+                  )
+                else
+                  FutureBuilder<List<SavedLocation>>(
+                    future: _savedFuture,
+                    builder: (context, snapshot) {
+                      final saved = snapshot.data ?? [];
+                      if (saved.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 8),
+                          ],
+                        ),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: saved.map((s) {
+                            return InputChip(
+                              avatar: const Icon(Icons.star, size: 16),
+                              label: Text(
+                                s.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onPressed: () =>
+                                  _selectResult(s.toPickedLocation()),
+                              onDeleted: () => _deleteFavorite(s),
+                              deleteIcon: const Icon(Icons.close, size: 16),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
               ],
             ),
@@ -230,10 +328,28 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: _picked == null ? null : _confirm,
-            child: Text(t('locationPicker.confirm')),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            children: [
+              IconButton.outlined(
+                onPressed: _picked == null || _saving ? null : _saveFavorite,
+                tooltip: t('locationPicker.saveFavorite'),
+                icon: _saving
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.star_outline),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _picked == null ? null : _confirm,
+                  child: Text(t('locationPicker.confirm')),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -41,6 +41,16 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool _loading = true;
   String? _error;
 
+  // Rewind state for the most recent swipe only (matches the standard
+  // "undo last swipe" behavior in swipe apps, not a full history).
+  MatchCandidate? _lastSwiped;
+  bool _lastLiked = false;
+  bool _lastPending = false;
+  bool _lastMutual = false;
+
+  bool get _canUndo =>
+      _lastSwiped != null && !_lastPending && !_lastMutual && _topIndex > 0;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +78,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         _candidates = candidates;
         _theirSports = theirSports;
         _topIndex = 0;
+        _lastSwiped = null;
       });
     } catch (e) {
       setState(() => _error = t('matches.loadFailed'));
@@ -77,7 +88,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 
   Future<void> _swipe(MatchCandidate candidate, bool liked) async {
-    setState(() => _topIndex++);
+    setState(() {
+      _topIndex++;
+      _lastSwiped = candidate;
+      _lastLiked = liked;
+      _lastMutual = false;
+      _lastPending = liked;
+    });
     if (!liked) return;
     // Every right-swipe must reach the server, even if a previous one
     // (from a fast double-swipe) is still in flight — this used to bail
@@ -89,7 +106,16 @@ class _MatchesScreenState extends State<MatchesScreen> {
         toUser: candidate.profile.id,
         activityId: _activity?.id,
       );
-      if (!mounted || !mutual) return;
+      if (!mounted) return;
+      // Only this swipe's own pending/mutual flags — a faster later swipe
+      // may already have replaced _lastSwiped by the time this resolves.
+      if (identical(_lastSwiped, candidate)) {
+        setState(() {
+          _lastPending = false;
+          _lastMutual = mutual;
+        });
+      }
+      if (!mutual) return;
       MatchNotifier.refresh();
       // Only guard the celebration dialog against overlapping popups if two
       // connections land back to back.
@@ -102,6 +128,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      if (identical(_lastSwiped, candidate)) {
+        setState(() => _lastPending = false);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t('matches.somethingWentWrong', {'error': '$e'})),
@@ -109,6 +138,25 @@ class _MatchesScreenState extends State<MatchesScreen> {
       );
     } finally {
       _celebrating = false;
+    }
+  }
+
+  /// Rewinds the most recent swipe — for a "like", also removes the like
+  /// sent for it, unless it already became a mutual match.
+  Future<void> _undo() async {
+    if (!_canUndo) return;
+    final candidate = _lastSwiped!;
+    final wasLiked = _lastLiked;
+    setState(() {
+      _topIndex--;
+      _lastSwiped = null;
+    });
+    if (wasLiked) {
+      try {
+        await _likeService.unlike(candidate.profile.id);
+      } catch (_) {
+        // Best-effort — worst case the like just stays recorded.
+      }
     }
   }
 
@@ -211,6 +259,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
+                        if (_canUndo) ...[
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: _undo,
+                            icon: const Icon(Icons.undo),
+                            label: Text(t('matches.undoLast')),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -258,6 +314,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _RoundActionButton(
+                  icon: Icons.undo,
+                  color: AppColors.textSecondary,
+                  size: 22,
+                  tooltip: t('matches.undoLast'),
+                  onPressed: _canUndo ? _undo : null,
+                ),
+                const SizedBox(width: 20),
+                _RoundActionButton(
                   icon: Icons.close,
                   color: AppColors.danger,
                   onPressed: () => _swipe(_candidates[_topIndex], false),
@@ -281,27 +345,34 @@ class _RoundActionButton extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onPressed,
+    this.size = 28,
+    this.tooltip,
   });
 
   final IconData icon;
   final Color color;
   final VoidCallback? onPressed;
+  final double size;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final disabled = onPressed == null;
+    final effectiveColor = disabled ? AppColors.border : color;
+    final button = Material(
       color: Colors.white,
-      shape: CircleBorder(side: BorderSide(color: color, width: 2)),
-      elevation: 2,
+      shape: CircleBorder(side: BorderSide(color: effectiveColor, width: 2)),
+      elevation: disabled ? 0 : 2,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Icon(icon, color: color, size: 28),
+          child: Icon(icon, color: effectiveColor, size: size),
         ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 
