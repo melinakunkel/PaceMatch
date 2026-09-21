@@ -9,6 +9,7 @@ import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/group_service.dart';
 import '../../services/like_service.dart';
+import '../../services/match_pass_service.dart';
 import '../../services/match_service.dart';
 import '../../services/match_notifier.dart';
 import '../../services/profile_service.dart';
@@ -34,6 +35,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final _matchService = MatchService();
   final _profileService = ProfileService();
   final _likeService = LikeService();
+  final _matchPassService = MatchPassService();
   final _groupService = GroupService();
 
   Activity? _activity;
@@ -42,11 +44,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   /// Liked this session (right-swiped or liked from the list) — removed from
   /// [_pending] immediately so it can't be shown again without reloading.
-  /// Passing on someone is *not* tracked here: it only advances [_topIndex]
-  /// in swipe mode, so a passed candidate can still be liked later from the
-  /// list view — nothing is permanently hidden just for being skipped once.
   final Set<String> _likedThisSession = {};
-  int _topIndex = 0;
+
+  /// Passed on (left-swiped), loaded from and persisted to the server —
+  /// unlike a like, this only ever affects [_swipeable]: the list view still
+  /// shows a passed candidate, since only a like should hide someone for
+  /// good. Passing is a "not now", not a permanent verdict.
+  Set<String> _passedIds = {};
+
   bool _listView = false;
   bool _celebrating = false;
   bool _loading = true;
@@ -62,11 +67,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool get _canUndo => _lastSwiped != null && !_lastPending && !_lastMutual;
 
   /// Candidates still to decide on — liked ones drop out immediately;
-  /// passed ones stay (just skipped over in swipe mode) so the list view can
-  /// still offer them.
+  /// passed ones stay so the list view can still offer them.
   List<MatchCandidate> get _pending => _candidates
       .where((c) => !_likedThisSession.contains(c.profile.id))
       .toList();
+
+  /// What the swipe view shows — [_pending] minus anyone already passed on.
+  List<MatchCandidate> get _swipeable =>
+      _pending.where((c) => !_passedIds.contains(c.profile.id)).toList();
 
   @override
   void initState() {
@@ -90,11 +98,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
               candidates.map((c) => c.profile.id).toList(),
               activity.sport,
             );
+      final passedIds = await _matchPassService.passedUserIdsForActivity(
+        activity.id,
+      );
       setState(() {
         _activity = activity;
         _candidates = candidates;
         _theirSports = theirSports;
-        _topIndex = 0;
+        _passedIds = passedIds;
         _likedThisSession.clear();
         _lastSwiped = null;
       });
@@ -149,14 +160,30 @@ class _MatchesScreenState extends State<MatchesScreen> {
       if (liked) {
         _likedThisSession.add(candidate.profile.id);
       } else {
-        _topIndex++;
+        _passedIds = {..._passedIds, candidate.profile.id};
       }
       _lastSwiped = candidate;
       _lastLiked = liked;
       _lastMutual = false;
-      _lastPending = liked;
+      _lastPending = true;
     });
-    if (!liked) return;
+    if (!liked) {
+      // Best-effort — a failed pass just means this candidate might come
+      // back after a reload, not a broken swipe.
+      try {
+        await _matchPassService.recordPass(
+          targetId: candidate.profile.id,
+          activityId: widget.activityId,
+        );
+      } catch (_) {
+        // ignore
+      } finally {
+        if (identical(_lastSwiped, candidate) && mounted) {
+          setState(() => _lastPending = false);
+        }
+      }
+      return;
+    }
     // Every right-swipe must reach the server, even if a previous one
     // (from a fast double-swipe) is still in flight — this used to bail
     // out early via a busy check and silently drop the like, so a quick
@@ -204,8 +231,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-  /// Rewinds the most recent swipe — for a "like", also removes the like
-  /// sent for it, unless it already became a mutual match.
+  /// Rewinds the most recent swipe — removes the like or pass that was
+  /// recorded for it, unless it already became a mutual match.
   Future<void> _undo() async {
     if (!_canUndo) return;
     final candidate = _lastSwiped!;
@@ -214,16 +241,21 @@ class _MatchesScreenState extends State<MatchesScreen> {
       if (wasLiked) {
         _likedThisSession.remove(candidate.profile.id);
       } else {
-        _topIndex--;
+        _passedIds = {..._passedIds}..remove(candidate.profile.id);
       }
       _lastSwiped = null;
     });
-    if (wasLiked) {
-      try {
+    try {
+      if (wasLiked) {
         await _likeService.unlike(candidate.profile.id);
-      } catch (_) {
-        // Best-effort — worst case the like just stays recorded.
+      } else {
+        await _matchPassService.removePass(
+          targetId: candidate.profile.id,
+          activityId: widget.activityId,
+        );
       }
+    } catch (_) {
+      // Best-effort — worst case the decision just stays recorded.
     }
   }
 
@@ -356,8 +388,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Widget _buildSwipeBody() {
     final activity = _activity!;
-    final pending = _pending;
-    final remaining = pending.length - _topIndex;
+    final swipeable = _swipeable;
     return Column(
       children: [
         _buildHeader(activity),
@@ -369,7 +400,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child: Text(
               _candidates.isEmpty
                   ? t('matches.noneFoundYet')
-                  : remaining > 0
+                  : swipeable.isNotEmpty
                   ? t('matches.swipePrompt')
                   : t('matches.allDoneForToday'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -389,7 +420,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                     ),
                   ),
                 )
-              : remaining <= 0
+              : swipeable.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
@@ -415,7 +446,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             label: Text(t('matches.undoLast')),
                           ),
                         ],
-                        if (pending.isNotEmpty) ...[
+                        if (_pending.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           TextButton.icon(
                             onPressed: () => setState(() => _listView = true),
@@ -432,17 +463,17 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   child: Stack(
                     children: [
                       for (
-                        var i = (_topIndex + 2).clamp(0, pending.length) - 1;
-                        i >= _topIndex;
+                        var i = swipeable.length.clamp(0, 2) - 1;
+                        i >= 0;
                         i--
                       )
-                        if (i == _topIndex)
+                        if (i == 0)
                           _SwipeCard(
-                            key: ValueKey(pending[i].profile.id),
-                            onSwiped: (liked) => _swipe(pending[i], liked),
+                            key: ValueKey(swipeable[i].profile.id),
+                            onSwiped: (liked) => _swipe(swipeable[i], liked),
                             child: _MatchCard(
-                              candidate: pending[i],
-                              theirSport: _theirSports[pending[i].profile.id],
+                              candidate: swipeable[i],
+                              theirSport: _theirSports[swipeable[i].profile.id],
                             ),
                           )
                         else
@@ -451,8 +482,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             child: Opacity(
                               opacity: 0.6,
                               child: _MatchCard(
-                                candidate: pending[i],
-                                theirSport: _theirSports[pending[i].profile.id],
+                                candidate: swipeable[i],
+                                theirSport:
+                                    _theirSports[swipeable[i].profile.id],
                               ),
                             ),
                           ),
@@ -460,7 +492,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   ),
                 ),
         ),
-        if (_candidates.isNotEmpty && remaining > 0)
+        if (_candidates.isNotEmpty && swipeable.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: Row(
@@ -477,13 +509,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 _RoundActionButton(
                   icon: Icons.close,
                   color: AppColors.danger,
-                  onPressed: () => _swipe(pending[_topIndex], false),
+                  onPressed: () => _swipe(swipeable.first, false),
                 ),
                 const SizedBox(width: 32),
                 _RoundActionButton(
                   icon: Icons.favorite,
                   color: AppColors.secondary,
-                  onPressed: () => _swipe(pending[_topIndex], true),
+                  onPressed: () => _swipe(swipeable.first, true),
                 ),
               ],
             ),
