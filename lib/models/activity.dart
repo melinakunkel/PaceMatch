@@ -54,6 +54,9 @@ class Activity {
   /// Only set for [SportType.radfahren].
   final String? bikeType;
 
+  /// 'normal' / 'longRun' / 'speedRun' — only set for [SportType.laufen].
+  final String? runType;
+
   /// Set for a one-off activity on this exact calendar date; null for a
   /// plain weekly recurrence on [dayOfWeek].
   final DateTime? specificDate;
@@ -80,6 +83,7 @@ class Activity {
     this.venueStatus,
     this.level,
     this.bikeType,
+    this.runType,
     this.specificDate,
     this.circleId,
   });
@@ -130,6 +134,7 @@ class Activity {
     venueStatus: map['venue_status'] as String?,
     level: map['level'] as String?,
     bikeType: map['bike_type'] as String?,
+    runType: map['run_type'] as String?,
     specificDate: map['specific_date'] == null
         ? null
         : DateTime.parse(map['specific_date'] as String),
@@ -151,12 +156,13 @@ class Activity {
   String get dayShortLabel => weekdayLabels[dayOfWeek - 1];
 
   String? get venueStatusLabel => switch (venueStatus) {
-    'has_venue' => 'Hat schon einen Platz',
-    'needs_venue' => 'Sucht noch einen Platz',
+    'has_venue' => t('newActivity.hasVenueYes'),
+    'needs_venue' => t('newActivity.hasVenueNo'),
     _ => null,
   };
 
   String? get bikeTypeLabel => BikeType.fromDb(bikeType)?.label;
+  String? get runTypeLabel => RunType.fromDb(runType)?.label;
 
   bool get hasVenue => venueStatus == 'has_venue';
   bool get needsVenue => venueStatus == 'needs_venue';

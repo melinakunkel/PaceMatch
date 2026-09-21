@@ -503,6 +503,12 @@ const _de = <String, String>{
   'verifiedBadge.tooltip': 'Verifiziertes Profil',
   'pacePicker.minutes': '{m} min',
   'pacePicker.seconds': '{s} sek',
+
+  // Run type (Laufen).
+  'newActivity.runType': 'Lauf-Typ',
+  'runType.normal': 'Normaler Lauf',
+  'runType.longRun': 'Long Run',
+  'runType.speedRun': 'Speed Run',
 };
 
 const _en = <String, String>{
@@ -944,4 +950,9 @@ const _en = <String, String>{
   'verifiedBadge.tooltip': 'Verified profile',
   'pacePicker.minutes': '{m} min',
   'pacePicker.seconds': '{s} sec',
+
+  'newActivity.runType': 'Run type',
+  'runType.normal': 'Normal Run',
+  'runType.longRun': 'Long Run',
+  'runType.speedRun': 'Speed Run',
 };

@@ -8,6 +8,7 @@ import '../../services/activity_service.dart';
 import '../../services/circle_controller.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/activity_stats.dart';
 import '../../widgets/app_scaffold.dart';
 import 'new_activity_screen.dart';
 
@@ -365,57 +366,102 @@ class _DayList extends StatelessWidget {
       itemCount: activities.length,
       itemBuilder: (context, index) {
         final a = activities[index];
+        final stats = activityStatsLabel(a, null);
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.secondaryLight,
-              child: Icon(a.sport.icon, color: AppColors.primary),
-            ),
-            title: Text(
-              '${a.timeRangeLabel}  ·  ${a.sport.label}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              a.isRecurring
-                  ? (a.locationName ?? t('plan.noFixedLocation'))
-                  : t('plan.oneOffLocation', {
-                      'date': a.specificDateLabel,
-                      'location': a.locationName ?? t('plan.noFixedLocation'),
-                    }),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.people_outline, color: AppColors.secondary),
-                  tooltip: t('plan.showMatches'),
-                  onPressed: () => context.push('/matches/${a.id}'),
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  onSelected: (value) async {
-                    if (value == 'edit') {
-                      await _editActivity(context, a);
-                      onDeleted();
-                    } else if (value == 'delete') {
-                      if (await _confirmDeleteActivity(context, a)) {
-                        onDeleted();
-                      }
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(value: 'edit', child: Text(t('common.edit'))),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(t('common.delete')),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _showActivitySheet(context, a, onDeleted),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppColors.secondaryLight,
+                    child: Icon(a.sport.icon, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a.sport.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              a.timeRangeLabel,
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.place_outlined,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                a.isRecurring
+                                    ? (a.locationName ??
+                                          t('plan.noFixedLocation'))
+                                    : t('plan.oneOffLocation', {
+                                        'date': a.specificDateLabel,
+                                        'location':
+                                            a.locationName ??
+                                            t('plan.noFixedLocation'),
+                                      }),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (stats != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            stats,
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.people_outline,
+                      color: AppColors.secondary,
+                    ),
+                    tooltip: t('plan.showMatches'),
+                    onPressed: () => context.push('/matches/${a.id}'),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -839,6 +885,17 @@ Future<void> _showActivitySheet(
                     }),
               style: TextStyle(color: AppColors.textSecondary),
             ),
+            if (activityStatsLabel(a, null) != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                activityStatsLabel(a, null)!,
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               children: [

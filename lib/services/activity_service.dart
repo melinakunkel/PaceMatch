@@ -91,6 +91,7 @@ class ActivityService {
     String? venueStatus,
     String? level,
     String? bikeType,
+    String? runType,
     DateTime? specificDate,
     String? circleId,
   }) async {
@@ -114,6 +115,7 @@ class ActivityService {
           'venue_status': venueStatus,
           'level': level,
           'bike_type': bikeType,
+          'run_type': runType,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),
@@ -146,6 +148,7 @@ class ActivityService {
     String? venueStatus,
     String? level,
     String? bikeType,
+    String? runType,
     DateTime? specificDate,
   }) async {
     await SupabaseService.ensureFreshSession();
@@ -167,6 +170,7 @@ class ActivityService {
           'venue_status': venueStatus,
           'level': level,
           'bike_type': bikeType,
+          'run_type': runType,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),

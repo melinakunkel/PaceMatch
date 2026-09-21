@@ -72,6 +72,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late String? _venueStatus = widget.existing?.venueStatus;
   late String? _level = widget.existing?.level;
   late String? _bikeType = widget.existing?.bikeType;
+  late String? _runType = widget.existing?.runType;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
   bool _saving = false;
@@ -167,6 +168,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final venueStatus = _sport.usesVenueQuestion ? _venueStatus : null;
       final level = _sport.usesPace ? null : _level;
       final bikeType = _sport.usesBikeType ? _bikeType : null;
+      final runType = _sport.usesRunType ? _runType : null;
       final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
@@ -187,6 +189,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           venueStatus: venueStatus,
           level: level,
           bikeType: bikeType,
+          runType: runType,
           specificDate: specificDate,
         );
         if (!mounted) return;
@@ -216,6 +219,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             venueStatus: venueStatus,
             level: level,
             bikeType: bikeType,
+            runType: runType,
             specificDate: specificDate,
             circleId: CircleController.active.value?.id,
           ),
@@ -349,6 +353,23 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     label: Text(b.label),
                     selected: _bikeType == b.name,
                     onSelected: (_) => setState(() => _bikeType = b.name),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (_sport.usesRunType) ...[
+              const SizedBox(height: 20),
+              _SectionLabel(t('newActivity.runType')),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: RunType.values.map((r) {
+                  final selected = _runType == r.name;
+                  return ChoiceChip(
+                    label: Text(r.label),
+                    selected: selected,
+                    onSelected: (_) =>
+                        setState(() => _runType = selected ? null : r.name),
                   );
                 }).toList(),
               ),

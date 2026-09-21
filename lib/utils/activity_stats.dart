@@ -28,6 +28,9 @@ String? activityStatsLabel(Activity activity, UserSport? theirSport) {
   if (activity.bikeTypeLabel != null) {
     parts.add(activity.bikeTypeLabel!);
   }
+  if (activity.runTypeLabel != null) {
+    parts.add(activity.runTypeLabel!);
+  }
   return parts.isEmpty ? null : parts.join(' · ');
 }
 

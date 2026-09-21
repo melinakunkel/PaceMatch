@@ -86,6 +86,9 @@ enum SportType {
 
   /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
   bool get usesBikeType => this == SportType.radfahren;
+
+  /// Whether a run type (normal/long run/speed run) makes sense to ask.
+  bool get usesRunType => this == SportType.laufen;
 }
 
 enum BikeType {
@@ -115,6 +118,31 @@ enum BikeType {
         return t('bikeType.trekking');
       case BikeType.ebike:
         return t('bikeType.ebike');
+    }
+  }
+}
+
+enum RunType {
+  normal,
+  longRun,
+  speedRun;
+
+  static RunType? fromDb(String? value) {
+    if (value == null) return null;
+    for (final r in RunType.values) {
+      if (r.name == value) return r;
+    }
+    return null;
+  }
+
+  String get label {
+    switch (this) {
+      case RunType.normal:
+        return t('runType.normal');
+      case RunType.longRun:
+        return t('runType.longRun');
+      case RunType.speedRun:
+        return t('runType.speedRun');
     }
   }
 }

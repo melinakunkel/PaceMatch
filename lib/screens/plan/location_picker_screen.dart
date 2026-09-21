@@ -99,11 +99,17 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   void _confirm() {
     if (_picked == null) return;
+    // Prefer whatever's actually in the text field: if reverse geocoding
+    // failed (or the user just prefers a different name) they may have
+    // typed over the pre-filled value, and that edit was otherwise silently
+    // discarded in favor of the stale [_pickedName].
+    final typed = _searchCtrl.text.trim();
     Navigator.of(context).pop(
       PickedLocation(
-        name:
-            _pickedName ??
-            '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}',
+        name: typed.isNotEmpty
+            ? typed
+            : (_pickedName ??
+                  '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}'),
         latitude: _picked!.latitude,
         longitude: _picked!.longitude,
       ),
