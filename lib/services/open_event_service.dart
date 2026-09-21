@@ -109,6 +109,36 @@ class OpenEventService {
   Future<void> joinEvent({required String groupId, required String userId}) =>
       _groupService.joinGroup(groupId: groupId, userId: userId);
 
+  /// Only name/description/maxParticipants are editable — sport, date/time
+  /// and location stay fixed once people have joined based on them. Also
+  /// renames the event's group chat to match, so the two don't drift apart.
+  Future<void> updateEvent({
+    required String id,
+    required String groupId,
+    required String name,
+    String? description,
+    int? maxParticipants,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('open_events')
+        .update({
+          'name': name,
+          'description': description,
+          'max_participants': maxParticipants,
+        })
+        .eq('id', id);
+    await _client.from('groups').update({'name': name}).eq('id', groupId);
+  }
+
+  /// Removes the event from Entdecken — the group chat (and anyone already
+  /// in it) is left untouched, since people may still want to reach each
+  /// other, e.g. to say the event is cancelled.
+  Future<void> deleteEvent(String id) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.from('open_events').delete().eq('id', id);
+  }
+
   static String _dateStr(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

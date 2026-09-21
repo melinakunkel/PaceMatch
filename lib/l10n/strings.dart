@@ -53,6 +53,7 @@ const _de = <String, String>{
   'forgotPassword.sendFailed': 'Konnte nicht gesendet werden: {error}',
   'forgotPassword.send': 'Link senden',
   'common.cancel': 'Abbrechen',
+  'common.save': 'Speichern',
   'common.close': 'Schließen',
 
   // Reset-password screen.
@@ -296,6 +297,13 @@ const _de = <String, String>{
   'discover.full': 'Voll',
   'discover.join': 'Teilnehmen',
   'discover.contact': 'Kontaktieren',
+  'discover.editEventTitle': 'Event bearbeiten',
+  'discover.editEventLockedHint': 'Sportart, Datum/Uhrzeit und Ort können nach der Veröffentlichung nicht mehr geändert werden.',
+  'discover.editEventFailed': 'Bearbeiten fehlgeschlagen: {error}',
+  'discover.deleteEventTitle': 'Event löschen?',
+  'discover.deleteEventBody': 'Das Event wird aus Entdecken entfernt. Der Gruppenchat bleibt bestehen, falls ihr euch schon ausgetauscht habt.',
+  'discover.deleteEventConfirm': 'Löschen',
+  'discover.deleteEventFailed': 'Löschen fehlgeschlagen: {error}',
 
   'month.jan': 'Jan',
   'month.feb': 'Feb',
@@ -567,6 +575,7 @@ const _en = <String, String>{
   'forgotPassword.sendFailed': 'Couldn\'t be sent: {error}',
   'forgotPassword.send': 'Send link',
   'common.cancel': 'Cancel',
+  'common.save': 'Save',
   'common.close': 'Close',
 
   'resetPassword.title': 'New password',
@@ -788,6 +797,14 @@ const _en = <String, String>{
   'discover.full': 'Full',
   'discover.join': 'Join',
   'discover.contact': 'Contact',
+  'discover.editEventTitle': 'Edit event',
+  'discover.editEventLockedHint':
+      'Sport, date/time and location can\'t be changed after publishing.',
+  'discover.editEventFailed': 'Edit failed: {error}',
+  'discover.deleteEventTitle': 'Delete event?',
+  'discover.deleteEventBody': 'The event will be removed from Discover. The group chat stays intact in case you\'ve already been in touch.',
+  'discover.deleteEventConfirm': 'Delete',
+  'discover.deleteEventFailed': 'Delete failed: {error}',
 
   'month.jan': 'Jan',
   'month.feb': 'Feb',

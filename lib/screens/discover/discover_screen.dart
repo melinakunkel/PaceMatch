@@ -270,6 +270,62 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  Future<void> _editOpenEvent(OpenEvent event) async {
+    final edits = await showDialog<_EventEdits>(
+      context: context,
+      builder: (context) => _EditOpenEventDialog(event: event),
+    );
+    if (edits == null) return;
+    try {
+      await _openEventService.updateEvent(
+        id: event.id,
+        groupId: event.groupId,
+        name: edits.name,
+        description: edits.description,
+        maxParticipants: edits.maxParticipants,
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('discover.editEventFailed', {'error': '$e'}))),
+      );
+    }
+  }
+
+  Future<void> _deleteOpenEvent(OpenEvent event) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('discover.deleteEventTitle')),
+        content: Text(t('discover.deleteEventBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: Text(t('discover.deleteEventConfirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _openEventService.deleteEvent(event.id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('discover.deleteEventFailed', {'error': '$e'})),
+        ),
+      );
+    }
+  }
+
   Future<void> _hostEvent() async {
     await context.push('/host-event');
     _load();
@@ -665,9 +721,41 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.name,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      if (isHost) ...[
+                        InkWell(
+                          onTap: () => _editOpenEvent(event),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => _deleteOpenEvent(event),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   if (event.description != null &&
                       event.description!.isNotEmpty)
@@ -1032,6 +1120,109 @@ class _DateStrip extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// What can actually change about an already-published open event — sport,
+/// date/time and location stay fixed once people have joined based on them.
+class _EventEdits {
+  const _EventEdits({
+    required this.name,
+    this.description,
+    this.maxParticipants,
+  });
+
+  final String name;
+  final String? description;
+  final int? maxParticipants;
+}
+
+class _EditOpenEventDialog extends StatefulWidget {
+  const _EditOpenEventDialog({required this.event});
+  final OpenEvent event;
+
+  @override
+  State<_EditOpenEventDialog> createState() => _EditOpenEventDialogState();
+}
+
+class _EditOpenEventDialogState extends State<_EditOpenEventDialog> {
+  late final _nameCtrl = TextEditingController(text: widget.event.name);
+  late final _descriptionCtrl = TextEditingController(
+    text: widget.event.description ?? '',
+  );
+  late final _maxParticipantsCtrl = TextEditingController(
+    text: widget.event.maxParticipants?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _descriptionCtrl.dispose();
+    _maxParticipantsCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(t('discover.editEventTitle')),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t('discover.editEventLockedHint'),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameCtrl,
+              autofocus: true,
+              decoration: InputDecoration(labelText: t('hostEvent.eventTitle')),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionCtrl,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: t('hostEvent.descriptionOptional'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _maxParticipantsCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t('hostEvent.maxParticipantsOptional'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('common.cancel')),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final name = _nameCtrl.text.trim();
+            if (name.isEmpty) return;
+            Navigator.of(context).pop(
+              _EventEdits(
+                name: name,
+                description: _descriptionCtrl.text.trim().isEmpty
+                    ? null
+                    : _descriptionCtrl.text.trim(),
+                maxParticipants: int.tryParse(_maxParticipantsCtrl.text),
+              ),
+            );
+          },
+          child: Text(t('common.save')),
+        ),
+      ],
     );
   }
 }
