@@ -9,6 +9,7 @@ import '../../services/like_service.dart';
 import '../../services/match_notifier.dart';
 import '../../services/match_service.dart';
 import '../../services/profile_service.dart';
+import '../../router/route_observer.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
@@ -39,7 +40,7 @@ class MatchesHubScreen extends StatefulWidget {
   State<MatchesHubScreen> createState() => _MatchesHubScreenState();
 }
 
-class _MatchesHubScreenState extends State<MatchesHubScreen> {
+class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
   final _activityService = ActivityService();
   final _matchService = MatchService();
   final _likeService = LikeService();
@@ -52,6 +53,30 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> {
   void initState() {
     super.initState();
     _future = _load();
+    MatchNotifier.markSeen();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) routeObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Called when a screen pushed on top of this one (swiping candidates,
+  /// viewing a profile) gets popped and this hub becomes visible again —
+  /// without this, a fresh match made while swiping wouldn't show up here
+  /// until a manual pull-to-refresh, since this screen's state isn't
+  /// recreated just by navigating back to it.
+  @override
+  void didPopNext() {
+    _refresh();
     MatchNotifier.markSeen();
   }
 

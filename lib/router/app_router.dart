@@ -18,10 +18,12 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../services/supabase_service.dart';
 import 'go_router_refresh_stream.dart';
+import 'route_observer.dart';
 
 GoRouter buildRouter() {
   return GoRouter(
     initialLocation: '/',
+    observers: [routeObserver],
     refreshListenable: GoRouterRefreshStream(
       SupabaseService.client.auth.onAuthStateChange,
     ),
