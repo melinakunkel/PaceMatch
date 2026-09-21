@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/circle.dart';
 import '../services/circle_controller.dart';
 import '../services/circle_service.dart';
@@ -19,8 +20,8 @@ class CircleSwitcherButton extends StatelessWidget {
       builder: (context, circle, _) {
         return IconButton(
           tooltip: circle == null
-              ? 'Bereich: Öffentlich (antippen zum Wechseln)'
-              : 'Bereich: ${circle.name} (antippen zum Wechseln)',
+              ? t('circles.tooltipPublic')
+              : t('circles.tooltipCircle', {'circle': circle.name}),
           icon: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -98,9 +99,9 @@ class _CircleSheetState extends State<_CircleSheet> {
       await _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Verlassen fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('circles.leaveFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -128,7 +129,7 @@ class _CircleSheetState extends State<_CircleSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kreis konnte nicht erstellt werden: $e')),
+        SnackBar(content: Text(t('circles.createFailed', {'error': '$e'}))),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -148,7 +149,7 @@ class _CircleSheetState extends State<_CircleSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kreis "${circle.name}" beigetreten.')),
+        SnackBar(content: Text(t('circles.joined', {'circle': circle.name}))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -167,14 +168,13 @@ class _CircleSheetState extends State<_CircleSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Bereich wechseln',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            Text(
+              t('circles.switchTitle'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Text(
-              'Sportplan, Entdecken und Sportbuddys zeigen dann nur noch '
-              'diesen Bereich.',
+              t('circles.switchSubtitle'),
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 12),
@@ -186,8 +186,8 @@ class _CircleSheetState extends State<_CircleSheet> {
                 groupValue: active?.id,
                 onChanged: _busy ? null : (_) => _select(null),
                 secondary: const Icon(Icons.public_outlined),
-                title: const Text('Öffentlich'),
-                subtitle: const Text('Für alle sichtbar, wie bisher'),
+                title: Text(t('circles.public')),
+                subtitle: Text(t('circles.publicSubtitle')),
               ),
             ),
             FutureBuilder<List<Circle>>(
@@ -212,11 +212,13 @@ class _CircleSheetState extends State<_CircleSheet> {
                         onChanged: _busy ? null : (_) => _select(c),
                         secondary: IconButton(
                           icon: const Icon(Icons.exit_to_app),
-                          tooltip: 'Kreis verlassen',
+                          tooltip: t('circles.leaveCircle'),
                           onPressed: _busy ? null : () => _leave(c),
                         ),
                         title: Text(c.name),
-                        subtitle: Text('Code: ${c.inviteCode}'),
+                        subtitle: Text(
+                          t('circles.code', {'code': c.inviteCode}),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -232,7 +234,7 @@ class _CircleSheetState extends State<_CircleSheet> {
                   child: OutlinedButton.icon(
                     onPressed: _busy ? null : _createCircle,
                     icon: const Icon(Icons.add),
-                    label: const Text('Kreis erstellen'),
+                    label: Text(t('circles.createCircle')),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -240,7 +242,7 @@ class _CircleSheetState extends State<_CircleSheet> {
                   child: OutlinedButton.icon(
                     onPressed: _busy ? null : _joinCircle,
                     icon: const Icon(Icons.login),
-                    label: const Text('Beitreten'),
+                    label: Text(t('circles.join')),
                   ),
                 ),
               ],
@@ -271,21 +273,21 @@ class _NameDialogState extends State<_NameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Kreis erstellen'),
+      title: Text(t('circles.createCircle')),
       content: TextField(
         controller: _ctrl,
         autofocus: true,
-        decoration: const InputDecoration(hintText: 'z.B. Laufgruppe Wien'),
+        decoration: InputDecoration(hintText: t('circles.createHint')),
         onSubmitted: (v) => Navigator.of(context).pop(v),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
+          child: Text(t('common.cancel')),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_ctrl.text),
-          child: const Text('Erstellen'),
+          child: Text(t('circles.create')),
         ),
       ],
     );
@@ -311,22 +313,22 @@ class _JoinDialogState extends State<_JoinDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Kreis beitreten'),
+      title: Text(t('circles.joinTitle')),
       content: TextField(
         controller: _ctrl,
         autofocus: true,
         textCapitalization: TextCapitalization.characters,
-        decoration: const InputDecoration(hintText: 'Einladungscode'),
+        decoration: InputDecoration(hintText: t('circles.inviteCode')),
         onSubmitted: (v) => Navigator.of(context).pop(v),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
+          child: Text(t('common.cancel')),
         ),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_ctrl.text),
-          child: const Text('Beitreten'),
+          child: Text(t('circles.join')),
         ),
       ],
     );
@@ -340,12 +342,12 @@ class _InviteCodeDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('"${circle.name}" erstellt'),
+      title: Text(t('circles.createdTitle', {'circle': circle.name})),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Teile diesen Code, damit andere beitreten können:'),
+          Text(t('circles.shareCode')),
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
@@ -370,7 +372,7 @@ class _InviteCodeDialog extends StatelessWidget {
       actions: [
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Fertig'),
+          child: Text(t('common.done')),
         ),
       ],
     );

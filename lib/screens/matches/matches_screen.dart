@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/match_candidate.dart';
 import '../../models/profile.dart';
@@ -13,6 +14,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
+import '../../utils/display_labels.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 
@@ -68,7 +70,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         _topIndex = 0;
       });
     } catch (e) {
-      setState(() => _error = 'Sportbuddys konnten nicht geladen werden.');
+      setState(() => _error = t('matches.loadFailed'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -102,8 +104,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Da ging etwas schief: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('matches.somethingWentWrong', {'error': '$e'})),
+        ),
+      );
     } finally {
       _celebrating = false;
     }
@@ -119,7 +124,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         ),
         title: Text(
           _activity == null
-              ? 'Passende Leute'
+              ? t('matches.title')
               : '${_activity!.sport.label} · ${_activity!.dayLabel}',
         ),
       ),
@@ -154,7 +159,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 color: AppColors.textSecondary,
               ),
               const SizedBox(width: 6),
-              Expanded(child: Text(activity.locationName ?? 'Ort flexibel')),
+              Expanded(
+                child: Text(
+                  activity.locationName ?? t('matches.flexibleLocation'),
+                ),
+              ),
             ],
           ),
         ),
@@ -165,10 +174,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               _candidates.isEmpty
-                  ? 'Noch keine passenden Leute gefunden.'
+                  ? t('matches.noneFoundYet')
                   : remaining > 0
-                  ? 'Wisch durch, wer zu dir passt.'
-                  : 'Das waren alle für heute.',
+                  ? t('matches.swipePrompt')
+                  : t('matches.allDoneForToday'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ),
@@ -180,8 +189,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
-                      'Sobald jemand eine ähnliche Sportzeit einträgt, '
-                      'erscheint er oder sie hier.',
+                      t('matches.emptyHint'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
@@ -201,7 +209,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Keine weiteren Vorschläge — schau später nochmal vorbei.',
+                          t('matches.noMoreSuggestions'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
@@ -338,13 +346,19 @@ class _SwipeCardState extends State<_SwipeCard> {
                 Positioned(
                   top: 20,
                   left: 20,
-                  child: _StampBadge(label: 'LIKE', color: AppColors.secondary),
+                  child: _StampBadge(
+                    label: t('matches.like'),
+                    color: AppColors.secondary,
+                  ),
                 ),
               if (_drag.dx < -20)
                 Positioned(
                   top: 20,
                   right: 20,
-                  child: _StampBadge(label: 'NOPE', color: AppColors.danger),
+                  child: _StampBadge(
+                    label: t('matches.nope'),
+                    color: AppColors.danger,
+                  ),
                 ),
             ],
           ),
@@ -474,9 +488,10 @@ class _MatchCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     [
-                      if (profile.gender != null) profile.gender!,
+                      if (profile.gender != null) genderLabel(profile.gender!),
                       candidate.theirActivity.timeRangeLabel,
-                      candidate.theirActivity.locationName ?? 'Ort flexibel',
+                      candidate.theirActivity.locationName ??
+                          t('matches.flexibleLocation'),
                     ].join(' · '),
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
@@ -559,13 +574,13 @@ class _MatchCelebrationDialog extends StatelessWidget {
           children: [
             Icon(Icons.groups, color: AppColors.secondary, size: 56),
             const SizedBox(height: 12),
-            const Text(
-              'Ihr seid jetzt Sportbuddys!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            Text(
+              t('matches.celebration.title'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              '${profile.fullName} und du wollt beide zusammen trainieren.',
+              t('matches.celebration.subtitle', {'name': profile.fullName}),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -597,7 +612,7 @@ class _MatchCelebrationDialog extends StatelessWidget {
                   Navigator.of(context).pop();
                   context.go('/matches');
                 },
-                child: const Text('Zu deinen Sportbuddys'),
+                child: Text(t('matches.celebration.goToBuddies')),
               ),
             ),
             const SizedBox(height: 8),
@@ -605,7 +620,7 @@ class _MatchCelebrationDialog extends StatelessWidget {
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Weiter swipen'),
+                child: Text(t('matches.celebration.keepSwiping')),
               ),
             ),
           ],

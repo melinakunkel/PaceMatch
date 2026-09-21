@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/activity.dart';
 import '../theme/app_theme.dart';
 
@@ -33,7 +34,7 @@ class VenueStatusBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            hasVenue ? 'Platz da' : 'Sucht Platz',
+            hasVenue ? t('venue.hasVenue') : t('venue.needsVenue'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

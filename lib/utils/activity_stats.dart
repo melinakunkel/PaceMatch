@@ -1,5 +1,6 @@
 import '../models/activity.dart';
 import '../models/user_sport.dart';
+import 'display_labels.dart';
 import 'pace_format.dart';
 
 /// A short summary of an activity's pace/distance (or skill level, for
@@ -15,7 +16,7 @@ String? activityStatsLabel(Activity activity, UserSport? theirSport) {
       paceRangeLabel(activity.paceMin!, activity.paceMax!, sport.defaultUnit),
     );
   } else if (!sport.usesPace && level != null) {
-    parts.add(level);
+    parts.add(levelLabel(level));
   }
   if (sport.usesDistance &&
       activity.distanceMinKm != null &&

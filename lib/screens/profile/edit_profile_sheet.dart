@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/interest.dart';
 import '../../models/profile.dart';
 import '../../models/prompt.dart';
 import '../../services/profile_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 
 const _minAge = 16.0;
 const _maxAge = 90.0;
@@ -130,7 +132,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) setState(() => _error = 'Speichern fehlgeschlagen: $e');
+      if (mounted) {
+        setState(() => _error = t('common.saveFailed', {'error': '$e'}));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -150,23 +154,23 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Profil bearbeiten',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            Text(
+              t('profile.editProfile'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: t('register.name')),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _bioCtrl,
               maxLines: 3,
               maxLength: 150,
-              decoration: const InputDecoration(
-                labelText: 'Über mich',
-                hintText: 'Erzähl kurz, wer du bist und worauf du Lust hast...',
+              decoration: InputDecoration(
+                labelText: t('editProfile.aboutMe'),
+                hintText: t('editProfile.aboutMeHint'),
                 alignLabelWithHint: true,
               ),
             ),
@@ -177,50 +181,54 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                   child: TextField(
                     controller: _ageCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Alter'),
+                    decoration: InputDecoration(
+                      labelText: t('onboarding.step3.age'),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _cityCtrl,
-                    decoration: const InputDecoration(labelText: 'Stadt'),
+                    decoration: InputDecoration(
+                      labelText: t('onboarding.step3.city'),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Geschlecht',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Text(
+              t('onboarding.step3.gender'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: _genders.map((g) {
                 return ChoiceChip(
-                  label: Text(g),
+                  label: Text(genderLabel(g)),
                   selected: g == _gender,
                   onSelected: (_) => setState(() => _gender = g),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Wer soll dir vorgeschlagen werden?',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Text(
+              t('onboarding.step4.title'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('Egal'),
+                  label: Text(t('onboarding.step4.anyone')),
                   selected: !_sameGenderOnly,
                   onSelected: (_) => setState(() => _sameGenderOnly = false),
                 ),
                 ChoiceChip(
-                  label: const Text('Nur mein Geschlecht'),
+                  label: Text(t('onboarding.step4.sameGenderOnly')),
                   selected: _sameGenderOnly,
                   onSelected: _gender == null
                       ? null
@@ -232,7 +240,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'Lege oben dein Geschlecht fest, um dies einzuschränken.',
+                  t('editProfile.setGenderFirst'),
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -241,8 +249,14 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               ),
             const SizedBox(height: 20),
             Text(
-              'Altersbereich: ${_ageRange.start.round()} - ${_ageRange.end.round()} Jahre'
-              '${_ageRange.start <= _minAge && _ageRange.end >= _maxAge ? ' (unbegrenzt)' : ''}',
+              t('onboarding.step4.ageRange', {
+                'min': _ageRange.start.round().toString(),
+                'max': _ageRange.end.round().toString(),
+                'unlimited':
+                    _ageRange.start <= _minAge && _ageRange.end >= _maxAge
+                    ? t('onboarding.step4.unlimited')
+                    : '',
+              }),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             RangeSlider(
@@ -257,9 +271,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               onChanged: (v) => setState(() => _ageRange = v),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Sprachen',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            Text(
+              t('editProfile.languages'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -281,7 +295,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Interessen (max. $kMaxInterests)',
+              t('editProfile.interestsMax', {'max': '$kMaxInterests'}),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -293,7 +307,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 final disabled =
                     !selected && _interests.length >= kMaxInterests;
                 return ChoiceChip(
-                  label: Text(interest),
+                  label: Text(interestLabel(interest)),
                   selected: selected,
                   onSelected: disabled
                       ? null
@@ -309,12 +323,12 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Prompts (max. $kMaxPrompts)',
+              t('editProfile.promptsMax', {'max': '$kMaxPrompts'}),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
-              'Wähl ein paar Fragen und beantworte sie kurz — zeigt mehr von dir als nur Zahlen.',
+              t('editProfile.promptsHint'),
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
@@ -325,7 +339,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 final selected = _prompts.any((p) => p.question == q);
                 final disabled = !selected && _prompts.length >= kMaxPrompts;
                 return ChoiceChip(
-                  label: Text(q),
+                  label: Text(promptQuestionLabel(q)),
                   selected: selected,
                   onSelected: disabled ? null : (_) => _togglePrompt(q),
                 );
@@ -337,7 +351,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 child: TextField(
                   controller: p.controller,
                   maxLength: kMaxPromptAnswerLength,
-                  decoration: InputDecoration(labelText: p.question),
+                  decoration: InputDecoration(
+                    labelText: promptQuestionLabel(p.question),
+                  ),
                 ),
               ),
             ),
@@ -357,7 +373,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Speichern'),
+                  : Text(t('newActivity.save')),
             ),
           ],
         ),

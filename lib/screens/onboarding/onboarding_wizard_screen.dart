@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/sport_type.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
 
@@ -111,9 +113,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       context.go('/');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Speichern fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -124,11 +126,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Los geht\'s'),
+        title: Text(t('onboarding.title')),
         actions: [
           TextButton(
             onPressed: _saving ? null : () => context.go('/'),
-            child: const Text('Später'),
+            child: Text(t('onboarding.later')),
           ),
         ],
       ),
@@ -180,7 +182,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
               if (_step > 0)
                 TextButton(
                   onPressed: _saving ? null : _back,
-                  child: const Text('Zurück'),
+                  child: Text(t('onboarding.back')),
                 ),
               const Spacer(),
               ElevatedButton(
@@ -194,7 +196,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : Text(_step == _stepCount - 1 ? 'Fertig' : 'Weiter'),
+                    : Text(
+                        _step == _stepCount - 1
+                            ? t('tutorial.done')
+                            : t('common.next'),
+                      ),
               ),
             ],
           ),
@@ -209,13 +215,13 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Welche Sportarten machst du?',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          Text(
+            t('onboarding.step1.title'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'Wähl aus, wonach wir für dich Ausschau halten sollen. Du kannst später jederzeit mehr hinzufügen.',
+            t('onboarding.step1.subtitle'),
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
@@ -247,19 +253,19 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Wie fit bist du dabei?',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          Text(
+            t('onboarding.step2.title'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'Hilft uns, dich mit Leuten auf ähnlichem Niveau zusammenzubringen.',
+            t('onboarding.step2.subtitle'),
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           if (_selectedSports.isEmpty)
             Text(
-              'Du hast noch keine Sportart ausgewählt — das holst du im Profil jederzeit nach.',
+              t('onboarding.step2.noSports'),
               style: TextStyle(color: AppColors.textSecondary),
             )
           else
@@ -285,7 +291,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                       spacing: 8,
                       children: _levels.map((l) {
                         return ChoiceChip(
-                          label: Text(l),
+                          label: Text(levelLabel(l)),
                           selected: _sportLevels[sport] == l,
                           onSelected: (_) =>
                               setState(() => _sportLevels[sport] = l),
@@ -295,7 +301,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                     if (sport.usesPace) ...[
                       const SizedBox(height: 12),
                       Text(
-                        'Pace-Bereich ($unitLabel)',
+                        t('onboarding.step2.paceRange', {'unit': unitLabel}),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
@@ -303,7 +309,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         children: [
                           Expanded(
                             child: PacePickerField(
-                              label: 'von',
+                              label: t('common.from'),
                               unit: sport.defaultUnit,
                               value: _paceLow[sport],
                               onChanged: (v) =>
@@ -313,7 +319,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: PacePickerField(
-                              label: 'bis',
+                              label: t('common.to'),
                               unit: sport.defaultUnit,
                               value: _paceHigh[sport],
                               onChanged: (v) =>
@@ -338,13 +344,13 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ein paar Basisdaten',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          Text(
+            t('onboarding.step3.title'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'Alles optional — hilft anderen aber, dich besser einzuschätzen.',
+            t('onboarding.step3.subtitle'),
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
@@ -354,29 +360,33 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 child: TextField(
                   controller: _ageCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Alter'),
+                  decoration: InputDecoration(
+                    labelText: t('onboarding.step3.age'),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
                   controller: _cityCtrl,
-                  decoration: const InputDecoration(labelText: 'Stadt'),
+                  decoration: InputDecoration(
+                    labelText: t('onboarding.step3.city'),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Geschlecht',
-            style: TextStyle(fontWeight: FontWeight.w600),
+          Text(
+            t('onboarding.step3.gender'),
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             children: ['weiblich', 'männlich', 'divers'].map((g) {
               return ChoiceChip(
-                label: Text(g),
+                label: Text(genderLabel(g)),
                 selected: g == _gender,
                 onSelected: (_) => setState(() => _gender = g),
               );
@@ -393,13 +403,13 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Wer soll dir vorgeschlagen werden?',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          Text(
+            t('onboarding.step4.title'),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'Kannst du später jederzeit im Profil anpassen.',
+            t('onboarding.step4.subtitle'),
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
@@ -407,12 +417,12 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             spacing: 8,
             children: [
               ChoiceChip(
-                label: const Text('Egal'),
+                label: Text(t('onboarding.step4.anyone')),
                 selected: !_sameGenderOnly,
                 onSelected: (_) => setState(() => _sameGenderOnly = false),
               ),
               ChoiceChip(
-                label: const Text('Nur mein Geschlecht'),
+                label: Text(t('onboarding.step4.sameGenderOnly')),
                 selected: _sameGenderOnly,
                 onSelected: _gender == null
                     ? null
@@ -424,14 +434,20 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Leg auf der vorigen Seite dein Geschlecht fest, um dies einzuschränken.',
+                t('onboarding.step4.setGenderFirst'),
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
           const SizedBox(height: 20),
           Text(
-            'Altersbereich: ${_ageRange.start.round()} - ${_ageRange.end.round()} Jahre'
-            '${_ageRange.start <= _minAge && _ageRange.end >= _maxAge ? ' (unbegrenzt)' : ''}',
+            t('onboarding.step4.ageRange', {
+              'min': _ageRange.start.round().toString(),
+              'max': _ageRange.end.round().toString(),
+              'unlimited':
+                  _ageRange.start <= _minAge && _ageRange.end >= _maxAge
+                  ? t('onboarding.step4.unlimited')
+                  : '',
+            }),
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           RangeSlider(

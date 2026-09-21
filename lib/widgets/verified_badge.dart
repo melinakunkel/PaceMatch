@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../theme/app_theme.dart';
 
 /// Small "verified profile" checkmark. Purely a UI placeholder for now —
@@ -12,7 +13,7 @@ class VerifiedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Verifiziertes Profil',
+      message: t('verifiedBadge.tooltip'),
       child: Icon(Icons.verified, size: size, color: AppColors.secondary),
     );
   }

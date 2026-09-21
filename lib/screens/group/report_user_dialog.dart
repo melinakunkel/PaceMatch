@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/profile.dart';
 import '../../services/report_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 
 class ReportUserDialog extends StatefulWidget {
   const ReportUserDialog({super.key, required this.members, this.groupId});
@@ -62,7 +64,9 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
       );
       if (mounted) setState(() => _sent = true);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Melden fehlgeschlagen: $e');
+      if (mounted) {
+        setState(() => _error = t('report.submitFailed', {'error': '$e'}));
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -71,19 +75,17 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Person melden'),
+      title: Text(t('group.reportUser')),
       content: _sent
-          ? const Text(
-              'Danke, deine Meldung wurde übermittelt. Wir schauen uns das an.',
-            )
+          ? Text(t('report.thanks'))
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (widget.members.isEmpty)
-                  const Text('Keine anderen Mitglieder in dieser Gruppe.')
+                  Text(t('report.noOtherMembers'))
                 else ...[
-                  const Text('Wen möchtest du melden?'),
+                  Text(t('report.whoToReport')),
                   const SizedBox(height: 8),
                   DropdownButton<Profile>(
                     isExpanded: true,
@@ -99,13 +101,18 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                     onChanged: (v) => setState(() => _selectedMember = v),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Grund'),
+                  Text(t('report.reason')),
                   const SizedBox(height: 8),
                   DropdownButton<String>(
                     isExpanded: true,
                     value: _reason,
                     items: _reasons
-                        .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                        .map(
+                          (r) => DropdownMenuItem(
+                            value: r,
+                            child: Text(reportReasonLabel(r)),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) =>
                         setState(() => _reason = v ?? _reasons.first),
@@ -114,9 +121,9 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                   TextField(
                     controller: _detailsCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Details (optional)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: t('report.detailsOptional'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   if (_error != null) ...[
@@ -129,7 +136,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(_sent ? 'Schließen' : 'Abbrechen'),
+          child: Text(_sent ? t('common.close') : t('common.cancel')),
         ),
         if (!_sent && widget.members.isNotEmpty)
           FilledButton(
@@ -144,7 +151,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Melden'),
+                : Text(t('report.submit')),
           ),
       ],
     );

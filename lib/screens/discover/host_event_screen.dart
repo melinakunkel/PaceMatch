@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/open_event.dart';
 import '../../models/picked_location.dart';
@@ -97,9 +98,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
       context.pushReplacement('/group/${event.groupId}');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erstellen fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('hostEvent.createFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -113,7 +114,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Event hosten'),
+        title: Text(t('hostEvent.title')),
       ),
       body: SafeArea(
         child: ListView(
@@ -122,13 +123,13 @@ class _HostEventScreenState extends State<HostEventScreen> {
             TextField(
               controller: _nameCtrl,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                labelText: 'Titel',
-                hintText: 'z.B. Sonntags-Lauftreff am Donaukanal',
+              decoration: InputDecoration(
+                labelText: t('hostEvent.eventTitle'),
+                hintText: t('hostEvent.eventTitleHint'),
               ),
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Sportart'),
+            _SectionLabel(t('newActivity.sport')),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -149,7 +150,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Wann?'),
+            _SectionLabel(t('newActivity.when')),
             InkWell(
               onTap: _pickDate,
               borderRadius: BorderRadius.circular(12),
@@ -173,9 +174,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
                     onTap: () => _pickTime(true),
                     borderRadius: BorderRadius.circular(12),
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Von',
-                        prefixIcon: Icon(Icons.schedule),
+                      decoration: InputDecoration(
+                        labelText: t('common.from'),
+                        prefixIcon: const Icon(Icons.schedule),
                       ),
                       child: Text(Activity.formatTime(_start)),
                     ),
@@ -187,9 +188,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
                     onTap: () => _pickTime(false),
                     borderRadius: BorderRadius.circular(12),
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Bis (optional)',
-                        prefixIcon: Icon(Icons.schedule),
+                      decoration: InputDecoration(
+                        labelText: t('hostEvent.untilOptional'),
+                        prefixIcon: const Icon(Icons.schedule),
                       ),
                       child: Text(
                         _end == null ? '-' : Activity.formatTime(_end!),
@@ -203,18 +204,18 @@ class _HostEventScreenState extends State<HostEventScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Wo?'),
+            _SectionLabel(t('newActivity.where')),
             InkWell(
               onTap: _pickLocation,
               borderRadius: BorderRadius.circular(12),
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  hintText: 'Ort auf der Karte auswählen',
-                  prefixIcon: Icon(Icons.place_outlined),
-                  suffixIcon: Icon(Icons.map_outlined),
+                decoration: InputDecoration(
+                  hintText: t('newActivity.pickLocation'),
+                  prefixIcon: const Icon(Icons.place_outlined),
+                  suffixIcon: const Icon(Icons.map_outlined),
                 ),
                 child: Text(
-                  _location?.name ?? 'Ort auf der Karte auswählen',
+                  _location?.name ?? t('newActivity.pickLocation'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: _location == null
@@ -227,9 +228,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
             TextField(
               controller: _descriptionCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Beschreibung (optional)',
-                hintText: 'Für wen ist das Event, was sollte man mitbringen...',
+              decoration: InputDecoration(
+                labelText: t('hostEvent.descriptionOptional'),
+                hintText: t('hostEvent.descriptionHint'),
                 alignLabelWithHint: true,
               ),
             ),
@@ -237,9 +238,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
             TextField(
               controller: _maxParticipantsCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Max. Teilnehmer (optional)',
-                prefixIcon: Icon(Icons.groups_outlined),
+              decoration: InputDecoration(
+                labelText: t('hostEvent.maxParticipantsOptional'),
+                prefixIcon: const Icon(Icons.groups_outlined),
               ),
             ),
             const SizedBox(height: 28),
@@ -254,7 +255,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Event veröffentlichen'),
+                  : Text(t('hostEvent.publish')),
             ),
           ],
         ),

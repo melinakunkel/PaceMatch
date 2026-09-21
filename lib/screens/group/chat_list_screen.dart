@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/group.dart';
 import '../../services/group_service.dart';
@@ -66,16 +67,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Chat verlassen?'),
-        content: Text('Du verlässt die Gruppe "${g.name}".'),
+        title: Text(t('chatList.leaveTitle')),
+        content: Text(t('chatList.leaveConfirm', {'name': g.name})),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Abbrechen'),
+            child: Text(t('common.cancel')),
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text('Verlassen'),
+            child: Text(t('chatList.leave')),
           ),
         ],
       ),
@@ -93,18 +94,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Chat löschen?'),
-        content: Text(
-          'Die Gruppe "${g.name}" wird für alle Teilnehmer unwiderruflich gelöscht.',
-        ),
+        title: Text(t('chatList.deleteTitle')),
+        content: Text(t('chatList.deleteConfirm', {'name': g.name})),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Abbrechen'),
+            child: Text(t('common.cancel')),
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text('Löschen'),
+            child: Text(t('common.delete')),
           ),
         ],
       ),
@@ -120,12 +119,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final myId = SupabaseService.currentUserId;
     return AppScaffold(
       currentIndex: 3,
-      title: _showArchived ? 'Archivierte Chats' : 'Gruppen & Chats',
+      title: _showArchived ? t('chatList.archivedTitle') : t('chatList.title'),
       actions: [
         IconButton(
           tooltip: _showArchived
-              ? 'Aktive Chats anzeigen'
-              : 'Archivierte Chats anzeigen',
+              ? t('chatList.showActive')
+              : t('chatList.showArchived'),
           icon: Icon(
             _showArchived ? Icons.chat_bubble_outline : Icons.archive_outlined,
           ),
@@ -147,7 +146,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  _showArchived ? 'Keine archivierten Chats.' : 'Noch keine Gruppen. Starte einen Chat über deine Sportbuddys.',
+                  _showArchived
+                      ? t('chatList.emptyArchived')
+                      : t('chatList.emptyActive'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
@@ -204,7 +205,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       if (g.meetingTime != null)
                         _formatMeetingTime(g.meetingTime!),
                       if (g.meetingPoint != null) g.meetingPoint!,
-                      '${g.memberCount} Teilnehmer',
+                      t('chatList.participants', {'count': '${g.memberCount}'}),
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -229,24 +230,24 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     },
                     itemBuilder: (context) => [
                       if (!_showArchived)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'archive',
-                          child: Text('Archivieren'),
+                          child: Text(t('chatList.archive')),
                         )
                       else
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'unarchive',
-                          child: Text('Wiederherstellen'),
+                          child: Text(t('chatList.unarchive')),
                         ),
                       if (isCreator)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
-                          child: Text('Löschen'),
+                          child: Text(t('common.delete')),
                         )
                       else
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'leave',
-                          child: Text('Verlassen'),
+                          child: Text(t('chatList.leave')),
                         ),
                     ],
                   ),

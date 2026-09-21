@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../../theme/app_theme.dart';
 
 class _TutorialSlide {
@@ -14,52 +15,38 @@ class _TutorialSlide {
   final String description;
 }
 
-const _slides = [
+/// Not `const` so it always reflects the active language — still usable as
+/// `_slides[i]`/`_slides.length` exactly like a plain list.
+List<_TutorialSlide> get _slides => [
   _TutorialSlide(
     icon: Icons.terrain,
-    title: 'Willkommen bei SAMEPACE',
-    description:
-        'Finde Leute, die zur gleichen Zeit und im gleichen Tempo Sport '
-        'machen möchten wie du — zum Laufen, Radfahren, Schwimmen, Wandern, '
-        'Tennis und mehr.',
+    title: t('tutorial.welcome.title'),
+    description: t('tutorial.welcome.description'),
   ),
   _TutorialSlide(
     icon: Icons.calendar_today_outlined,
-    title: 'Mein Sportplan',
-    description:
-        'Trag deine Sportzeiten ein — wiederkehrend jede Woche oder '
-        'einmalig an einem bestimmten Tag. Pace, Level oder Distanz je nach '
-        'Sportart.',
+    title: t('tutorial.plan.title'),
+    description: t('tutorial.plan.description'),
   ),
   _TutorialSlide(
     icon: Icons.people_outline,
-    title: 'Sportbuddys',
-    description:
-        'Sobald jemand eine passende Sportzeit einträgt, seht ihr euch '
-        'gegenseitig als Vorschlag — mit Pace, Level und ob schon ein Platz '
-        'gebucht ist. Wischt beide nach rechts, seid ihr Sportbuddys.',
+    title: t('tutorial.buddies.title'),
+    description: t('tutorial.buddies.description'),
   ),
   _TutorialSlide(
     icon: Icons.explore_outlined,
-    title: 'Entdecken',
-    description:
-        'Stöbere nach Datum durch alle Sportzeiten in deiner Nähe und nach '
-        'kuratierten Community-Events — filterbar nach Sportart und '
-        'Uhrzeit.',
+    title: t('tutorial.discover.title'),
+    description: t('tutorial.discover.description'),
   ),
   _TutorialSlide(
     icon: Icons.chat_bubble_outline,
-    title: 'Chat',
-    description:
-        'Sprich dich in der Gruppe ab, legt einen Treffpunkt auf der Karte '
-        'fest und seht direkt, wo es losgeht.',
+    title: t('tutorial.chat.title'),
+    description: t('tutorial.chat.description'),
   ),
   _TutorialSlide(
     icon: Icons.person_outline,
-    title: 'Profil',
-    description:
-        'Zeig deine Sportarten, dein Level, deine Interessen und Sprachen — '
-        'so finden andere leichter heraus, ob ihr zusammenpasst.',
+    title: t('tutorial.profile.title'),
+    description: t('tutorial.profile.description'),
   ),
 ];
 
@@ -110,7 +97,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
           if (widget.showSkip && !isLast)
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Überspringen'),
+              child: Text(t('tutorial.skip')),
             ),
         ],
       ),
@@ -216,7 +203,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _next,
-                  child: Text(isLast ? 'Los geht\'s' : 'Weiter'),
+                  child: Text(isLast ? t('tutorial.done') : t('common.next')),
                 ),
               ),
             ],

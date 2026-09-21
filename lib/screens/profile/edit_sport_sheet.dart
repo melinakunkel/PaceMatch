@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/profile_service.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
 
@@ -57,9 +59,9 @@ class _EditSportSheetState extends State<EditSportSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Sportart & Level',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          Text(
+            t('editSport.title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -78,7 +80,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
             spacing: 8,
             children: _levels.map((l) {
               return ChoiceChip(
-                label: Text(l),
+                label: Text(levelLabel(l)),
                 selected: l == _level,
                 onSelected: (_) => setState(() => _level = l),
               );
@@ -87,7 +89,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
           if (_sport.usesPace) ...[
             const SizedBox(height: 16),
             Text(
-              'Pace-Bereich ($unitLabel)',
+              t('onboarding.step2.paceRange', {'unit': unitLabel}),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -95,7 +97,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
               children: [
                 Expanded(
                   child: PacePickerField(
-                    label: 'von',
+                    label: t('common.from'),
                     unit: _sport.defaultUnit,
                     value: _valueLow,
                     onChanged: (v) => setState(() => _valueLow = v),
@@ -104,7 +106,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: PacePickerField(
-                    label: 'bis',
+                    label: t('common.to'),
                     unit: _sport.defaultUnit,
                     value: _valueHigh,
                     onChanged: (v) => setState(() => _valueHigh = v),
@@ -125,7 +127,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
                       color: Colors.white,
                     ),
                   )
-                : const Text('Speichern'),
+                : Text(t('newActivity.save')),
           ),
         ],
       ),

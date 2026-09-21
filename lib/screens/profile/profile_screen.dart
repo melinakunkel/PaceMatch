@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/interest.dart';
 import '../../models/profile.dart';
@@ -10,6 +11,7 @@ import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
@@ -107,7 +109,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Foto konnte nicht hochgeladen werden: $e')),
+        SnackBar(
+          content: Text(t('profile.avatarUploadFailed', {'error': '$e'})),
+        ),
       );
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
@@ -118,11 +122,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       currentIndex: 4,
-      title: 'Mein Profil',
+      title: t('profile.title'),
       actions: [
         IconButton(
           icon: const Icon(Icons.logout),
-          tooltip: 'Abmelden',
+          tooltip: t('profile.signOut'),
           onPressed: () async {
             await AuthService().signOut();
             if (context.mounted) context.go('/login');
@@ -152,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _load,
-                      child: const Text('Erneut versuchen'),
+                      child: Text(t('discover.retry')),
                     ),
                   ],
                 ),
@@ -250,8 +254,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Text(
                               [
                                 if (_profile!.age != null)
-                                  '${_profile!.age} Jahre',
-                                if (_profile!.gender != null) _profile!.gender!,
+                                  t('profile.ageYears', {
+                                    'age': '${_profile!.age}',
+                                  }),
+                                if (_profile!.gender != null)
+                                  genderLabel(_profile!.gender!),
                                 if (_profile!.city != null) _profile!.city!,
                               ].join(' · '),
                               style: TextStyle(color: AppColors.textSecondary),
@@ -261,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Profil bearbeiten',
+                        tooltip: t('profile.editProfile'),
                         onPressed: _editProfile,
                       ),
                     ],
@@ -276,30 +283,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () => showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Profil verifizieren'),
-                          content: const Text(
-                            'Die Verifizierung ist bald verfügbar. Damit kannst du '
-                            'anderen zeigen, dass dein Profil echt ist.',
-                          ),
+                          title: Text(t('profile.verifyTitle')),
+                          content: Text(t('profile.verifyBody')),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Okay'),
+                              child: Text(t('profile.okay')),
                             ),
                           ],
                         ),
                       ),
                       icon: const Icon(Icons.verified_outlined),
-                      label: const Text('Profil verifizieren'),
+                      label: Text(t('profile.verifyProfile')),
                     ),
                   ],
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Meine Sportarten & Level',
-                        style: TextStyle(
+                      Text(
+                        t('profile.sportsAndLevel'),
+                        style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
                         ),
@@ -307,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       TextButton.icon(
                         onPressed: () => _editSport(),
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Hinzufügen'),
+                        label: Text(t('profile.add')),
                       ),
                     ],
                   ),
@@ -316,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        'Noch keine Sportart hinterlegt.',
+                        t('profile.noSports'),
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
@@ -326,7 +330,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: ListTile(
                         leading: Icon(s.sport.icon, color: AppColors.primary),
                         title: Text(s.sport.label),
-                        subtitle: s.level != null ? Text(s.level!) : null,
+                        subtitle: s.level != null
+                            ? Text(levelLabel(s.level!))
+                            : null,
                         trailing: s.sport.usesPace
                             ? Text(
                                 s.rangeLabel,
@@ -342,9 +348,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (_profile!.interests.isNotEmpty ||
                       _profile!.languages.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    const Text(
-                      'Interessen & Sprachen',
-                      style: TextStyle(
+                    Text(
+                      t('profile.interestsAndLanguages'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -360,15 +366,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             label: Text(kLanguageOptions[l] ?? l),
                           ),
                         ),
-                        ..._profile!.interests.map((i) => Chip(label: Text(i))),
+                        ..._profile!.interests.map(
+                          (i) => Chip(label: Text(interestLabel(i))),
+                        ),
                       ],
                     ),
                   ],
                   if (_profile!.prompts.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    const Text(
-                      'Meine Prompts',
-                      style: TextStyle(
+                    Text(
+                      t('profile.myPrompts'),
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -383,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                p.question,
+                                promptQuestionLabel(p.question),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
@@ -404,9 +412,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  const Text(
-                    'Zuverlässigkeit',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  Text(
+                    t('profile.reliability'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -430,9 +441,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Aktiv in den letzten 7 Tagen',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  Text(
+                    t('profile.activeLast7Days'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(

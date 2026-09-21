@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
@@ -198,8 +199,8 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
               const SizedBox(height: 4),
               Text(
                 group.groupId == null
-                    ? 'Wähl aus, wen du zum Gruppenchat hinzufügen willst.'
-                    : 'Wähl aus, wen du zum bestehenden Chat hinzufügen willst.',
+                    ? t('matchesHub.pickForNewChat')
+                    : t('matchesHub.pickForExistingChat'),
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 8),
@@ -241,8 +242,8 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                       },
                 child: Text(
                   group.groupId == null
-                      ? 'Gruppenchat erstellen'
-                      : 'Chat öffnen',
+                      ? t('matchesHub.createGroupChat')
+                      : t('discover.openChat'),
                 ),
               ),
             ],
@@ -286,7 +287,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Chat konnte nicht erstellt werden: $e')),
+        SnackBar(
+          content: Text(t('matchesHub.chatCreateFailed', {'error': '$e'})),
+        ),
       );
     }
   }
@@ -302,7 +305,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
         final created = await _groupService.createGroup(
           createdBy: me,
           sport: SportType.sonstige,
-          name: 'Sportbuddy: ${buddy.fullName}',
+          name: t('matchesHub.sportbuddyChatName', {'name': buddy.fullName}),
           isMatch: true,
         );
         await _groupService.joinGroup(groupId: created.id, userId: buddy.id);
@@ -314,7 +317,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Chat konnte nicht erstellt werden: $e')),
+        SnackBar(
+          content: Text(t('matchesHub.chatCreateFailed', {'error': '$e'})),
+        ),
       );
     }
   }
@@ -323,7 +328,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
   Widget build(BuildContext context) {
     return AppScaffold(
       currentIndex: 2,
-      title: 'Sportbuddys',
+      title: t('matchesHub.title'),
       body: FutureBuilder<_HubData>(
         future: _future,
         builder: (context, snapshot) {
@@ -346,8 +351,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Aktuell gibt es noch keine passenden Leute zu deinen '
-                    'Sportzeiten. Trag weitere Zeiten ein oder schau später nochmal vorbei.',
+                    t('matchesHub.empty'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
@@ -355,7 +359,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                   Center(
                     child: ElevatedButton(
                       onPressed: () => context.push('/new-activity'),
-                      child: const Text('Sportzeit eintragen'),
+                      child: Text(t('matchesHub.addActivity')),
                     ),
                   ),
                 ],
@@ -387,12 +391,12 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Weitere Sportbuddys',
+              t('matchesHub.moreBuddies'),
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 2),
             Text(
-              'Nicht mehr einer bestimmten Sportzeit zugeordnet.',
+              t('matchesHub.unassignedDesc'),
               style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 10),
@@ -425,8 +429,8 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                       onPressed: () => _startChatWithUnassignedBuddy(b),
                       child: Text(
                         _chatByUnassignedBuddy[b.id] == null
-                            ? 'Chat starten'
-                            : 'Chat öffnen',
+                            ? t('matchesHub.startChat')
+                            : t('discover.openChat'),
                       ),
                     ),
                   ],
@@ -516,13 +520,21 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                   SizedBox(width: g.buddies.length.clamp(0, 4) * 24.0 + 4),
                   Expanded(
                     child: Text(
-                      '${g.buddies.length} Sportbuddy${g.buddies.length == 1 ? '' : 's'}',
+                      g.buddies.length == 1
+                          ? t('matchesHub.buddyCountOne')
+                          : t('matchesHub.buddyCountMany', {
+                              'count': '${g.buddies.length}',
+                            }),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                   OutlinedButton(
                     onPressed: () => _openGroupSheet(g),
-                    child: Text(g.groupId == null ? 'Gruppenchat' : 'Chat'),
+                    child: Text(
+                      g.groupId == null
+                          ? t('matchesHub.groupChat')
+                          : t('nav.chat'),
+                    ),
                   ),
                 ],
               ),
@@ -539,13 +551,15 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${g.candidateCount} weitere Vorschläge',
+                      t('matchesHub.moreSuggestions', {
+                        'count': '${g.candidateCount}',
+                      }),
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ),
                   TextButton(
                     onPressed: () => context.push('/matches/${a.id}'),
-                    child: const Text('Ansehen'),
+                    child: Text(t('matchesHub.view')),
                   ),
                 ],
               ),

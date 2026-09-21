@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/interest.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
@@ -9,6 +10,7 @@ import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../widgets/verified_badge.dart';
 
 /// Read-only view of another user's profile, reachable by tapping their
@@ -74,7 +76,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final group = await _groupService.createGroup(
           createdBy: me,
           sport: _sports.isNotEmpty ? _sports.first.sport : SportType.sonstige,
-          name: 'Chat mit ${_profile?.fullName ?? ''}',
+          name: t('publicProfile.chatWith', {'name': _profile?.fullName ?? ''}),
         );
         await _groupService.joinGroup(groupId: group.id, userId: widget.userId);
         groupId = group.id;
@@ -83,8 +85,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       context.push('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Kontakt fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('discover.contactFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _contacting = false);
     }
@@ -98,7 +101,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        title: Text(_profile?.fullName ?? 'Profil'),
+        title: Text(_profile?.fullName ?? t('publicProfile.title')),
       ),
       body: SafeArea(
         child: _loading
@@ -170,8 +173,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                   Text(
                     [
-                      if (profile.age != null) '${profile.age} Jahre',
-                      if (profile.gender != null) profile.gender!,
+                      if (profile.age != null)
+                        t('profile.ageYears', {'age': '${profile.age}'}),
+                      if (profile.gender != null) genderLabel(profile.gender!),
                       if (profile.city != null) profile.city!,
                     ].join(' · '),
                     style: TextStyle(color: AppColors.textSecondary),
@@ -196,7 +200,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      p.question,
+                      promptQuestionLabel(p.question),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -217,16 +221,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ],
         const SizedBox(height: 24),
-        const Text(
-          'Sportarten & Level',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        Text(
+          t('publicProfile.sportsAndLevel'),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 8),
         if (_sports.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'Noch keine Sportart hinterlegt.',
+              t('profile.noSports'),
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
@@ -236,7 +240,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: ListTile(
               leading: Icon(s.sport.icon, color: AppColors.primary),
               title: Text(s.sport.label),
-              subtitle: s.level != null ? Text(s.level!) : null,
+              subtitle: s.level != null ? Text(levelLabel(s.level!)) : null,
               trailing: s.sport.usesPace
                   ? Text(
                       s.rangeLabel,
@@ -248,9 +252,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ),
         if (profile.interests.isNotEmpty || profile.languages.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const Text(
-            'Interessen & Sprachen',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          Text(
+            t('profile.interestsAndLanguages'),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -263,14 +267,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   label: Text(kLanguageOptions[l] ?? l),
                 ),
               ),
-              ...profile.interests.map((i) => Chip(label: Text(i))),
+              ...profile.interests.map(
+                (i) => Chip(label: Text(interestLabel(i))),
+              ),
             ],
           ),
         ],
         const SizedBox(height: 24),
-        const Text(
-          'Zuverlässigkeit',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        Text(
+          t('profile.reliability'),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 12),
         Row(
@@ -306,7 +312,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                 )
               : const Icon(Icons.chat_bubble_outline),
-          label: const Text('Nachricht senden'),
+          label: Text(t('publicProfile.sendMessage')),
         ),
       ],
     );

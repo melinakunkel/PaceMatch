@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import 'sport_type.dart';
 
-const weekdayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const weekdayFullLabels = [
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-  'Sonntag',
+/// Not `const` so it always reflects the active language — a top-level
+/// getter can still be indexed as `weekdayLabels[i]` exactly like a plain
+/// list, so no call site needs to change.
+List<String> get weekdayLabels => [
+  t('weekday.mo'),
+  t('weekday.tu'),
+  t('weekday.we'),
+  t('weekday.th'),
+  t('weekday.fr'),
+  t('weekday.sa'),
+  t('weekday.su'),
+];
+
+List<String> get weekdayFullLabels => [
+  t('weekdayFull.mo'),
+  t('weekdayFull.tu'),
+  t('weekdayFull.we'),
+  t('weekdayFull.th'),
+  t('weekdayFull.fr'),
+  t('weekdayFull.sa'),
+  t('weekdayFull.su'),
 ];
 
 class Activity {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../services/activity_service.dart';
 import '../../services/circle_controller.dart';
@@ -95,18 +96,24 @@ class _PlanScreenState extends State<PlanScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Sichtbarer Zeitraum',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('plan.hourRange.title'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Welchen Teil des Tages soll der Kalender anzeigen?',
+                  t('plan.hourRange.subtitle'),
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '${_formatHour(range.start)} - ${_formatHour(range.end)} Uhr',
+                  t('plan.hourRange.value', {
+                    'start': _formatHour(range.start),
+                    'end': _formatHour(range.end),
+                  }),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 RangeSlider(
@@ -151,12 +158,12 @@ class _PlanScreenState extends State<PlanScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       currentIndex: 1,
-      title: 'Mein Sportplan',
+      title: t('plan.title'),
       actions: [
         if (_viewMode == _PlanViewMode.week)
           IconButton(
             icon: const Icon(Icons.schedule_outlined),
-            tooltip: 'Sichtbarer Zeitraum',
+            tooltip: t('plan.hourRange.title'),
             onPressed: _openHourRangeSheet,
           ),
         IconButton(
@@ -166,8 +173,8 @@ class _PlanScreenState extends State<PlanScreen> {
                 : Icons.view_agenda_outlined,
           ),
           tooltip: _viewMode == _PlanViewMode.list
-              ? 'Wochen-Kalender-Ansicht'
-              : 'Listen-Ansicht',
+              ? t('plan.weekView')
+              : t('plan.listView'),
           onPressed: () => _setViewMode(
             _viewMode == _PlanViewMode.list
                 ? _PlanViewMode.week
@@ -182,7 +189,7 @@ class _PlanScreenState extends State<PlanScreen> {
           _refresh();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Sportzeit hinzufügen'),
+        label: Text(t('plan.addActivity')),
       ),
       body: FutureBuilder<List<Activity>>(
         future: _future,
@@ -238,18 +245,25 @@ Future<bool> _confirmDeleteActivity(BuildContext context, Activity a) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Sportzeit löschen?'),
+      title: Text(t('plan.deleteTitle')),
       content: Text(
-        '${a.sport.label} am ${a.dayLabel}, ${a.timeRangeLabel} wirklich löschen?',
+        t('plan.deleteConfirm', {
+          'sport': a.sport.label,
+          'day': a.dayLabel,
+          'time': a.timeRangeLabel,
+        }),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Abbrechen'),
+          child: Text(t('common.cancel')),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text('Löschen', style: TextStyle(color: AppColors.danger)),
+          child: Text(
+            t('common.delete'),
+            style: TextStyle(color: AppColors.danger),
+          ),
         ),
       ],
     ),
@@ -338,7 +352,7 @@ class _DayList extends StatelessWidget {
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'Noch keine Sportzeit an diesem Tag.\nTippe unten, um eine hinzuzufügen.',
+              t('plan.emptyDay'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -365,8 +379,11 @@ class _DayList extends StatelessWidget {
             ),
             subtitle: Text(
               a.isRecurring
-                  ? (a.locationName ?? 'Ohne festen Ort')
-                  : 'Einmalig, ${a.specificDateLabel}  ·  ${a.locationName ?? "Ohne festen Ort"}',
+                  ? (a.locationName ?? t('plan.noFixedLocation'))
+                  : t('plan.oneOffLocation', {
+                      'date': a.specificDateLabel,
+                      'location': a.locationName ?? t('plan.noFixedLocation'),
+                    }),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -375,7 +392,7 @@ class _DayList extends StatelessWidget {
               children: [
                 IconButton(
                   icon: Icon(Icons.people_outline, color: AppColors.secondary),
-                  tooltip: 'Passende Leute anzeigen',
+                  tooltip: t('plan.showMatches'),
                   onPressed: () => context.push('/matches/${a.id}'),
                 ),
                 PopupMenuButton<String>(
@@ -390,9 +407,12 @@ class _DayList extends StatelessWidget {
                       }
                     }
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Bearbeiten')),
-                    PopupMenuItem(value: 'delete', child: Text('Löschen')),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(value: 'edit', child: Text(t('common.edit'))),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(t('common.delete')),
+                    ),
                   ],
                 ),
               ],
@@ -468,7 +488,7 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'Noch keine Sportzeiten eingetragen.\nTippe unten, um eine hinzuzufügen.',
+              t('plan.emptyWeek'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary),
             ),
@@ -518,7 +538,7 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
                       GestureDetector(
                         onTap: _goToToday,
                         child: Text(
-                          'Zu dieser Woche',
+                          t('plan.goToThisWeek'),
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.primary,
@@ -611,7 +631,7 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
-                  'Keine Sportzeiten in dieser Woche.',
+                  t('plan.emptyWeekShort'),
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
@@ -812,8 +832,11 @@ Future<void> _showActivitySheet(
             const SizedBox(height: 6),
             Text(
               a.isRecurring
-                  ? (a.locationName ?? 'Ohne festen Ort')
-                  : 'Einmalig, ${a.specificDateLabel}  ·  ${a.locationName ?? "Ohne festen Ort"}',
+                  ? (a.locationName ?? t('plan.noFixedLocation'))
+                  : t('plan.oneOffLocation', {
+                      'date': a.specificDateLabel,
+                      'location': a.locationName ?? t('plan.noFixedLocation'),
+                    }),
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
@@ -826,7 +849,7 @@ Future<void> _showActivitySheet(
                       context.push('/matches/${a.id}');
                     },
                     icon: const Icon(Icons.people_outline),
-                    label: const Text('Vorschläge'),
+                    label: Text(t('plan.suggestions')),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -838,7 +861,7 @@ Future<void> _showActivitySheet(
                       onChanged();
                     },
                     icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Bearbeiten'),
+                    label: Text(t('common.edit')),
                   ),
                 ),
               ],
@@ -853,7 +876,7 @@ Future<void> _showActivitySheet(
                 },
                 icon: Icon(Icons.delete_outline, color: AppColors.danger),
                 label: Text(
-                  'Löschen',
+                  t('common.delete'),
                   style: TextStyle(color: AppColors.danger),
                 ),
               ),

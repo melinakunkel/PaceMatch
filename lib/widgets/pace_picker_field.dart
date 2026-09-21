@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../utils/pace_format.dart';
 
 /// A tappable field that opens a scroll-wheel picker for a pace value —
@@ -88,7 +89,9 @@ Future<double?> _showPacePicker(
                         onSelectedItemChanged: (i) => minutes = i + minMinutes,
                         children: [
                           for (var m = minMinutes; m <= maxMinutes; m++)
-                            Center(child: Text('$m min')),
+                            Center(
+                              child: Text(t('pacePicker.minutes', {'m': '$m'})),
+                            ),
                         ],
                       ),
                     ),
@@ -103,7 +106,9 @@ Future<double?> _showPacePicker(
                           for (var s = 0; s <= 55; s += 5)
                             Center(
                               child: Text(
-                                '${s.toString().padLeft(2, '0')} sek',
+                                t('pacePicker.seconds', {
+                                  's': s.toString().padLeft(2, '0'),
+                                }),
                               ),
                             ),
                         ],
@@ -166,9 +171,9 @@ class _PickerSheetHeader extends StatelessWidget {
       children: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Abbrechen'),
+          child: Text(t('common.cancel')),
         ),
-        TextButton(onPressed: onDone, child: const Text('Fertig')),
+        TextButton(onPressed: onDone, child: Text(t('common.done'))),
       ],
     );
   }

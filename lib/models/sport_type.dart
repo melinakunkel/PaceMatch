@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
+
 enum SportType {
   laufen,
   radfahren,
@@ -17,19 +19,19 @@ enum SportType {
   String get label {
     switch (this) {
       case SportType.laufen:
-        return 'Laufen';
+        return t('sport.laufen');
       case SportType.radfahren:
-        return 'Radfahren';
+        return t('sport.radfahren');
       case SportType.schwimmen:
-        return 'Schwimmen';
+        return t('sport.schwimmen');
       case SportType.wandern:
-        return 'Wandern';
+        return t('sport.wandern');
       case SportType.tennis:
-        return 'Tennis';
+        return t('sport.tennis');
       case SportType.schwangerschaftssport:
-        return 'Schwangerschafts-/Rückbildungssport';
+        return t('sport.schwangerschaftssport');
       case SportType.sonstige:
-        return 'Weitere';
+        return t('sport.sonstige');
     }
   }
 
@@ -104,15 +106,15 @@ enum BikeType {
   String get label {
     switch (this) {
       case BikeType.rennrad:
-        return 'Rennrad';
+        return t('bikeType.rennrad');
       case BikeType.mountainbike:
-        return 'Mountainbike';
+        return t('bikeType.mountainbike');
       case BikeType.gravel:
-        return 'Gravelbike';
+        return t('bikeType.gravel');
       case BikeType.trekking:
-        return 'Trekkingrad';
+        return t('bikeType.trekking');
       case BikeType.ebike:
-        return 'E-Bike';
+        return t('bikeType.ebike');
     }
   }
 }

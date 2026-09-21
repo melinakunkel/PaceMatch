@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/picked_location.dart';
 import '../../services/geocoding_service.dart';
 import '../../theme/app_theme.dart';
@@ -117,7 +118,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Ort auswählen'),
+        title: Text(t('locationPicker.title')),
       ),
       body: Stack(
         children: [
@@ -163,7 +164,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     controller: _searchCtrl,
                     onChanged: _onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: 'Ort suchen, z.B. Prater',
+                      hintText: t('locationPicker.search'),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searching
                           ? const Padding(
@@ -226,7 +227,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           padding: const EdgeInsets.all(16),
           child: ElevatedButton(
             onPressed: _picked == null ? null : _confirm,
-            child: const Text('Diesen Ort übernehmen'),
+            child: Text(t('locationPicker.confirm')),
           ),
         ),
       ),

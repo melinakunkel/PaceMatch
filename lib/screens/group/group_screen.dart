@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart' show weekdayLabels;
 import '../../models/group.dart';
 import '../../models/message.dart';
@@ -85,16 +86,17 @@ class _GroupScreenState extends State<GroupScreen> {
         SnackBar(
           content: Text(
             attended
-                ? 'Cool, danke fürs Bestätigen! 🙌'
-                : 'Danke für die Rückmeldung.',
+                ? t('group.checkinThanksAttended')
+                : t('group.checkinThanks'),
           ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _checkingIn = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Check-in fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('group.checkinFailed', {'error': '$e'}))),
+      );
     }
   }
 
@@ -141,7 +143,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      group.meetingPoint ?? 'Treffpunkt',
+                      group.meetingPoint ?? t('group.meetingPoint'),
                       style: const TextStyle(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -193,7 +195,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     mode: LaunchMode.externalApplication,
                   ),
                   icon: const Icon(Icons.open_in_new),
-                  label: const Text('In OpenStreetMap öffnen'),
+                  label: Text(t('group.openInOsm')),
                 ),
               ),
             ),
@@ -222,7 +224,7 @@ class _GroupScreenState extends State<GroupScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.flag_outlined),
-            tooltip: 'Person melden',
+            tooltip: t('group.reportUser'),
             onPressed: () => showDialog(
               context: context,
               builder: (_) => ReportUserDialog(
@@ -250,7 +252,9 @@ class _GroupScreenState extends State<GroupScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '${group.memberCount} Teilnehmer',
+                        t('chatList.participants', {
+                          'count': '${group.memberCount}',
+                        }),
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
@@ -301,14 +305,13 @@ class _GroupScreenState extends State<GroupScreen> {
                       borderRadius: BorderRadius.circular(12),
                       child: InputDecorator(
                         decoration: InputDecoration(
-                          hintText: 'Treffpunkt auf der Karte festlegen',
+                          hintText: t('group.setMeetingPoint'),
                           prefixIcon: const Icon(Icons.place_outlined),
                           suffixIcon: const Icon(Icons.map_outlined),
                           isDense: true,
                         ),
                         child: Text(
-                          group.meetingPoint ??
-                              'Treffpunkt auf der Karte festlegen',
+                          group.meetingPoint ?? t('group.setMeetingPoint'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: group.meetingPoint == null
@@ -363,13 +366,13 @@ class _GroupScreenState extends State<GroupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Hat das Treffen stattgefunden?',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                        Text(
+                          t('group.didMeetingHappen'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Sag kurz Bescheid, ob du dabei warst — das hält deinen Zuverlässigkeits-Score aktuell.',
+                          t('group.checkinHint'),
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -384,7 +387,7 @@ class _GroupScreenState extends State<GroupScreen> {
                                     ? null
                                     : () => _checkIn(false),
                                 icon: const Icon(Icons.close, size: 18),
-                                label: const Text('Konnte nicht'),
+                                label: Text(t('group.couldNotMake')),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -394,7 +397,7 @@ class _GroupScreenState extends State<GroupScreen> {
                                     ? null
                                     : () => _checkIn(true),
                                 icon: const Icon(Icons.check, size: 18),
-                                label: const Text('War da'),
+                                label: Text(t('group.wasThere')),
                               ),
                             ),
                           ],
@@ -462,7 +465,7 @@ class _ChatViewState extends State<_ChatView> {
               if (messages.isEmpty) {
                 return Center(
                   child: Text(
-                    'Noch keine Nachrichten. Sag hallo!',
+                    t('group.noMessages'),
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 );
@@ -558,8 +561,8 @@ class _ChatViewState extends State<_ChatView> {
                 Expanded(
                   child: TextField(
                     controller: _textCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Nachricht schreiben...',
+                    decoration: InputDecoration(
+                      hintText: t('group.messagePlaceholder'),
                       isDense: true,
                     ),
                     onSubmitted: (_) => _send(),
@@ -596,9 +599,9 @@ String _formatMessageTime(DateTime dt) {
 String _formatDateDividerLabel(DateTime dt) {
   final local = dt.toLocal();
   final now = DateTime.now();
-  if (_isSameDay(local, now)) return 'Heute';
+  if (_isSameDay(local, now)) return t('group.today');
   if (_isSameDay(local, now.subtract(const Duration(days: 1)))) {
-    return 'Gestern';
+    return t('group.yesterday');
   }
   return '${weekdayLabels[local.weekday - 1]}, '
       '${local.day.toString().padLeft(2, '0')}.'

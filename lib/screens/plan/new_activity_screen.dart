@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/picked_location.dart';
 import '../../models/sport_type.dart';
@@ -10,6 +11,7 @@ import '../../services/circle_controller.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
 import 'location_picker_screen.dart';
@@ -224,15 +226,19 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
         context.pushReplacement('/matches/${created.first.id}');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${created.length} Sportzeiten hinzugefügt.')),
+          SnackBar(
+            content: Text(
+              t('newActivity.added', {'count': '${created.length}'}),
+            ),
+          ),
         );
         context.pushReplacement('/plan');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Speichern fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -249,7 +255,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          widget.isEditing ? 'Aktivität bearbeiten' : 'Neue Aktivität',
+          widget.isEditing
+              ? t('newActivity.editTitle')
+              : t('newActivity.title'),
         ),
       ),
       body: SafeArea(
@@ -273,8 +281,10 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                       const SizedBox(width: 6),
                       Text(
                         circle == null
-                            ? 'Wird veröffentlicht: Öffentlich'
-                            : 'Wird veröffentlicht in: ${circle.name}',
+                            ? t('newActivity.publishPublic')
+                            : t('newActivity.publishInCircle', {
+                                'circle': circle.name,
+                              }),
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -284,7 +294,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   ),
                 ),
               ),
-            const _SectionLabel('Sportart'),
+            _SectionLabel(t('newActivity.sport')),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -309,18 +319,18 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ),
             if (_sport.usesVenueQuestion) ...[
               const SizedBox(height: 20),
-              const _SectionLabel('Hast du schon einen Platz?'),
+              _SectionLabel(t('newActivity.hasVenue')),
               Wrap(
                 spacing: 8,
                 children: [
                   ChoiceChip(
-                    label: const Text('Hab schon einen Platz'),
+                    label: Text(t('newActivity.hasVenueYes')),
                     selected: _venueStatus == 'has_venue',
                     onSelected: (_) =>
                         setState(() => _venueStatus = 'has_venue'),
                   ),
                   ChoiceChip(
-                    label: const Text('Suche noch einen Platz'),
+                    label: Text(t('newActivity.hasVenueNo')),
                     selected: _venueStatus == 'needs_venue',
                     onSelected: (_) =>
                         setState(() => _venueStatus = 'needs_venue'),
@@ -330,7 +340,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ],
             if (_sport.usesBikeType) ...[
               const SizedBox(height: 20),
-              const _SectionLabel('Rad-Typ'),
+              _SectionLabel(t('newActivity.bikeType')),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -345,12 +355,12 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ],
             if (!_sport.usesPace) ...[
               const SizedBox(height: 20),
-              const _SectionLabel('Level'),
+              _SectionLabel(t('newActivity.level')),
               Wrap(
                 spacing: 8,
                 children: _levels.map((l) {
                   return ChoiceChip(
-                    label: Text(l),
+                    label: Text(levelLabel(l)),
                     selected: _level == l,
                     onSelected: (_) => setState(() => _level = l),
                   );
@@ -358,17 +368,17 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               ),
             ],
             const SizedBox(height: 20),
-            const _SectionLabel('Wann?'),
+            _SectionLabel(t('newActivity.when')),
             Wrap(
               spacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('Jede Woche'),
+                  label: Text(t('newActivity.everyWeek')),
                   selected: _isRecurring,
                   onSelected: (_) => setState(() => _isRecurring = true),
                 ),
                 ChoiceChip(
-                  label: const Text('Einmalig am...'),
+                  label: Text(t('newActivity.oneOffOn')),
                   selected: !_isRecurring,
                   onSelected: (_) => setState(() => _isRecurring = false),
                 ),
@@ -411,13 +421,13 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 onTap: _pickSpecificDate,
                 borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    hintText: 'Datum auswählen',
-                    prefixIcon: Icon(Icons.event_outlined),
+                  decoration: InputDecoration(
+                    hintText: t('newActivity.pickDate'),
+                    prefixIcon: const Icon(Icons.event_outlined),
                   ),
                   child: Text(
                     _specificDate == null
-                        ? 'Datum auswählen'
+                        ? t('newActivity.pickDate')
                         : '${weekdayFullLabels[_specificDate!.weekday - 1]}, '
                               '${_specificDate!.day.toString().padLeft(2, '0')}.'
                               '${_specificDate!.month.toString().padLeft(2, '0')}.'
@@ -433,7 +443,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               children: [
                 Expanded(
                   child: _TimeField(
-                    label: 'Von',
+                    label: t('common.from'),
                     time: _start,
                     onTap: () => _pickTime(true),
                   ),
@@ -441,7 +451,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _TimeField(
-                    label: 'Bis',
+                    label: t('common.to'),
                     time: _end,
                     onTap: () => _pickTime(false),
                   ),
@@ -449,18 +459,18 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const _SectionLabel('Wo?'),
+            _SectionLabel(t('newActivity.where')),
             InkWell(
               onTap: _pickLocation,
               borderRadius: BorderRadius.circular(12),
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  hintText: 'Ort auf der Karte auswählen',
-                  prefixIcon: Icon(Icons.place_outlined),
-                  suffixIcon: Icon(Icons.map_outlined),
+                decoration: InputDecoration(
+                  hintText: t('newActivity.pickLocation'),
+                  prefixIcon: const Icon(Icons.place_outlined),
+                  suffixIcon: const Icon(Icons.map_outlined),
                 ),
                 child: Text(
-                  _location?.name ?? 'Ort auf der Karte auswählen',
+                  _location?.name ?? t('newActivity.pickLocation'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: _location == null
@@ -475,14 +485,14 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Umkreis (km)',
-                prefixIcon: Icon(Icons.social_distance_outlined),
+              decoration: InputDecoration(
+                labelText: t('newActivity.radius'),
+                prefixIcon: const Icon(Icons.social_distance_outlined),
               ),
             ),
             if (_sport.usesDistance) ...[
               const SizedBox(height: 20),
-              const _SectionLabel('Distanz (km)'),
+              _SectionLabel(t('newActivity.distance')),
               Row(
                 children: [
                   Expanded(
@@ -491,7 +501,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(labelText: 'von'),
+                      decoration: InputDecoration(labelText: t('common.from')),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -501,7 +511,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(labelText: 'bis'),
+                      decoration: InputDecoration(labelText: t('common.to')),
                     ),
                   ),
                 ],
@@ -509,12 +519,14 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ],
             if (_sport.usesPace) ...[
               const SizedBox(height: 20),
-              _SectionLabel('Pace ($unitLabel)'),
+              _SectionLabel(
+                t('onboarding.step2.paceRange', {'unit': unitLabel}),
+              ),
               Row(
                 children: [
                   Expanded(
                     child: PacePickerField(
-                      label: 'von',
+                      label: t('common.from'),
                       unit: _sport.defaultUnit,
                       value: _paceMin,
                       onChanged: (v) => setState(() => _paceMin = v),
@@ -523,7 +535,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: PacePickerField(
-                      label: 'bis',
+                      label: t('common.to'),
                       unit: _sport.defaultUnit,
                       value: _paceMax,
                       onChanged: (v) => setState(() => _paceMax = v),
@@ -548,10 +560,12 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     )
                   : Text(
                       widget.isEditing
-                          ? 'Speichern'
+                          ? t('newActivity.save')
                           : _selectedDays.length > 1
-                          ? 'Veröffentlichen (${_selectedDays.length} Tage)'
-                          : 'Veröffentlichen',
+                          ? t('newActivity.publishMultiple', {
+                              'count': '${_selectedDays.length}',
+                            })
+                          : t('newActivity.publish'),
                     ),
             ),
           ],

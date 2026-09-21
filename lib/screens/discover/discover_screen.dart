@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/community_event.dart';
 import '../../models/open_event.dart';
@@ -17,6 +18,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/matching_preferences.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/venue_status_badge.dart';
@@ -211,7 +213,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         final group = await _groupService.createGroup(
           createdBy: me,
           sport: entry.activity.sport,
-          name: '${entry.activity.sport.label} mit ${entry.profile.fullName}',
+          name: t('discover.groupNameWith', {
+            'sport': entry.activity.sport.label,
+            'name': entry.profile.fullName,
+          }),
           meetingPoint: entry.activity.locationName,
           latitude: entry.activity.latitude,
           longitude: entry.activity.longitude,
@@ -234,8 +239,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       context.push('/group/$groupId');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Kontakt fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('discover.contactFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _contacting.remove(entry.activity.id));
     }
@@ -251,9 +257,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Beitreten fehlgeschlagen: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('discover.joinFailed', {'error': '$e'}))),
+      );
     } finally {
       if (mounted) setState(() => _joining.remove(event.id));
     }
@@ -281,14 +287,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Filter',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Text(
+                  t('discover.filters.title'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Events in der Nähe anzeigen'),
+                  title: Text(t('discover.filters.showNearbyEvents')),
                   value: _showCommunityEvents,
                   onChanged: (v) {
                     setSheetState(() => _showCommunityEvents = v);
@@ -296,9 +305,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   },
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Sportart',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  t('newActivity.sport'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -324,9 +333,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Uhrzeit: ${_formatHour(_timeRange.start)} - '
-                  '${_formatHour(_timeRange.end)}'
-                  '${_timeRange.start <= 0 && _timeRange.end >= 24 ? ' (egal)' : ''}',
+                  t('discover.filters.time', {
+                    'start': _formatHour(_timeRange.start),
+                    'end': _formatHour(_timeRange.end),
+                    'any': _timeRange.start <= 0 && _timeRange.end >= 24
+                        ? t('discover.filters.timeAny')
+                        : '',
+                  }),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 RangeSlider(
@@ -354,7 +367,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       });
                       setState(() {});
                     },
-                    child: const Text('Filter zurücksetzen'),
+                    child: Text(t('discover.filters.reset')),
                   ),
               ],
             ),
@@ -374,18 +387,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       currentIndex: 0,
-      title: 'Entdecken',
+      title: t('nav.discover'),
       actions: [
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
-          tooltip: 'Event hosten',
+          tooltip: t('discover.hostEvent'),
           onPressed: _hostEvent,
         ),
         IconButton(
           icon: Icon(
             _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
           ),
-          tooltip: 'Filter',
+          tooltip: t('discover.filters.title'),
           onPressed: _openFilters,
         ),
       ],
@@ -425,7 +438,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _load,
-                child: const Text('Erneut versuchen'),
+                child: Text(t('discover.retry')),
               ),
             ],
           ),
@@ -443,7 +456,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'An diesem Tag hat noch niemand eine Sportzeit eingetragen.',
+                t('discover.emptyDay'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
@@ -451,7 +464,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               OutlinedButton.icon(
                 onPressed: _hostEvent,
                 icon: const Icon(Icons.add_circle_outline),
-                label: const Text('Event hosten'),
+                label: Text(t('discover.hostEvent')),
               ),
             ],
           ),
@@ -466,14 +479,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Nichts passt zu deinen Filtern.',
+                t('discover.emptyFiltered'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: _openFilters,
-                child: const Text('Filter anpassen'),
+                child: Text(t('discover.adjustFilters')),
               ),
             ],
           ),
@@ -493,7 +506,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   const Icon(Icons.star, size: 16, color: Colors.amber),
                   const SizedBox(width: 6),
                   Text(
-                    'Events in der Nähe',
+                    t('discover.eventsNearby'),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,
@@ -513,7 +526,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   Icon(Icons.groups, size: 16, color: AppColors.secondary),
                   const SizedBox(width: 6),
                   Text(
-                    'Offene Events',
+                    t('discover.openEvents'),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,
@@ -529,7 +542,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 4),
               child: Text(
-                'Passende Leute',
+                t('discover.matchingPeople'),
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textSecondary,
@@ -616,7 +629,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           Uri.parse(event.url!),
                           mode: LaunchMode.externalApplication,
                         ),
-                        child: const Text('Mehr Infos'),
+                        child: Text(t('discover.moreInfo')),
                       ),
                     ),
                   ],
@@ -711,8 +724,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       const SizedBox(width: 4),
                       Text(
                         event.maxParticipants == null
-                            ? '${event.participantCount} dabei'
-                            : '${event.participantCount}/${event.maxParticipants} dabei',
+                            ? t('discover.participants', {
+                                'count': '${event.participantCount}',
+                              })
+                            : t('discover.participantsMax', {
+                                'count': '${event.participantCount}',
+                                'max': '${event.maxParticipants}',
+                              }),
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -727,7 +745,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ? OutlinedButton(
                             onPressed: () =>
                                 context.push('/group/${event.groupId}'),
-                            child: const Text('Chat öffnen'),
+                            child: Text(t('discover.openChat')),
                           )
                         : ElevatedButton(
                             onPressed: (joining || event.isFull)
@@ -742,7 +760,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : Text(event.isFull ? 'Voll' : 'Teilnehmen'),
+                                : Text(
+                                    event.isFull
+                                        ? t('discover.full')
+                                        : t('discover.join'),
+                                  ),
                           ),
                   ),
                 ],
@@ -812,7 +834,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ),
                   if (e.profile.gender != null)
                     Text(
-                      e.profile.gender!,
+                      genderLabel(e.profile.gender!),
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
@@ -897,7 +919,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                               width: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Kontaktieren'),
+                          : Text(t('discover.contact')),
                     ),
                   ),
                 ],
@@ -921,19 +943,19 @@ class _DateStrip extends StatelessWidget {
   final DateTime selected;
   final ValueChanged<DateTime> onSelect;
 
-  static const _monthLabels = [
-    'Jan',
-    'Feb',
-    'Mär',
-    'Apr',
-    'Mai',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Dez',
+  static List<String> get _monthLabels => [
+    t('month.jan'),
+    t('month.feb'),
+    t('month.mar'),
+    t('month.apr'),
+    t('month.may'),
+    t('month.jun'),
+    t('month.jul'),
+    t('month.aug'),
+    t('month.sep'),
+    t('month.oct'),
+    t('month.nov'),
+    t('month.dec'),
   ];
 
   @override
