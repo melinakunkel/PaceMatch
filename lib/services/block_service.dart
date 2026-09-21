@@ -1,5 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../models/profile.dart';
 import 'profile_service.dart';
 import 'supabase_service.dart';
@@ -8,17 +6,12 @@ class BlockService {
   final _client = SupabaseService.client;
   final _profileService = ProfileService();
 
+  /// Blocks [userId] and immediately leaves any group chat I currently share
+  /// with them, so blocking actually ends the conversation instead of just
+  /// filtering future matches (see 0027_block_user_leaves_chats.sql).
   Future<void> blockUser(String userId) async {
     await SupabaseService.ensureFreshSession();
-    try {
-      await _client.from('blocks').insert({
-        'blocker_id': SupabaseService.currentUserId,
-        'blocked_id': userId,
-      });
-    } on PostgrestException catch (e) {
-      // 23505 = unique_violation: already blocked, nothing to do.
-      if (e.code != '23505') rethrow;
-    }
+    await _client.rpc('block_user', params: {'target': userId});
   }
 
   Future<void> unblockUser(String userId) async {

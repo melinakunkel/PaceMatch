@@ -34,6 +34,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
   bool _alsoBlock = true;
   bool _sending = false;
   bool _sent = false;
+  bool _blocked = false;
   String? _error;
 
   @override
@@ -67,7 +68,12 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
       if (_alsoBlock) {
         await BlockService().blockUser(_selectedMember!.id);
       }
-      if (mounted) setState(() => _sent = true);
+      if (mounted) {
+        setState(() {
+          _sent = true;
+          _blocked = _alsoBlock;
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _error = t('report.submitFailed', {'error': '$e'}));
@@ -148,7 +154,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
             ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(_blocked),
           child: Text(_sent ? t('common.close') : t('common.cancel')),
         ),
         if (!_sent && widget.members.isNotEmpty)

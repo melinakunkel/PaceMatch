@@ -78,30 +78,48 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                 final busy = _unblocking.contains(profile.id);
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.secondaryLight,
-                      backgroundImage: profile.avatarUrl != null
-                          ? NetworkImage(profile.avatarUrl!)
-                          : null,
-                      child: profile.avatarUrl != null
-                          ? null
-                          : Text(
-                              profile.fullName.isNotEmpty
-                                  ? profile.fullName[0].toUpperCase()
-                                  : '?',
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.secondaryLight,
+                          backgroundImage: profile.avatarUrl != null
+                              ? NetworkImage(profile.avatarUrl!)
+                              : null,
+                          child: profile.avatarUrl != null
+                              ? null
+                              : Text(
+                                  profile.fullName.isNotEmpty
+                                      ? profile.fullName[0].toUpperCase()
+                                      : '?',
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            profile.fullName,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
                             ),
-                    ),
-                    title: Text(profile.fullName),
-                    trailing: OutlinedButton(
-                      onPressed: busy ? null : () => _unblock(profile),
-                      child: busy
-                          ? const SizedBox(
-                              height: 14,
-                              width: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(t('blockedUsers.unblock')),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton(
+                          onPressed: busy ? null : () => _unblock(profile),
+                          child: busy
+                              ? const SizedBox(
+                                  height: 14,
+                                  width: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(t('blockedUsers.unblock')),
+                        ),
+                      ],
                     ),
                   ),
                 );

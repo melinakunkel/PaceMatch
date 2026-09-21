@@ -273,13 +273,20 @@ class _GroupScreenState extends State<GroupScreen> {
           IconButton(
             icon: const Icon(Icons.flag_outlined),
             tooltip: t('group.reportUser'),
-            onPressed: () => showDialog(
-              context: context,
-              builder: (_) => ReportUserDialog(
-                members: _members.where((m) => m.id != myId).toList(),
-                groupId: widget.groupId,
-              ),
-            ),
+            onPressed: () async {
+              final blocked = await showDialog<bool>(
+                context: context,
+                builder: (_) => ReportUserDialog(
+                  members: _members.where((m) => m.id != myId).toList(),
+                  groupId: widget.groupId,
+                ),
+              );
+              // Blocking removes me from this chat server-side — leave the
+              // screen instead of showing a group I'm no longer part of.
+              if (blocked == true && context.mounted) {
+                safeBack(context, '/chat');
+              }
+            },
           ),
         ],
       ),
