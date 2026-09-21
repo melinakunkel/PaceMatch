@@ -7,10 +7,12 @@ import '../../models/match_candidate.dart';
 import '../../models/profile.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
+import '../../services/group_service.dart';
 import '../../services/like_service.dart';
 import '../../services/match_service.dart';
 import '../../services/match_notifier.dart';
 import '../../services/profile_service.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/display_labels.dart';
@@ -32,11 +34,20 @@ class _MatchesScreenState extends State<MatchesScreen> {
   final _matchService = MatchService();
   final _profileService = ProfileService();
   final _likeService = LikeService();
+  final _groupService = GroupService();
 
   Activity? _activity;
   List<MatchCandidate> _candidates = [];
   Map<String, UserSport> _theirSports = {};
+
+  /// Liked this session (right-swiped or liked from the list) — removed from
+  /// [_pending] immediately so it can't be shown again without reloading.
+  /// Passing on someone is *not* tracked here: it only advances [_topIndex]
+  /// in swipe mode, so a passed candidate can still be liked later from the
+  /// list view — nothing is permanently hidden just for being skipped once.
+  final Set<String> _likedThisSession = {};
   int _topIndex = 0;
+  bool _listView = false;
   bool _celebrating = false;
   bool _loading = true;
   String? _error;
@@ -48,8 +59,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool _lastPending = false;
   bool _lastMutual = false;
 
-  bool get _canUndo =>
-      _lastSwiped != null && !_lastPending && !_lastMutual && _topIndex > 0;
+  bool get _canUndo => _lastSwiped != null && !_lastPending && !_lastMutual;
+
+  /// Candidates still to decide on — liked ones drop out immediately;
+  /// passed ones stay (just skipped over in swipe mode) so the list view can
+  /// still offer them.
+  List<MatchCandidate> get _pending => _candidates
+      .where((c) => !_likedThisSession.contains(c.profile.id))
+      .toList();
 
   @override
   void initState() {
@@ -78,6 +95,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
         _candidates = candidates;
         _theirSports = theirSports;
         _topIndex = 0;
+        _likedThisSession.clear();
         _lastSwiped = null;
       });
     } catch (e) {
@@ -87,9 +105,52 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
+  /// Creates (or reuses) this activity's group chat and adds [userId] to it
+  /// — called right after a mutual match so the celebration dialog can open
+  /// straight into the chat instead of sending the user on a detour through
+  /// the Sportbuddys hub to manually set one up.
+  Future<String?> _ensureGroupFor(String userId) async {
+    final activity = _activity;
+    if (activity == null) return null;
+    try {
+      final me = SupabaseService.currentUserId!;
+      final existingGroupId = await _groupService.findGroupIdForActivity(
+        activity.id,
+      );
+      String groupId;
+      if (existingGroupId != null) {
+        groupId = existingGroupId;
+      } else {
+        final created = await _groupService.createGroup(
+          createdBy: me,
+          sport: activity.sport,
+          name:
+              '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+          meetingPoint: activity.locationName,
+          latitude: activity.latitude,
+          longitude: activity.longitude,
+          meetingTime: activity.nextOccurrence,
+          activityId: activity.id,
+          isMatch: true,
+        );
+        groupId = created.id;
+      }
+      await _groupService.joinGroup(groupId: groupId, userId: userId);
+      return groupId;
+    } catch (_) {
+      // Best-effort — the celebration dialog falls back to the Hub if this
+      // fails, so a chat can still be set up manually from there.
+      return null;
+    }
+  }
+
   Future<void> _swipe(MatchCandidate candidate, bool liked) async {
     setState(() {
-      _topIndex++;
+      if (liked) {
+        _likedThisSession.add(candidate.profile.id);
+      } else {
+        _topIndex++;
+      }
       _lastSwiped = candidate;
       _lastLiked = liked;
       _lastMutual = false;
@@ -117,6 +178,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
       }
       if (!mutual) return;
       MatchNotifier.refresh();
+      final groupId = await _ensureGroupFor(candidate.profile.id);
+      if (!mounted) return;
       // Only guard the celebration dialog against overlapping popups if two
       // connections land back to back.
       if (_celebrating) return;
@@ -124,13 +187,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => _MatchCelebrationDialog(profile: candidate.profile),
+        builder: (_) => _MatchCelebrationDialog(
+          profile: candidate.profile,
+          groupId: groupId,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      if (identical(_lastSwiped, candidate)) {
-        setState(() => _lastPending = false);
-      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t('matches.somethingWentWrong', {'error': '$e'})),
@@ -148,7 +211,11 @@ class _MatchesScreenState extends State<MatchesScreen> {
     final candidate = _lastSwiped!;
     final wasLiked = _lastLiked;
     setState(() {
-      _topIndex--;
+      if (wasLiked) {
+        _likedThisSession.remove(candidate.profile.id);
+      } else {
+        _topIndex--;
+      }
       _lastSwiped = null;
     });
     if (wasLiked) {
@@ -173,6 +240,16 @@ class _MatchesScreenState extends State<MatchesScreen> {
               ? t('matches.title')
               : '${_activity!.sport.label} · ${_activity!.dayLabel}',
         ),
+        actions: [
+          if (!_loading && _error == null)
+            IconButton(
+              icon: Icon(_listView ? Icons.style_outlined : Icons.list),
+              tooltip: _listView
+                  ? t('matches.viewToggleSwipe')
+                  : t('matches.viewToggleList'),
+              onPressed: () => setState(() => _listView = !_listView),
+            ),
+        ],
       ),
       body: SafeArea(
         child: _loading
@@ -181,38 +258,109 @@ class _MatchesScreenState extends State<MatchesScreen> {
             ? Center(
                 child: Text(_error!, style: TextStyle(color: AppColors.danger)),
               )
-            : _buildBody(),
+            : _listView
+            ? _buildListBody()
+            : _buildSwipeBody(),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildListBody() {
     final activity = _activity!;
-    final remaining = _candidates.length - _topIndex;
+    final pending = _pending;
     return Column(
       children: [
+        _buildHeader(activity),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-          child: Row(
-            children: [
-              Icon(Icons.schedule, size: 18, color: AppColors.textSecondary),
-              const SizedBox(width: 6),
-              Text(activity.timeRangeLabel),
-              const SizedBox(width: 16),
-              Icon(
-                Icons.place_outlined,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  activity.locationName ?? t('matches.flexibleLocation'),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _candidates.isEmpty
+                  ? t('matches.noneFoundYet')
+                  : pending.isEmpty
+                  ? t('matches.allDoneForToday')
+                  : t('matches.listPrompt'),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
           ),
         ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _candidates.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      t('matches.emptyHint'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                )
+              : pending.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 48,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          t('matches.noMoreSuggestions'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: pending.length,
+                  itemBuilder: (context, i) => _CandidateListTile(
+                    candidate: pending[i],
+                    theirSport: _theirSports[pending[i].profile.id],
+                    onLike: () => _swipe(pending[i], true),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(Activity activity) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Text(activity.timeRangeLabel),
+          const SizedBox(width: 16),
+          Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(activity.locationName ?? t('matches.flexibleLocation')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwipeBody() {
+    final activity = _activity!;
+    final pending = _pending;
+    final remaining = pending.length - _topIndex;
+    return Column(
+      children: [
+        _buildHeader(activity),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -267,6 +415,14 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             label: Text(t('matches.undoLast')),
                           ),
                         ],
+                        if (pending.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () => setState(() => _listView = true),
+                            icon: const Icon(Icons.list),
+                            label: Text(t('matches.viewToggleList')),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -276,19 +432,17 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   child: Stack(
                     children: [
                       for (
-                        var i =
-                            (_topIndex + 2).clamp(0, _candidates.length) - 1;
+                        var i = (_topIndex + 2).clamp(0, pending.length) - 1;
                         i >= _topIndex;
                         i--
                       )
                         if (i == _topIndex)
                           _SwipeCard(
-                            key: ValueKey(_candidates[i].profile.id),
-                            onSwiped: (liked) => _swipe(_candidates[i], liked),
+                            key: ValueKey(pending[i].profile.id),
+                            onSwiped: (liked) => _swipe(pending[i], liked),
                             child: _MatchCard(
-                              candidate: _candidates[i],
-                              theirSport:
-                                  _theirSports[_candidates[i].profile.id],
+                              candidate: pending[i],
+                              theirSport: _theirSports[pending[i].profile.id],
                             ),
                           )
                         else
@@ -297,9 +451,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                             child: Opacity(
                               opacity: 0.6,
                               child: _MatchCard(
-                                candidate: _candidates[i],
-                                theirSport:
-                                    _theirSports[_candidates[i].profile.id],
+                                candidate: pending[i],
+                                theirSport: _theirSports[pending[i].profile.id],
                               ),
                             ),
                           ),
@@ -324,13 +477,13 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 _RoundActionButton(
                   icon: Icons.close,
                   color: AppColors.danger,
-                  onPressed: () => _swipe(_candidates[_topIndex], false),
+                  onPressed: () => _swipe(pending[_topIndex], false),
                 ),
                 const SizedBox(width: 32),
                 _RoundActionButton(
                   icon: Icons.favorite,
                   color: AppColors.secondary,
-                  onPressed: () => _swipe(_candidates[_topIndex], true),
+                  onPressed: () => _swipe(pending[_topIndex], true),
                 ),
               ],
             ),
@@ -628,9 +781,125 @@ class _MatchBadge extends StatelessWidget {
   }
 }
 
+/// Row for the list view — same info as a swipe card, condensed, with a
+/// dedicated like button instead of a swipe gesture.
+class _CandidateListTile extends StatelessWidget {
+  const _CandidateListTile({
+    required this.candidate,
+    required this.theirSport,
+    required this.onLike,
+  });
+
+  final MatchCandidate candidate;
+  final UserSport? theirSport;
+  final VoidCallback onLike;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = candidate.profile;
+    final stats = activityStatsLabel(candidate.theirActivity, theirSport);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push('/profile/${profile.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: AppColors.secondaryLight,
+                backgroundImage: profile.avatarUrl != null
+                    ? NetworkImage(profile.avatarUrl!)
+                    : null,
+                child: profile.avatarUrl != null
+                    ? null
+                    : Text(
+                        profile.fullName.isNotEmpty
+                            ? profile.fullName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            [
+                              profile.fullName,
+                              if (profile.age != null) '${profile.age}',
+                            ].join(', '),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (profile.isVerified) ...[
+                          const SizedBox(width: 4),
+                          const VerifiedBadge(size: 14),
+                        ],
+                        const Spacer(),
+                        _MatchBadge(percent: candidate.matchPercent),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        candidate.theirActivity.timeRangeLabel,
+                        candidate.theirActivity.locationName ??
+                            t('matches.flexibleLocation'),
+                      ].join(' · '),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (stats != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        stats,
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                onPressed: onLike,
+                tooltip: t('matches.likeButton'),
+                icon: const Icon(Icons.favorite),
+                color: AppColors.secondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MatchCelebrationDialog extends StatelessWidget {
-  const _MatchCelebrationDialog({required this.profile});
+  const _MatchCelebrationDialog({required this.profile, this.groupId});
   final Profile profile;
+  final String? groupId;
 
   @override
   Widget build(BuildContext context) {
@@ -679,9 +948,17 @@ class _MatchCelebrationDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  context.go('/matches');
+                  if (groupId != null) {
+                    context.go('/group/$groupId');
+                  } else {
+                    context.go('/matches');
+                  }
                 },
-                child: Text(t('matches.celebration.goToBuddies')),
+                child: Text(
+                  groupId != null
+                      ? t('matches.celebration.openChat')
+                      : t('matches.celebration.goToBuddies'),
+                ),
               ),
             ),
             const SizedBox(height: 8),

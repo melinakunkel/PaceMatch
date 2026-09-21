@@ -358,6 +358,7 @@ const _de = <String, String>{
   'matches.flexibleLocation': 'Ort flexibel',
   'matches.noneFoundYet': 'Noch keine passenden Leute gefunden.',
   'matches.swipePrompt': 'Wisch durch, wer zu dir passt.',
+  'matches.listPrompt': 'Alle, die noch zu dir passen.',
   'matches.allDoneForToday': 'Das waren alle für heute.',
   'matches.emptyHint': 'Sobald jemand eine ähnliche Sportzeit einträgt, erscheint er oder sie hier.',
   'matches.noMoreSuggestions':
@@ -365,9 +366,13 @@ const _de = <String, String>{
   'matches.undoLast': 'Letztes rückgängig machen',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',
+  'matches.likeButton': 'Liken',
+  'matches.viewToggleList': 'Als Liste anzeigen',
+  'matches.viewToggleSwipe': 'Zum Swipen wechseln',
   'matches.celebration.title': 'Ihr seid jetzt Sportbuddys!',
   'matches.celebration.subtitle':
       '{name} und du wollt beide zusammen trainieren.',
+  'matches.celebration.openChat': 'Chat öffnen',
   'matches.celebration.goToBuddies': 'Zu deinen Sportbuddys',
   'matches.celebration.keepSwiping': 'Weiter swipen',
 
@@ -852,6 +857,7 @@ const _en = <String, String>{
   'matches.flexibleLocation': 'Flexible location',
   'matches.noneFoundYet': 'No matching people found yet.',
   'matches.swipePrompt': 'Swipe through who matches you.',
+  'matches.listPrompt': 'Everyone who still matches you.',
   'matches.allDoneForToday': 'That was everyone for today.',
   'matches.emptyHint':
       'As soon as someone adds a similar sport time, they\'ll show up here.',
@@ -859,8 +865,12 @@ const _en = <String, String>{
   'matches.undoLast': 'Undo last swipe',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',
+  'matches.likeButton': 'Like',
+  'matches.viewToggleList': 'Show as list',
+  'matches.viewToggleSwipe': 'Switch to swiping',
   'matches.celebration.title': 'You\'re Sportbuddys now!',
   'matches.celebration.subtitle': 'You and {name} both want to train together.',
+  'matches.celebration.openChat': 'Open chat',
   'matches.celebration.goToBuddies': 'Go to your Sportbuddys',
   'matches.celebration.keepSwiping': 'Keep swiping',
 

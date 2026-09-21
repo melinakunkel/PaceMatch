@@ -5,12 +5,14 @@ import '../utils/match_scoring.dart';
 import '../utils/matching_preferences.dart';
 import 'activity_service.dart';
 import 'block_service.dart';
+import 'like_service.dart';
 import 'supabase_service.dart';
 
 class MatchService {
   final _client = SupabaseService.client;
   final _activityService = ActivityService();
   final _blockService = BlockService();
+  final _likeService = LikeService();
 
   /// Finds other users whose activities overlap with [myActivity] on the
   /// same weekday, ranked by a 0-100 match score (time + pace overlap).
@@ -60,6 +62,11 @@ class MatchService {
       for (final row in profileRows) row['id'] as String: Profile.fromMap(row),
     };
     final blockedIds = await _blockService.blockedUserIds();
+    // Someone already liked (for this activity) shouldn't be offered again
+    // as a suggestion — whether or not it's mutual yet, that decision is
+    // already made. Without this, reopening this screen re-showed everyone
+    // from scratch, including people you'd already matched with.
+    final likedIds = await _likeService.likedUserIdsForActivity(myActivity.id);
 
     final result = <MatchCandidate>[];
     for (final entry in scored) {
@@ -67,6 +74,7 @@ class MatchService {
       if (profile == null) continue;
       if (profile.isSuspended) continue;
       if (blockedIds.contains(profile.id)) continue;
+      if (likedIds.contains(profile.id)) continue;
       if (myProfile != null && !isAllowedByPreferences(myProfile, profile)) {
         continue;
       }

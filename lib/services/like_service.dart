@@ -25,6 +25,18 @@ class LikeService {
     await _client.rpc('unlike_user', params: {'target': toUser});
   }
 
+  /// Everyone the current user has already liked for [activityId] — used to
+  /// keep a decided candidate (whether or not it's mutual yet) from
+  /// reappearing as a match suggestion for that same activity.
+  Future<Set<String>> likedUserIdsForActivity(String activityId) async {
+    final rows = await _client
+        .from('likes')
+        .select('to_user')
+        .eq('from_user', SupabaseService.currentUserId as String)
+        .eq('activity_id', activityId);
+    return (rows as List).map((r) => r['to_user'] as String).toSet();
+  }
+
   /// Everyone the current user has mutually liked — a "Sportbuddy"
   /// connection — newest first. A mutual pair "connects" at whichever of the
   /// two likes came second.
