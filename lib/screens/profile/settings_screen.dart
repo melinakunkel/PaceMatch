@@ -35,6 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _setBrowserNotifications(bool value) async {
     if (!value) {
       await BrowserNotificationService.disable();
+      if (!mounted) return;
       setState(() => _browserNotifications = false);
       return;
     }

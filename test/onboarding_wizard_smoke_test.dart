@@ -9,16 +9,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await Supabase.initialize(
       url: 'https://example.supabase.co',
-      anonKey: 'test-anon-key',
+      publishableKey: 'test-anon-key',
     );
   });
 
   testWidgets('Weiter button advances through all onboarding steps', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: OnboardingWizardScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: OnboardingWizardScreen()));
 
     expect(find.text('Welche Sportarten machst du?'), findsOneWidget);
 
@@ -47,9 +45,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 420));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      const MaterialApp(home: OnboardingWizardScreen()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: OnboardingWizardScreen()));
 
     expect(tester.takeException(), isNull);
     final weiterFinder = find.text('Weiter');

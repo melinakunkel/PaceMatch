@@ -180,14 +180,19 @@ class _CircleSheetState extends State<_CircleSheet> {
             const SizedBox(height: 12),
             ValueListenableBuilder<Circle?>(
               valueListenable: CircleController.active,
-              builder: (context, active, _) => RadioListTile<String?>(
-                contentPadding: EdgeInsets.zero,
-                value: null,
+              builder: (context, active, _) => RadioGroup<String?>(
                 groupValue: active?.id,
-                onChanged: _busy ? null : (_) => _select(null),
-                secondary: const Icon(Icons.public_outlined),
-                title: Text(t('circles.public')),
-                subtitle: Text(t('circles.publicSubtitle')),
+                onChanged: (_) {
+                  if (!_busy) _select(null);
+                },
+                child: RadioListTile<String?>(
+                  contentPadding: EdgeInsets.zero,
+                  value: null,
+                  enabled: !_busy,
+                  secondary: const Icon(Icons.public_outlined),
+                  title: Text(t('circles.public')),
+                  subtitle: Text(t('circles.publicSubtitle')),
+                ),
               ),
             ),
             FutureBuilder<List<Circle>>(
@@ -203,24 +208,30 @@ class _CircleSheetState extends State<_CircleSheet> {
                 if (circles.isEmpty) return const SizedBox.shrink();
                 return ValueListenableBuilder<Circle?>(
                   valueListenable: CircleController.active,
-                  builder: (context, active, _) => Column(
-                    children: circles.map((c) {
-                      return RadioListTile<String?>(
-                        contentPadding: EdgeInsets.zero,
-                        value: c.id,
-                        groupValue: active?.id,
-                        onChanged: _busy ? null : (_) => _select(c),
-                        secondary: IconButton(
-                          icon: const Icon(Icons.exit_to_app),
-                          tooltip: t('circles.leaveCircle'),
-                          onPressed: _busy ? null : () => _leave(c),
-                        ),
-                        title: Text(c.name),
-                        subtitle: Text(
-                          t('circles.code', {'code': c.inviteCode}),
-                        ),
-                      );
-                    }).toList(),
+                  builder: (context, active, _) => RadioGroup<String?>(
+                    groupValue: active?.id,
+                    onChanged: (id) {
+                      if (_busy) return;
+                      _select(circles.firstWhere((c) => c.id == id));
+                    },
+                    child: Column(
+                      children: circles.map((c) {
+                        return RadioListTile<String?>(
+                          contentPadding: EdgeInsets.zero,
+                          value: c.id,
+                          enabled: !_busy,
+                          secondary: IconButton(
+                            icon: const Icon(Icons.exit_to_app),
+                            tooltip: t('circles.leaveCircle'),
+                            onPressed: _busy ? null : () => _leave(c),
+                          ),
+                          title: Text(c.name),
+                          subtitle: Text(
+                            t('circles.code', {'code': c.inviteCode}),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 );
               },

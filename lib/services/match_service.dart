@@ -54,8 +54,9 @@ class MatchService {
     for (final entry in scored) {
       final profile = profilesById[entry.key.userId];
       if (profile == null) continue;
-      if (myProfile != null && !isAllowedByPreferences(myProfile, profile))
+      if (myProfile != null && !isAllowedByPreferences(myProfile, profile)) {
         continue;
+      }
       result.add(
         MatchCandidate(
           profile: profile,

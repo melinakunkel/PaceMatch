@@ -1,11 +1,18 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
-bool get notificationsSupported => html.Notification.supported;
+import 'package:web/web.dart' as web;
+
+/// Feature-detected rather than assumed: some browsers (older Safari, some
+/// in-app webviews) don't expose the Notification API at all, and touching
+/// `web.Notification.permission` there would throw instead of just being
+/// unsupported.
+bool get notificationsSupported => globalContext.has('Notification');
 
 Future<bool> requestNotificationPermission() async {
   if (!notificationsSupported) return false;
-  final permission = await html.Notification.requestPermission();
-  return permission == 'granted';
+  final permission = await web.Notification.requestPermission().toDart;
+  return permission.toDart == 'granted';
 }
 
 /// Only fires while the app is running in this browser tab — real push
@@ -13,6 +20,10 @@ Future<bool> requestNotificationPermission() async {
 /// of this.
 void showBrowserNotification({required String title, String? body}) {
   if (!notificationsSupported) return;
-  if (html.Notification.permission != 'granted') return;
-  html.Notification(title, body: body);
+  if (web.Notification.permission != 'granted') return;
+  if (body != null) {
+    web.Notification(title, web.NotificationOptions(body: body));
+  } else {
+    web.Notification(title);
+  }
 }
