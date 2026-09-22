@@ -43,10 +43,10 @@ class AppScaffold extends StatelessWidget {
       appBar: title == null
           ? null
           : AppBar(
-              // The logo doubles as the Home shortcut, and the circle
-              // (public/private area) switch sits right next to it — both
-              // are used from every screen. Only screen-specific actions
-              // go in their own row below, so they never crowd the title.
+              // The logo doubles as the Home shortcut, right next to the
+              // title; screen-specific actions and the circle (public/
+              // private area) switch sit in the standard actions row —
+              // all in one line, since the title itself is small.
               title: Row(
                 children: [
                   IconButton(
@@ -57,21 +57,9 @@ class AppScaffold extends StatelessWidget {
                   Expanded(
                     child: Text(title!, overflow: TextOverflow.ellipsis),
                   ),
-                  const CircleSwitcherButton(),
                 ],
               ),
-              bottom: (actions == null || actions!.isEmpty)
-                  ? null
-                  : PreferredSize(
-                      preferredSize: const Size.fromHeight(44),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: actions!,
-                        ),
-                      ),
-                    ),
+              actions: [...?actions, const CircleSwitcherButton()],
             ),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
