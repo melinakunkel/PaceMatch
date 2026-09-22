@@ -80,6 +80,33 @@ class OpenEventService {
         .eq('city', city)
         .eq('event_date', _dateStr(date))
         .order('start_time');
+    return _withParticipantInfo(rows, userId);
+  }
+
+  /// Open events in [city] within the next [days] days from [from] — used
+  /// by the "all events" timeline view (as opposed to
+  /// [getForCityAndDate]'s single day).
+  Future<List<OpenEvent>> getUpcomingForCity({
+    required String city,
+    required DateTime from,
+    required String userId,
+    int days = 120,
+  }) async {
+    final rows = await _client
+        .from('open_events')
+        .select('*, groups(group_members(count))')
+        .eq('city', city)
+        .gte('event_date', _dateStr(from))
+        .lt('event_date', _dateStr(from.add(Duration(days: days))))
+        .order('event_date')
+        .order('start_time');
+    return _withParticipantInfo(rows, userId);
+  }
+
+  Future<List<OpenEvent>> _withParticipantInfo(
+    List<Map<String, dynamic>> rows,
+    String userId,
+  ) async {
     if (rows.isEmpty) return [];
 
     final groupIds = rows.map((r) => r['group_id'] as String).toList();

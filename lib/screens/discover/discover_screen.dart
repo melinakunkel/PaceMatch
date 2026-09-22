@@ -32,6 +32,53 @@ class _DiscoverEntry {
   final Activity activity;
 }
 
+/// One occurrence of a community or open event, for the chronological "all
+/// events" timeline view — a recurring [CommunityEvent] contributes one
+/// entry per matching date (see [CommunityEvent.occurrencesBetween]).
+class _TimelineEntry {
+  _TimelineEntry.community(this.date, CommunityEvent event)
+    : community = event,
+      open = null,
+      _startMinutes = _minutesOf(event.startTime);
+
+  _TimelineEntry.open(this.date, OpenEvent event)
+    : community = null,
+      open = event,
+      _startMinutes = event.startTime.hour * 60 + event.startTime.minute;
+
+  final DateTime date;
+  final CommunityEvent? community;
+  final OpenEvent? open;
+  final int _startMinutes;
+
+  static int _minutesOf(String hhmm) {
+    final parts = hhmm.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+
+  static int compare(_TimelineEntry a, _TimelineEntry b) {
+    final byDate = a.date.compareTo(b.date);
+    return byDate != 0 ? byDate : a._startMinutes.compareTo(b._startMinutes);
+  }
+}
+
+List<String> get _monthLabels => [
+  t('month.jan'),
+  t('month.feb'),
+  t('month.mar'),
+  t('month.apr'),
+  t('month.may'),
+  t('month.jun'),
+  t('month.jul'),
+  t('month.aug'),
+  t('month.sep'),
+  t('month.oct'),
+  t('month.nov'),
+  t('month.dec'),
+];
+
+String _monthYearLabel(DateTime d) => '${_monthLabels[d.month - 1]} ${d.year}';
+
 /// "Entdecken": pick a date and browse what everyone else has scheduled
 /// that day, across all sports — not just matches for one of your own
 /// activities.
@@ -70,6 +117,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _showCommunityEvents = true;
   Set<SportType> _sportFilter = {};
   RangeValues _timeRange = const RangeValues(0, 24);
+
+  /// Chronological "all events" view, as an alternative to picking one day
+  /// at a time — see [_buildTimelineBody].
+  bool _timelineView = false;
+  bool _timelineShowCommunity = true;
+  bool _timelineShowOpen = true;
+  bool _timelineLoading = true;
+  String? _timelineError;
+  List<CommunityEvent> _timelineCommunityEvents = [];
+  List<OpenEvent> _timelineOpenEvents = [];
+  static const _timelineDaysAhead = 120;
 
   bool get _filtersActive =>
       !_showCommunityEvents ||
@@ -210,6 +268,69 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  Future<void> _toggleTimelineView() async {
+    setState(() => _timelineView = !_timelineView);
+    if (_timelineView &&
+        _timelineCommunityEvents.isEmpty &&
+        _timelineOpenEvents.isEmpty) {
+      await _loadTimeline();
+    }
+  }
+
+  Future<void> _loadTimeline() async {
+    setState(() {
+      _timelineLoading = true;
+      _timelineError = null;
+    });
+    try {
+      final myId = SupabaseService.currentUserId!;
+      final myProfiles = await _profileService.getProfilesByIds([myId]);
+      final city = myProfiles.isEmpty
+          ? 'Wien'
+          : (myProfiles.first.city ?? 'Wien');
+      final today = _dateOnly(DateTime.now());
+      final community = await _communityEventService.getAllForCity(city);
+      final open = await _openEventService.getUpcomingForCity(
+        city: city,
+        from: today,
+        userId: myId,
+        days: _timelineDaysAhead,
+      );
+      if (!mounted) return;
+      setState(() {
+        _timelineCommunityEvents = community;
+        _timelineOpenEvents = open;
+        _timelineLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _timelineError = '$e';
+        _timelineLoading = false;
+      });
+    }
+  }
+
+  List<_TimelineEntry> get _timelineEntries {
+    final today = _dateOnly(DateTime.now());
+    final to = today.add(const Duration(days: _timelineDaysAhead));
+    final entries = <_TimelineEntry>[];
+    if (_timelineShowCommunity) {
+      for (final event in _timelineCommunityEvents) {
+        for (final date in event.occurrencesBetween(today, to)) {
+          entries.add(_TimelineEntry.community(date, event));
+        }
+      }
+    }
+    if (_timelineShowOpen) {
+      for (final event in _timelineOpenEvents) {
+        entries.add(_TimelineEntry.open(_dateOnly(event.eventDate), event));
+      }
+    }
+    entries.sort(_TimelineEntry.compare);
+    return entries;
+  }
+
   Future<void> _contact(_DiscoverEntry entry) async {
     setState(() => _contacting.add(entry.activity.id));
     try {
@@ -277,6 +398,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  /// Refreshes whichever view is currently showing after a join/edit/delete
+  /// on an open event — the day view and the timeline load independently.
+  Future<void> _reload() => _timelineView ? _loadTimeline() : _load();
+
   Future<void> _joinOpenEvent(OpenEvent event) async {
     setState(() => _joining.add(event.id));
     try {
@@ -284,7 +409,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       await _openEventService.joinEvent(groupId: event.groupId, userId: myId);
       if (!mounted) return;
       context.push('/group/${event.groupId}');
-      await _load();
+      await _reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -309,7 +434,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         description: edits.description,
         maxParticipants: edits.maxParticipants,
       );
-      await _load();
+      await _reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -340,7 +465,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     if (confirmed != true) return;
     try {
       await _openEventService.deleteEvent(event.id);
-      await _load();
+      await _reload();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -480,28 +605,40 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           tooltip: t('discover.hostEvent'),
           onPressed: _hostEvent,
         ),
+        if (!_timelineView)
+          IconButton(
+            icon: Icon(
+              _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+            ),
+            tooltip: t('discover.filters.title'),
+            onPressed: _openFilters,
+          ),
         IconButton(
           icon: Icon(
-            _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+            _timelineView ? Icons.calendar_view_day : Icons.event_note,
           ),
-          tooltip: t('discover.filters.title'),
-          onPressed: _openFilters,
+          tooltip: _timelineView
+              ? t('discover.dayView')
+              : t('discover.allEventsView'),
+          onPressed: _toggleTimelineView,
         ),
       ],
-      body: Column(
-        children: [
-          _DateStrip(
-            dates: _dateRange,
-            selected: _selectedDate,
-            onSelect: (d) {
-              setState(() => _selectedDate = d);
-              _load();
-            },
-          ),
-          const Divider(height: 1),
-          Expanded(child: _buildBody()),
-        ],
-      ),
+      body: _timelineView
+          ? _buildTimelineBody()
+          : Column(
+              children: [
+                _DateStrip(
+                  dates: _dateRange,
+                  selected: _selectedDate,
+                  onSelect: (d) {
+                    setState(() => _selectedDate = d);
+                    _load();
+                  },
+                ),
+                const Divider(height: 1),
+                Expanded(child: _buildBody()),
+              ],
+            ),
     );
   }
 
@@ -638,6 +775,102 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ...entries.map(_buildEntryCard),
         ],
       ),
+    );
+  }
+
+  Widget _buildTimelineBody() {
+    if (_timelineLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_timelineError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, color: AppColors.danger, size: 40),
+              const SizedBox(height: 12),
+              Text(
+                _timelineError!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.danger),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadTimeline,
+                child: Text(t('discover.retry')),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final entries = _timelineEntries;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
+                label: Text(t('discover.starEvents')),
+                selected: _timelineShowCommunity,
+                onSelected: (v) => setState(() => _timelineShowCommunity = v),
+              ),
+              FilterChip(
+                avatar: Icon(
+                  Icons.groups,
+                  size: 16,
+                  color: AppColors.secondary,
+                ),
+                label: Text(t('discover.openEvents')),
+                selected: _timelineShowOpen,
+                onSelected: (v) => setState(() => _timelineShowOpen = v),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: entries.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      t('discover.timelineEmpty'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadTimeline,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    itemCount: entries.length,
+                    itemBuilder: (context, i) {
+                      final entry = entries[i];
+                      final newMonth =
+                          i == 0 ||
+                          entries[i - 1].date.month != entry.date.month ||
+                          entries[i - 1].date.year != entry.date.year;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (newMonth) _MonthHeader(date: entry.date),
+                          entry.community != null
+                              ? _buildCommunityEventCard(entry.community!)
+                              : _buildOpenEventCard(entry.open!),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+        ),
+      ],
     );
   }
 
@@ -1073,6 +1306,24 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 }
 
+/// Section divider shown whenever the month changes while scrolling the
+/// "all events" timeline.
+class _MonthHeader extends StatelessWidget {
+  const _MonthHeader({required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      child: Text(
+        _monthYearLabel(date),
+        style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+      ),
+    );
+  }
+}
+
 class _DateStrip extends StatelessWidget {
   const _DateStrip({
     required this.dates,
@@ -1084,21 +1335,6 @@ class _DateStrip extends StatelessWidget {
   final DateTime selected;
   final ValueChanged<DateTime> onSelect;
 
-  static List<String> get _monthLabels => [
-    t('month.jan'),
-    t('month.feb'),
-    t('month.mar'),
-    t('month.apr'),
-    t('month.may'),
-    t('month.jun'),
-    t('month.jul'),
-    t('month.aug'),
-    t('month.sep'),
-    t('month.oct'),
-    t('month.nov'),
-    t('month.dec'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -1109,6 +1345,7 @@ class _DateStrip extends StatelessWidget {
         itemCount: dates.length,
         itemBuilder: (context, index) {
           final d = dates[index];
+          final showMonth = index == 0 || dates[index - 1].month != d.month;
           final isSelected =
               d.year == selected.year &&
               d.month == selected.month &&
@@ -1153,13 +1390,19 @@ class _DateStrip extends StatelessWidget {
                       color: isSelected ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
-                  Text(
-                    _monthLabels[d.month - 1],
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected
-                          ? Colors.white70
-                          : AppColors.textSecondary,
+                  Visibility(
+                    visible: showMonth,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: Text(
+                      _monthLabels[d.month - 1],
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected
+                            ? Colors.white70
+                            : AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ],

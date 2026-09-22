@@ -20,4 +20,15 @@ class CommunityEventService {
         .order('start_time');
     return rows.map((m) => CommunityEvent.fromMap(m)).toList();
   }
+
+  /// Every curated event in [city], regardless of date — used by the "all
+  /// events" timeline view, which expands each row into its actual
+  /// occurrence dates itself (see [CommunityEvent.occurrencesBetween]).
+  Future<List<CommunityEvent>> getAllForCity(String city) async {
+    final rows = await _client
+        .from('community_events')
+        .select()
+        .eq('city', city);
+    return rows.map((m) => CommunityEvent.fromMap(m)).toList();
+  }
 }

@@ -58,4 +58,26 @@ class CommunityEvent {
       endTime == null ? startTime : '$startTime - $endTime';
   String get dayLabel =>
       dayOfWeek == null ? '' : weekdayFullLabels[dayOfWeek! - 1];
+
+  /// Every date this event actually happens on between [from] (inclusive)
+  /// and [to] (exclusive) — every matching weekday for a recurring event,
+  /// or just [specificDate] itself for a one-off, if it falls in range.
+  /// Used by the "all events" timeline view to turn a recurring row into
+  /// its individual occurrences.
+  List<DateTime> occurrencesBetween(DateTime from, DateTime to) {
+    if (specificDate != null) {
+      final d = DateTime(
+        specificDate!.year,
+        specificDate!.month,
+        specificDate!.day,
+      );
+      return (!d.isBefore(from) && d.isBefore(to)) ? [d] : [];
+    }
+    if (dayOfWeek == null) return [];
+    final occurrences = <DateTime>[];
+    for (var d = from; d.isBefore(to); d = d.add(const Duration(days: 1))) {
+      if (d.weekday == dayOfWeek) occurrences.add(d);
+    }
+    return occurrences;
+  }
 }
