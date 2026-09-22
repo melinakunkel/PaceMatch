@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/circle.dart';
-import '../models/profile.dart';
+import '../models/circle_member.dart';
 import 'supabase_service.dart';
 
 class CircleService {
@@ -22,23 +22,50 @@ class CircleService {
         .toList();
   }
 
-  /// Creates a circle and adds the creator as its first member.
+  /// Creates a circle and adds the creator as its first member, with admin
+  /// rights so they can manage it right away.
   Future<Circle> createCircle({
     required String name,
+    String? description,
     required String createdBy,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
         .from('circles')
-        .insert({'name': name, 'created_by': createdBy})
+        .insert({
+          'name': name,
+          'description': description?.trim().isEmpty ?? true
+              ? null
+              : description!.trim(),
+          'created_by': createdBy,
+        })
         .select()
         .single();
     final circle = Circle.fromMap(map);
     await _client.from('circle_members').insert({
       'circle_id': circle.id,
       'user_id': createdBy,
+      'role': 'admin',
     });
     return circle;
+  }
+
+  /// Renames/redescribes a circle — only an admin's RLS policy allows this.
+  Future<void> updateCircle({
+    required String circleId,
+    required String name,
+    String? description,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('circles')
+        .update({
+          'name': name,
+          'description': description?.trim().isEmpty ?? true
+              ? null
+              : description!.trim(),
+        })
+        .eq('id', circleId);
   }
 
   /// Joins a circle by its invite code, via a security-definer function so
@@ -64,21 +91,17 @@ class CircleService {
     }
   }
 
-  /// Everyone in [circleId], newest-joined first — relies on the "members
-  /// viewable by fellow members" RLS policy, so only works for a circle the
-  /// caller is themselves a member of.
-  Future<List<Profile>> getMembers(String circleId) async {
+  /// Everyone in [circleId] with their role, newest-joined first — relies
+  /// on the "members viewable by fellow members" RLS policy, so only works
+  /// for a circle the caller is themselves a member of.
+  Future<List<CircleMember>> getMembers(String circleId) async {
     final rows = await _client
         .from('circle_members')
-        .select('joined_at, profiles(*)')
+        .select('joined_at, role, profiles(*)')
         .eq('circle_id', circleId)
         .order('joined_at', ascending: false)
         .limit(300);
-    return rows
-        .map((row) => row['profiles'] as Map<String, dynamic>?)
-        .whereType<Map<String, dynamic>>()
-        .map(Profile.fromMap)
-        .toList();
+    return rows.map((row) => CircleMember.fromMap(row)).toList();
   }
 
   Future<void> leaveCircle({
@@ -89,6 +112,35 @@ class CircleService {
     await _client
         .from('circle_members')
         .delete()
+        .eq('circle_id', circleId)
+        .eq('user_id', userId);
+  }
+
+  /// An admin removing someone else from the circle — same delete as
+  /// [leaveCircle], kept separate so callers can use distinct confirmation
+  /// copy for "I'm leaving" vs. "I'm removing this person".
+  Future<void> removeMember({
+    required String circleId,
+    required String userId,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('circle_members')
+        .delete()
+        .eq('circle_id', circleId)
+        .eq('user_id', userId);
+  }
+
+  /// Promotes/demotes a member — only an admin's RLS policy allows this.
+  Future<void> setMemberRole({
+    required String circleId,
+    required String userId,
+    required bool isAdmin,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('circle_members')
+        .update({'role': isAdmin ? 'admin' : 'member'})
         .eq('circle_id', circleId)
         .eq('user_id', userId);
   }

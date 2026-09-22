@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../l10n/strings.dart';
 import '../models/circle.dart';
-import '../models/profile.dart';
+import '../screens/circles/circle_detail_screen.dart';
 import '../services/circle_controller.dart';
 import '../services/circle_service.dart';
 import '../services/supabase_service.dart';
@@ -110,15 +109,16 @@ class _CircleSheetState extends State<_CircleSheet> {
   }
 
   Future<void> _createCircle() async {
-    final name = await showDialog<String>(
+    final result = await showDialog<(String, String?)>(
       context: context,
       builder: (context) => const _NameDialog(),
     );
-    if (name == null || name.trim().isEmpty) return;
+    if (result == null || result.$1.trim().isEmpty) return;
     setState(() => _busy = true);
     try {
       final circle = await _circleService.createCircle(
-        name: name.trim(),
+        name: result.$1.trim(),
+        description: result.$2,
         createdBy: SupabaseService.currentUserId!,
       );
       await CircleController.setActive(circle);
@@ -138,11 +138,16 @@ class _CircleSheetState extends State<_CircleSheet> {
     }
   }
 
-  Future<void> _showMembers(Circle circle) async {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => _CircleMembersDialog(circle: circle),
+  Future<void> _openDetail(Circle circle) async {
+    final updated = await Navigator.of(context).push<Circle>(
+      MaterialPageRoute(builder: (_) => CircleDetailScreen(circle: circle)),
     );
+    if (updated != null) {
+      if (CircleController.active.value?.id == updated.id) {
+        await CircleController.setActive(updated);
+      }
+      await _refresh();
+    }
   }
 
   Future<void> _joinCircle() async {
@@ -233,9 +238,9 @@ class _CircleSheetState extends State<_CircleSheet> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.people_outline),
-                                tooltip: t('circles.members'),
-                                onPressed: () => _showMembers(c),
+                                icon: const Icon(Icons.info_outline),
+                                tooltip: t('circles.details'),
+                                onPressed: () => _openDetail(c),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.exit_to_app),
@@ -292,33 +297,50 @@ class _NameDialog extends StatefulWidget {
 }
 
 class _NameDialogState extends State<_NameDialog> {
-  final _ctrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
+
+  void _submit() => Navigator.of(context).pop((
+    _nameCtrl.text,
+    _descCtrl.text.trim().isEmpty ? null : _descCtrl.text,
+  ));
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(t('circles.createCircle')),
-      content: TextField(
-        controller: _ctrl,
-        autofocus: true,
-        decoration: InputDecoration(hintText: t('circles.createHint')),
-        onSubmitted: (v) => Navigator.of(context).pop(v),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            autofocus: true,
+            decoration: InputDecoration(hintText: t('circles.createHint')),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _descCtrl,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: t('circles.descriptionOptional'),
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(t('common.cancel')),
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_ctrl.text),
-          child: Text(t('circles.create')),
-        ),
+        ElevatedButton(onPressed: _submit, child: Text(t('circles.create'))),
       ],
     );
   }
@@ -359,100 +381,6 @@ class _JoinDialogState extends State<_JoinDialog> {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_ctrl.text),
           child: Text(t('circles.join')),
-        ),
-      ],
-    );
-  }
-}
-
-class _CircleMembersDialog extends StatefulWidget {
-  const _CircleMembersDialog({required this.circle});
-  final Circle circle;
-
-  @override
-  State<_CircleMembersDialog> createState() => _CircleMembersDialogState();
-}
-
-class _CircleMembersDialogState extends State<_CircleMembersDialog> {
-  late final Future<List<Profile>> _future = CircleService().getMembers(
-    widget.circle.id,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(t('circles.membersTitle', {'circle': widget.circle.name})),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: FutureBuilder<List<Profile>>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  t('circles.membersLoadFailed', {
-                    'error': '${snapshot.error}',
-                  }),
-                  style: TextStyle(color: AppColors.danger),
-                ),
-              );
-            }
-            final members = snapshot.data ?? [];
-            if (members.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  t('circles.membersEmpty'),
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              );
-            }
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 360),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: members.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  final member = members[i];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.secondaryLight,
-                      backgroundImage: member.avatarUrl != null
-                          ? NetworkImage(member.avatarUrl!)
-                          : null,
-                      child: member.avatarUrl != null
-                          ? null
-                          : Text(
-                              member.firstName.isNotEmpty
-                                  ? member.firstName[0].toUpperCase()
-                                  : '?',
-                            ),
-                    ),
-                    title: Text(member.firstName),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      context.push('/profile/${member.id}');
-                    },
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(t('common.close')),
         ),
       ],
     );
