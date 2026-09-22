@@ -215,7 +215,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       for (final a in activities) {
         final p = profilesById[a.userId];
         if (p == null) continue;
-        if (p.isSuspended) continue;
+        if (p.isSuspended || p.isPaused) continue;
         if (blockedIds.contains(p.id)) continue;
         if (myProfile != null && !isAllowedByPreferences(myProfile, p)) {
           continue;

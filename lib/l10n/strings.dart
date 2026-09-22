@@ -32,6 +32,8 @@ const _de = <String, String>{
   'login.signInFailed': 'Anmeldung fehlgeschlagen: {error}',
   'login.signIn': 'Anmelden',
   'login.noAccount': 'Noch kein Konto? Jetzt registrieren',
+  'login.accountReactivated':
+      'Willkommen zurück! Dein Konto wurde reaktiviert.',
 
   // Register screen.
   'register.title': 'Konto erstellen',
@@ -566,6 +568,27 @@ const _de = <String, String>{
   'settings.contactSubtitle': 'Frage oder Problem? Schreib uns',
   'settings.mailFailed': 'E-Mail-App konnte nicht geöffnet werden.',
 
+  // Settings: account section (pause/delete).
+  'settings.account': 'Konto',
+  'settings.pauseAccount': 'Konto pausieren',
+  'settings.pauseAccountSubtitle': 'Vorübergehend unsichtbar machen',
+  'settings.deleteAccount': 'Konto löschen',
+  'settings.deleteAccountSubtitle': 'Endgültig und unwiderruflich',
+  'settings.pauseAccountTitle': 'Konto pausieren?',
+  'settings.pauseAccountBody': 'Dein Profil wird für andere unsichtbar und taucht nicht mehr bei Matches oder in Entdecken auf. Melde dich einfach jederzeit wieder an, um dein Konto zu reaktivieren.',
+  'settings.pauseAccountConfirm': 'Pausieren',
+  'settings.pauseAccountDoneTitle': 'Konto pausiert',
+  'settings.pauseAccountDoneBody': 'Dein Konto ist jetzt pausiert. Melde dich jederzeit wieder an, um es zu reaktivieren.',
+  'settings.deleteAccountTitle': 'Konto endgültig löschen?',
+  'settings.deleteAccountBody': 'Dein Profil, deine Aktivitäten, Matches und Chats werden unwiderruflich gelöscht. Das kann nicht rückgängig gemacht werden.',
+  'settings.deleteAccountConfirm': 'Löschen',
+  'settings.deleteAccountDoneTitle': 'Konto gelöscht',
+  'settings.deleteAccountDoneBody':
+      'Dein Konto und alle Daten wurden gelöscht. Schade, dass du gehst!',
+  'settings.accountReasonLabel': 'Grund (optional)',
+  'settings.accountReasonHint': 'Magst du uns sagen, warum?',
+  'settings.accountActionFailed': 'Das hat leider nicht geklappt: {error}',
+
   // FAQ screen.
   'faq.title': 'Häufige Fragen',
   'faq.q1': 'Ist SAMEPACE eine Dating-App?',
@@ -623,6 +646,8 @@ const _en = <String, String>{
   'login.signInFailed': 'Sign in failed: {error}',
   'login.signIn': 'Sign in',
   'login.noAccount': 'No account yet? Register now',
+  'login.accountReactivated':
+      'Welcome back! Your account has been reactivated.',
 
   'register.title': 'Create account',
   'register.name': 'Name',
@@ -1112,6 +1137,28 @@ const _en = <String, String>{
   'settings.contact': 'Contact',
   'settings.contactSubtitle': 'Question or issue? Get in touch',
   'settings.mailFailed': 'Could not open your email app.',
+
+  // Settings: account section (pause/delete).
+  'settings.account': 'Account',
+  'settings.pauseAccount': 'Pause account',
+  'settings.pauseAccountSubtitle': 'Make yourself invisible for a while',
+  'settings.deleteAccount': 'Delete account',
+  'settings.deleteAccountSubtitle': 'Permanent and irreversible',
+  'settings.pauseAccountTitle': 'Pause your account?',
+  'settings.pauseAccountBody': 'Your profile becomes invisible to others and stops showing up in matches or Discover. Just log back in any time to reactivate it.',
+  'settings.pauseAccountConfirm': 'Pause',
+  'settings.pauseAccountDoneTitle': 'Account paused',
+  'settings.pauseAccountDoneBody':
+      'Your account is now paused. Log back in any time to reactivate it.',
+  'settings.deleteAccountTitle': 'Delete your account for good?',
+  'settings.deleteAccountBody': 'Your profile, activities, matches and chats will be permanently deleted. This cannot be undone.',
+  'settings.deleteAccountConfirm': 'Delete',
+  'settings.deleteAccountDoneTitle': 'Account deleted',
+  'settings.deleteAccountDoneBody':
+      'Your account and all its data have been deleted. Sorry to see you go!',
+  'settings.accountReasonLabel': 'Reason (optional)',
+  'settings.accountReasonHint': 'Mind telling us why?',
+  'settings.accountActionFailed': 'That didn\'t work: {error}',
 
   // FAQ screen.
   'faq.title': 'FAQ',

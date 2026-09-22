@@ -72,7 +72,7 @@ class MatchService {
     for (final entry in scored) {
       final profile = profilesById[entry.key.userId];
       if (profile == null) continue;
-      if (profile.isSuspended) continue;
+      if (profile.isSuspended || profile.isPaused) continue;
       if (blockedIds.contains(profile.id)) continue;
       if (likedIds.contains(profile.id)) continue;
       if (myProfile != null && !isAllowedByPreferences(myProfile, profile)) {

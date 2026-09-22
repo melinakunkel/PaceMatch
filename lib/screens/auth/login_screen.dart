@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../l10n/strings.dart';
 import '../../services/auth_service.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/stock_photos.dart';
@@ -40,6 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordCtrl.text,
       );
       await SupabaseService.setRememberMe(_rememberMe);
+      final userId = SupabaseService.currentUserId!;
+      final profile = await ProfileService().getProfile(userId);
+      if (profile.isPaused) {
+        await ProfileService().reactivateAccount(userId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t('login.accountReactivated'))),
+          );
+        }
+      }
       if (mounted) context.go('/');
     } on AuthException catch (e) {
       setState(() => _error = e.message);

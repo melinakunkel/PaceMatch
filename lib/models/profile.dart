@@ -22,6 +22,12 @@ class Profile {
   /// against this account — see handle_new_report() in the DB.
   final bool isSuspended;
 
+  /// Set when the owner paused their own account (hidden from
+  /// matching/discovery, same as [isSuspended], but voluntary and
+  /// reversible) — cleared automatically the next time they log in.
+  final DateTime? pausedAt;
+  bool get isPaused => pausedAt != null;
+
   /// Up to 3 interests picked from the fixed list in interest.dart.
   final List<String> interests;
 
@@ -52,6 +58,7 @@ class Profile {
     this.ageRangeMax,
     this.isVerified = false,
     this.isSuspended = false,
+    this.pausedAt,
     this.interests = const [],
     this.languages = const [],
     this.autoArchiveInactiveChats = false,
@@ -72,6 +79,9 @@ class Profile {
     ageRangeMax: map['age_range_max'] as int?,
     isVerified: map['is_verified'] as bool? ?? false,
     isSuspended: map['is_suspended'] as bool? ?? false,
+    pausedAt: map['paused_at'] == null
+        ? null
+        : DateTime.parse(map['paused_at'] as String),
     interests: (map['interests'] as List?)?.cast<String>() ?? const [],
     languages: (map['languages'] as List?)?.cast<String>() ?? const [],
     autoArchiveInactiveChats:
@@ -114,6 +124,7 @@ class Profile {
     ageRangeMax: ageRangeMax ?? this.ageRangeMax,
     isVerified: isVerified,
     isSuspended: isSuspended,
+    pausedAt: pausedAt,
     interests: interests ?? this.interests,
     languages: languages ?? this.languages,
     autoArchiveInactiveChats:

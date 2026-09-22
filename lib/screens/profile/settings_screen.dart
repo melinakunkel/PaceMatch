@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/app_info.dart';
 import '../../l10n/app_language.dart';
 import '../../l10n/strings.dart';
+import '../../services/account_feedback_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/browser_notification_service.dart';
 import '../../services/locale_controller.dart';
 import '../../services/profile_service.dart';
@@ -75,6 +78,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!launched && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(t('settings.mailFailed'))));
+    }
+  }
+
+  Future<void> _showDoneDialog(String title, String body) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(t('common.close')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pauseAccount() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const _AccountActionDialog(action: 'pause'),
+    );
+    if (reason == null) return;
+    try {
+      final userId = SupabaseService.currentUserId!;
+      await AccountFeedbackService().submit(action: 'pause', reason: reason);
+      await _profileService.pauseAccount(userId);
+      if (!mounted) return;
+      await _showDoneDialog(
+        t('settings.pauseAccountDoneTitle'),
+        t('settings.pauseAccountDoneBody'),
+      );
+      await AuthService().signOut();
+      if (mounted) context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('settings.accountActionFailed', {'error': '$e'})),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => const _AccountActionDialog(action: 'delete'),
+    );
+    if (reason == null) return;
+    try {
+      await AccountFeedbackService().submit(action: 'delete', reason: reason);
+      await _profileService.deleteOwnAccount();
+      if (!mounted) return;
+      await _showDoneDialog(
+        t('settings.deleteAccountDoneTitle'),
+        t('settings.deleteAccountDoneBody'),
+      );
+      await AuthService().signOut();
+      if (mounted) context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('settings.accountActionFailed', {'error': '$e'})),
+        ),
+      );
     }
   }
 
@@ -380,11 +453,122 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  t('settings.account'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Icons.pause_circle_outline,
+                          color: AppColors.textSecondary,
+                        ),
+                        title: Text(t('settings.pauseAccount')),
+                        subtitle: Text(t('settings.pauseAccountSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _pauseAccount,
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: Icon(
+                          Icons.delete_forever_outlined,
+                          color: AppColors.danger,
+                        ),
+                        title: Text(
+                          t('settings.deleteAccount'),
+                          style: TextStyle(color: AppColors.danger),
+                        ),
+                        subtitle: Text(t('settings.deleteAccountSubtitle')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _deleteAccount,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             );
           },
         ),
       ),
+    );
+  }
+}
+
+class _AccountActionDialog extends StatefulWidget {
+  const _AccountActionDialog({required this.action});
+
+  /// 'pause' or 'delete'.
+  final String action;
+
+  @override
+  State<_AccountActionDialog> createState() => _AccountActionDialogState();
+}
+
+class _AccountActionDialogState extends State<_AccountActionDialog> {
+  final _reasonCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  bool get _isDelete => widget.action == 'delete';
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        _isDelete
+            ? t('settings.deleteAccountTitle')
+            : t('settings.pauseAccountTitle'),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isDelete
+                ? t('settings.deleteAccountBody')
+                : t('settings.pauseAccountBody'),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _reasonCtrl,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: t('settings.accountReasonLabel'),
+              hintText: t('settings.accountReasonHint'),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('common.cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_reasonCtrl.text),
+          style: _isDelete
+              ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
+              : null,
+          child: Text(
+            _isDelete
+                ? t('settings.deleteAccountConfirm')
+                : t('settings.pauseAccountConfirm'),
+          ),
+        ),
+      ],
     );
   }
 }

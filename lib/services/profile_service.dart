@@ -219,4 +219,28 @@ class ProfileService {
     }
     return byDay;
   }
+
+  /// Hides the account from matching/discovery without deleting anything —
+  /// reversed automatically the next time this person logs in (see
+  /// [reactivateAccount] and the login flow that calls it).
+  Future<void> pauseAccount(String userId) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'paused_at': DateTime.now().toIso8601String()})
+        .eq('id', userId);
+  }
+
+  Future<void> reactivateAccount(String userId) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.from('profiles').update({'paused_at': null}).eq('id', userId);
+  }
+
+  /// Permanently deletes the caller's account — the auth user and
+  /// everything that cascades from it (profile, activities, messages, …).
+  /// See delete_own_account() in 0031_pause_and_delete_account.sql.
+  Future<void> deleteOwnAccount() async {
+    await SupabaseService.ensureFreshSession();
+    await _client.rpc('delete_own_account');
+  }
 }
