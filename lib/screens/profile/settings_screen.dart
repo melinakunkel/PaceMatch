@@ -513,7 +513,10 @@ class _AccountActionDialog extends StatefulWidget {
 }
 
 class _AccountActionDialogState extends State<_AccountActionDialog> {
+  static const _other = '__other__';
+
   final _reasonCtrl = TextEditingController();
+  String? _selectedReason;
 
   @override
   void dispose() {
@@ -523,6 +526,27 @@ class _AccountActionDialogState extends State<_AccountActionDialog> {
 
   bool get _isDelete => widget.action == 'delete';
 
+  List<String> get _reasonLabels => _isDelete
+      ? [
+          t('settings.deleteReason1'),
+          t('settings.deleteReason2'),
+          t('settings.deleteReason3'),
+        ]
+      : [
+          t('settings.pauseReason1'),
+          t('settings.pauseReason2'),
+          t('settings.pauseReason3'),
+        ];
+
+  /// The fixed label text if one was picked, the free-text field's content
+  /// if "Sonstiges" was picked, or null if nothing was picked yet.
+  String? get _resolvedReason {
+    if (_selectedReason == null) return null;
+    if (_selectedReason != _other) return _selectedReason;
+    final text = _reasonCtrl.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -531,26 +555,54 @@ class _AccountActionDialogState extends State<_AccountActionDialog> {
             ? t('settings.deleteAccountTitle')
             : t('settings.pauseAccountTitle'),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _isDelete
-                ? t('settings.deleteAccountBody')
-                : t('settings.pauseAccountBody'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _reasonCtrl,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: t('settings.accountReasonLabel'),
-              hintText: t('settings.accountReasonHint'),
-              border: const OutlineInputBorder(),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _isDelete
+                  ? t('settings.deleteAccountBody')
+                  : t('settings.pauseAccountBody'),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              t('settings.accountReasonLabel'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            RadioGroup<String>(
+              groupValue: _selectedReason,
+              onChanged: (v) => setState(() => _selectedReason = v),
+              child: Column(
+                children: [
+                  for (final label in _reasonLabels)
+                    RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      value: label,
+                      title: Text(label),
+                    ),
+                  RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    value: _other,
+                    title: Text(t('settings.reasonOther')),
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedReason == _other) ...[
+              const SizedBox(height: 4),
+              TextField(
+                controller: _reasonCtrl,
+                maxLines: 3,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: t('settings.reasonOtherHint'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -558,7 +610,7 @@ class _AccountActionDialogState extends State<_AccountActionDialog> {
           child: Text(t('common.cancel')),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(_reasonCtrl.text),
+          onPressed: () => Navigator.of(context).pop(_resolvedReason ?? ''),
           style: _isDelete
               ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
               : null,

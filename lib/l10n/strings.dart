@@ -588,6 +588,14 @@ const _de = <String, String>{
   'settings.accountReasonLabel': 'Grund (optional)',
   'settings.accountReasonHint': 'Magst du uns sagen, warum?',
   'settings.accountActionFailed': 'Das hat leider nicht geklappt: {error}',
+  'settings.pauseReason1': 'Ich mache gerade eine Sportpause',
+  'settings.pauseReason2': 'Ich habe schon eine feste Trainingsgruppe gefunden',
+  'settings.pauseReason3': 'Ich möchte für eine Weile nicht gefunden werden',
+  'settings.deleteReason1': 'Ich habe nicht gefunden, was ich gesucht habe',
+  'settings.deleteReason2': 'Datenschutz- oder Sicherheitsbedenken',
+  'settings.deleteReason3': 'Ich nutze eine andere App',
+  'settings.reasonOther': 'Sonstiges',
+  'settings.reasonOtherHint': 'Magst du uns sagen, warum?',
 
   // FAQ screen.
   'faq.title': 'Häufige Fragen',
@@ -1159,6 +1167,14 @@ const _en = <String, String>{
   'settings.accountReasonLabel': 'Reason (optional)',
   'settings.accountReasonHint': 'Mind telling us why?',
   'settings.accountActionFailed': 'That didn\'t work: {error}',
+  'settings.pauseReason1': 'I\'m taking a break from sports right now',
+  'settings.pauseReason2': 'I already found a regular training group',
+  'settings.pauseReason3': 'I\'d rather not be found for a while',
+  'settings.deleteReason1': 'I didn\'t find what I was looking for',
+  'settings.deleteReason2': 'Privacy or safety concerns',
+  'settings.deleteReason3': 'I\'m using a different app',
+  'settings.reasonOther': 'Other',
+  'settings.reasonOtherHint': 'Mind telling us why?',
 
   // FAQ screen.
   'faq.title': 'FAQ',
