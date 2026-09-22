@@ -16,6 +16,7 @@ import '../../widgets/app_scaffold.dart';
 import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
 import 'edit_sport_sheet.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -126,6 +127,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       currentIndex: 4,
       title: t('profile.title'),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: t('appbar.settings'),
+          onPressed: () => Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+        ),
         IconButton(
           icon: const Icon(Icons.logout),
           tooltip: t('profile.signOut'),

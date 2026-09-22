@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/strings.dart';
-import '../screens/profile/settings_screen.dart';
 import '../services/match_notifier.dart';
 import '../services/unread_controller.dart';
 import '../theme/app_theme.dart';
 import 'circle_switcher.dart';
 
 /// Shared bottom-nav scaffold for the 5 main tabs (Entdecken, Plan, Matches,
-/// Chat, Profil). Home and Settings aren't tabs — they're reached via the
-/// persistent icons every screen's app bar gets, top right.
+/// Chat, Profil). Home isn't a tab — tapping the logo next to the title
+/// reaches it from anywhere. Settings lives in the Profil tab instead of
+/// its own persistent icon.
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
     super.key,
@@ -43,45 +43,35 @@ class AppScaffold extends StatelessWidget {
       appBar: title == null
           ? null
           : AppBar(
-              // Home and the circle (public/private area) switch are the
-              // most-used icons, so they sit right next to the title; any
-              // per-screen action plus Settings live in their own row below
-              // instead of squeezing into the title row, which would
-              // truncate the title.
+              // The logo doubles as the Home shortcut, and the circle
+              // (public/private area) switch sits right next to it — both
+              // are used from every screen. Only screen-specific actions
+              // go in their own row below, so they never crowd the title.
               title: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.terrain),
+                    tooltip: t('appbar.home'),
+                    onPressed: () => context.go('/'),
+                  ),
                   Expanded(
                     child: Text(title!, overflow: TextOverflow.ellipsis),
                   ),
                   const CircleSwitcherButton(),
-                  IconButton(
-                    icon: const Icon(Icons.home_outlined),
-                    tooltip: t('appbar.home'),
-                    onPressed: () => context.go('/'),
-                  ),
                 ],
               ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(44),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ...?actions,
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined),
-                        tooltip: t('appbar.settings'),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsScreen(),
-                          ),
+              bottom: (actions == null || actions!.isEmpty)
+                  ? null
+                  : PreferredSize(
+                      preferredSize: const Size.fromHeight(44),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: actions!,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
