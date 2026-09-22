@@ -49,7 +49,10 @@ class ActivityService {
   /// Every other user's activity that's actually happening on [date]: a
   /// recurring one on that weekday, or a one-off with a matching
   /// specific_date. Used by the "Entdecken" screen. [circleId] scopes it to
-  /// the active "Kreis" context (or, when null, the public pool).
+  /// the active "Kreis" context (or, when null, the public pool). Excludes
+  /// activities set to 'hidden' discoverVisibility — matching (see
+  /// [getActivitiesForSport]) is unaffected, since that's a separate,
+  /// intentional two-sided flow the owner already opted into.
   Future<List<Activity>> getActivitiesForDate({
     required DateTime date,
     required String excludeUserId,
@@ -61,6 +64,7 @@ class ActivityService {
         .select()
         .eq('day_of_week', date.weekday)
         .eq('is_active', true)
+        .neq('discover_visibility', 'hidden')
         .neq('user_id', excludeUserId);
     query = circleId == null
         ? query.isFilter('circle_id', null)
@@ -95,6 +99,7 @@ class ActivityService {
     String? runType,
     DateTime? specificDate,
     String? circleId,
+    String discoverVisibility = 'open',
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -121,6 +126,7 @@ class ActivityService {
               ? null
               : _formatDate(specificDate),
           'circle_id': circleId,
+          'discover_visibility': discoverVisibility,
         })
         .select()
         .single();
@@ -130,6 +136,12 @@ class ActivityService {
   Future<Activity> getActivityById(String id) async {
     final map = await _client.from('activities').select().eq('id', id).single();
     return Activity.fromMap(map);
+  }
+
+  Future<List<Activity>> getActivitiesByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final rows = await _client.from('activities').select().inFilter('id', ids);
+    return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
   Future<Activity> updateActivity({
@@ -151,6 +163,7 @@ class ActivityService {
     String? bikeType,
     String? runType,
     DateTime? specificDate,
+    String discoverVisibility = 'open',
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -175,6 +188,7 @@ class ActivityService {
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),
+          'discover_visibility': discoverVisibility,
         })
         .eq('id', id)
         .select()

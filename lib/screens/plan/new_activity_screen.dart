@@ -76,6 +76,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late String? _runType = widget.existing?.runType;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
+  late String _discoverVisibility =
+      widget.existing?.discoverVisibility ?? 'open';
   bool _saving = false;
   Map<SportType, UserSport> _mySports = {};
 
@@ -192,6 +194,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           bikeType: bikeType,
           runType: runType,
           specificDate: specificDate,
+          discoverVisibility: _discoverVisibility,
         );
         if (!mounted) return;
         context.pushReplacement('/matches/${updated.id}');
@@ -223,6 +226,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             runType: runType,
             specificDate: specificDate,
             circleId: CircleController.active.value?.id,
+            discoverVisibility: _discoverVisibility,
           ),
         );
       }
@@ -566,6 +570,32 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 ],
               ),
             ],
+            const SizedBox(height: 20),
+            _SectionLabel(t('newActivity.visibility')),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ChoiceChip(
+                  label: Text(t('newActivity.visibilityOpen')),
+                  selected: _discoverVisibility == 'open',
+                  onSelected: (_) =>
+                      setState(() => _discoverVisibility = 'open'),
+                ),
+                ChoiceChip(
+                  label: Text(t('newActivity.visibilityRequest')),
+                  selected: _discoverVisibility == 'request',
+                  onSelected: (_) =>
+                      setState(() => _discoverVisibility = 'request'),
+                ),
+                ChoiceChip(
+                  label: Text(t('newActivity.visibilityHidden')),
+                  selected: _discoverVisibility == 'hidden',
+                  onSelected: (_) =>
+                      setState(() => _discoverVisibility = 'hidden'),
+                ),
+              ],
+            ),
             const SizedBox(height: 28),
             ElevatedButton(
               onPressed: _saving || (!_isRecurring && _specificDate == null)

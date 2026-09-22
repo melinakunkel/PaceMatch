@@ -11,6 +11,7 @@ import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
 import '../../services/activity_service.dart';
 import '../../services/block_service.dart';
+import '../../services/chat_request_service.dart';
 import '../../services/circle_controller.dart';
 import '../../services/community_event_service.dart';
 import '../../services/group_service.dart';
@@ -46,6 +47,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final _profileService = ProfileService();
   final _groupService = GroupService();
   final _blockService = BlockService();
+  final _chatRequestService = ChatRequestService();
   final _communityEventService = CommunityEventService();
   final _openEventService = OpenEventService();
 
@@ -62,6 +64,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<OpenEvent> _openEvents = [];
   final Set<String> _contacting = {};
   final Set<String> _joining = {};
+  final Set<String> _sendingRequest = {};
+  Set<String> _requestedActivityIds = {};
 
   bool _showCommunityEvents = true;
   Set<SportType> _sportFilter = {};
@@ -147,6 +151,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final profiles = await _profileService.getProfilesByIds(userIds);
       final profilesById = {for (final p in profiles) p.id: p};
       final blockedIds = await _blockService.blockedUserIds();
+      final requestedActivityIds = await _chatRequestService.sentActivityIds();
 
       final entries = <_DiscoverEntry>[];
       for (final a in activities) {
@@ -193,6 +198,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _communityEvents = communityEvents;
         _openEvents = openEvents;
         _theirSports = theirSports;
+        _requestedActivityIds = requestedActivityIds;
         _loading = false;
       });
     } catch (e) {
@@ -249,6 +255,25 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       );
     } finally {
       if (mounted) setState(() => _contacting.remove(entry.activity.id));
+    }
+  }
+
+  Future<void> _sendChatRequest(_DiscoverEntry entry) async {
+    setState(() => _sendingRequest.add(entry.activity.id));
+    try {
+      await _chatRequestService.sendRequest(
+        toUser: entry.profile.id,
+        activityId: entry.activity.id,
+      );
+      if (!mounted) return;
+      setState(() => _requestedActivityIds.add(entry.activity.id));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('discover.requestFailed', {'error': '$e'}))),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingRequest.remove(entry.activity.id));
     }
   }
 
@@ -871,6 +896,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Widget _buildEntryCard(_DiscoverEntry e) {
     final contacting = _contacting.contains(e.activity.id);
+    final sendingRequest = _sendingRequest.contains(e.activity.id);
+    final requested = _requestedActivityIds.contains(e.activity.id);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -1004,16 +1031,37 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 36,
-                    child: OutlinedButton(
-                      onPressed: contacting ? null : () => _contact(e),
-                      child: contacting
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(t('discover.contact')),
-                    ),
+                    child: e.activity.requiresChatRequest
+                        ? OutlinedButton(
+                            onPressed: (sendingRequest || requested)
+                                ? null
+                                : () => _sendChatRequest(e),
+                            child: sendingRequest
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    requested
+                                        ? t('discover.requestSent')
+                                        : t('discover.sendRequest'),
+                                  ),
+                          )
+                        : OutlinedButton(
+                            onPressed: contacting ? null : () => _contact(e),
+                            child: contacting
+                                ? const SizedBox(
+                                    height: 16,
+                                    width: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(t('discover.contact')),
+                          ),
                   ),
                 ],
               ),

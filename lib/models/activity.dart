@@ -65,6 +65,12 @@ class Activity {
   /// part of the public pool, visible and matchable for everyone.
   final String? circleId;
 
+  /// 'open' (shown in "Entdecken", directly contactable — the default),
+  /// 'hidden' (not shown there at all) or 'request' (shown, but contacting
+  /// first sends a request that must be accepted before a chat opens).
+  /// Only affects the "Entdecken" screen, never matching.
+  final String discoverVisibility;
+
   Activity({
     required this.id,
     required this.userId,
@@ -86,9 +92,13 @@ class Activity {
     this.runType,
     this.specificDate,
     this.circleId,
+    this.discoverVisibility = 'open',
   });
 
   bool get isRecurring => specificDate == null;
+
+  bool get isHiddenFromDiscover => discoverVisibility == 'hidden';
+  bool get requiresChatRequest => discoverVisibility == 'request';
 
   /// The next real calendar date+time this activity happens — the exact
   /// date for a one-off activity, or the next upcoming [dayOfWeek] for a
@@ -139,6 +149,7 @@ class Activity {
         ? null
         : DateTime.parse(map['specific_date'] as String),
     circleId: map['circle_id'] as String?,
+    discoverVisibility: map['discover_visibility'] as String? ?? 'open',
   );
 
   static TimeOfDay _parseTime(String raw) {

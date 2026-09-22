@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/group.dart';
+import '../../services/chat_request_service.dart';
 import '../../services/group_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
+import 'chat_requests_screen.dart';
 
 String _formatMeetingTime(DateTime t) {
   final day = weekdayLabels[t.weekday - 1];
@@ -28,13 +30,29 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final _groupService = GroupService();
   final _profileService = ProfileService();
+  final _chatRequestService = ChatRequestService();
   bool _showArchived = false;
   late Future<List<SportGroup>> _future;
+  int _pendingRequestCount = 0;
 
   @override
   void initState() {
     super.initState();
     _future = _loadGroups();
+    _loadRequestCount();
+  }
+
+  Future<void> _loadRequestCount() async {
+    final requests = await _chatRequestService.getIncomingRequests();
+    if (!mounted) return;
+    setState(() => _pendingRequestCount = requests.length);
+  }
+
+  Future<void> _openChatRequests() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ChatRequestsScreen()));
+    _reload();
+    _loadRequestCount();
   }
 
   Future<List<SportGroup>> _loadGroups() async {
@@ -121,6 +139,30 @@ class _ChatListScreenState extends State<ChatListScreen> {
       currentIndex: 3,
       title: _showArchived ? t('chatList.archivedTitle') : t('chatList.title'),
       actions: [
+        IconButton(
+          tooltip: t('chatList.chatRequests'),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.mail_outline),
+              if (_pendingRequestCount > 0)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: AppColors.danger,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: _openChatRequests,
+        ),
         IconButton(
           tooltip: _showArchived
               ? t('chatList.showActive')

@@ -584,6 +584,26 @@ const _de = <String, String>{
   // Privacy policy / imprint screens (content itself is German-only for now).
   'privacy.title': 'Datenschutzerklärung',
   'imprint.title': 'Impressum',
+
+  // New activity: discoverability in "Entdecken".
+  'newActivity.visibility': 'Sichtbarkeit in Entdecken',
+  'newActivity.visibilityOpen': 'Sichtbar, direkt kontaktierbar',
+  'newActivity.visibilityRequest': 'Sichtbar, Chat nur nach Anfrage',
+  'newActivity.visibilityHidden': 'Nicht in Entdecken anzeigen',
+
+  // Discover screen: chat-request flow (visibility 'request').
+  'discover.sendRequest': 'Anfrage senden',
+  'discover.requestSent': 'Anfrage gesendet',
+  'discover.requestFailed': 'Anfrage fehlgeschlagen: {error}',
+
+  // Chat requests inbox.
+  'chatRequests.title': 'Chat-Anfragen',
+  'chatRequests.empty': 'Keine offenen Chat-Anfragen.',
+  'chatRequests.wantsToChat': 'möchte mit dir chatten',
+  'chatRequests.accept': 'Annehmen',
+  'chatRequests.decline': 'Ablehnen',
+  'chatRequests.respondFailed': 'Das hat leider nicht geklappt: {error}',
+  'chatList.chatRequests': 'Chat-Anfragen',
 };
 
 const _en = <String, String>{
@@ -1107,4 +1127,24 @@ const _en = <String, String>{
   // Privacy policy / imprint screens (content itself is German-only for now).
   'privacy.title': 'Privacy policy',
   'imprint.title': 'Imprint',
+
+  // New activity: discoverability in "Discover".
+  'newActivity.visibility': 'Visibility in Discover',
+  'newActivity.visibilityOpen': 'Visible, directly contactable',
+  'newActivity.visibilityRequest': 'Visible, chat only after request',
+  'newActivity.visibilityHidden': 'Don\'t show in Discover',
+
+  // Discover screen: chat-request flow (visibility 'request').
+  'discover.sendRequest': 'Send request',
+  'discover.requestSent': 'Request sent',
+  'discover.requestFailed': 'Request failed: {error}',
+
+  // Chat requests inbox.
+  'chatRequests.title': 'Chat requests',
+  'chatRequests.empty': 'No open chat requests.',
+  'chatRequests.wantsToChat': 'wants to chat with you',
+  'chatRequests.accept': 'Accept',
+  'chatRequests.decline': 'Decline',
+  'chatRequests.respondFailed': 'That didn\'t work: {error}',
+  'chatList.chatRequests': 'Chat requests',
 };
