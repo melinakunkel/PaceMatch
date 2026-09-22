@@ -44,22 +44,37 @@ class AppScaffold extends StatelessWidget {
           ? null
           : AppBar(
               title: Text(title!),
-              actions: [
-                ...?actions,
-                const CircleSwitcherButton(),
-                IconButton(
-                  icon: const Icon(Icons.home_outlined),
-                  tooltip: t('appbar.home'),
-                  onPressed: () => context.go('/'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  tooltip: t('appbar.settings'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              // Icons live in their own row below the title instead of
+              // squeezing into the title row as `actions` — with a
+              // per-screen action or two plus the circle/home/settings
+              // icons that's often 4-6 icons, which truncated the title.
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(44),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ...?actions,
+                      const CircleSwitcherButton(),
+                      IconButton(
+                        icon: const Icon(Icons.home_outlined),
+                        tooltip: t('appbar.home'),
+                        onPressed: () => context.go('/'),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        tooltip: t('appbar.settings'),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
