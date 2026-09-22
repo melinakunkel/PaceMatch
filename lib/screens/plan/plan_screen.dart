@@ -486,9 +486,10 @@ class _WeekCalendarView extends StatefulWidget {
   final List<Activity> activities;
   final Future<void> Function() onChanged;
 
-  /// The hour range the user wants to see by default (from the "Sichtbarer
-  /// Zeitraum" setting) — the grid still auto-expands beyond this if an
-  /// activity in the viewed week falls outside it.
+  /// The hour range to display, set via the "Sichtbarer Zeitraum" setting —
+  /// this is the actual grid range shown; activities outside it are clipped
+  /// (or partially shown, for ones that only start/end outside it) so the
+  /// setting reliably shrinks or enlarges the timetable.
   final int preferredMinHour;
   final int preferredMaxHour;
 
@@ -549,16 +550,8 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
     final today = DateTime.now();
     final isCurrentWeek = _isSameDate(_weekStart, _mondayOf(today));
 
-    var minHour = widget.preferredMinHour;
-    var maxHour = widget.preferredMaxHour;
-    for (final a in weekActivities) {
-      minHour = minHour < a.startTime.hour ? minHour : a.startTime.hour;
-      final endHour = a.endTime.minute > 0
-          ? a.endTime.hour + 1
-          : a.endTime.hour;
-      maxHour = maxHour > endHour ? maxHour : endHour;
-    }
-    if (maxHour <= minHour) maxHour = minHour + 1;
+    final minHour = widget.preferredMinHour.clamp(0, 23);
+    final maxHour = widget.preferredMaxHour.clamp(minHour + 1, 24);
     final hourCount = maxHour - minHour;
     final gridHeight = hourCount * _hourHeight;
 
@@ -770,6 +763,7 @@ class _DayColumn extends StatelessWidget {
         builder: (context, constraints) {
           final totalWidth = constraints.maxWidth;
           return Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
               ...List.generate(
                 hourCount + 1,
@@ -782,16 +776,17 @@ class _DayColumn extends StatelessWidget {
               ),
               ...laned.map((l) {
                 final a = l.activity;
-                final startMinutes =
+                final rawStart =
                     (a.startTime.hour - minHour) * 60 + a.startTime.minute;
-                final endMinutes =
+                final rawEnd =
                     (a.endTime.hour - minHour) * 60 + a.endTime.minute;
-                final top = startMinutes / 60 * hourHeight;
-                final blockHeight =
-                    ((endMinutes - startMinutes) / 60 * hourHeight).clamp(
-                      20,
-                      height,
-                    );
+                // Clip to the visible range instead of assuming every
+                // activity fits — the grid only spans [minHour, maxHour]
+                // now, so one outside it would otherwise render off-canvas.
+                final top = (rawStart / 60 * hourHeight).clamp(0.0, height);
+                final bottom = (rawEnd / 60 * hourHeight).clamp(0.0, height);
+                final blockHeight = bottom - top;
+                if (blockHeight < 2) return const SizedBox.shrink();
                 final colWidth = totalWidth / l.columnCount;
                 final left = l.column * colWidth;
                 return Positioned(

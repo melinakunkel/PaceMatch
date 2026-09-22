@@ -43,11 +43,24 @@ class AppScaffold extends StatelessWidget {
       appBar: title == null
           ? null
           : AppBar(
-              title: Text(title!),
-              // Icons live in their own row below the title instead of
-              // squeezing into the title row as `actions` — with a
-              // per-screen action or two plus the circle/home/settings
-              // icons that's often 4-6 icons, which truncated the title.
+              // Home and the circle (public/private area) switch are the
+              // most-used icons, so they sit right next to the title; any
+              // per-screen action plus Settings live in their own row below
+              // instead of squeezing into the title row, which would
+              // truncate the title.
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(title!, overflow: TextOverflow.ellipsis),
+                  ),
+                  const CircleSwitcherButton(),
+                  IconButton(
+                    icon: const Icon(Icons.home_outlined),
+                    tooltip: t('appbar.home'),
+                    onPressed: () => context.go('/'),
+                  ),
+                ],
+              ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(44),
                 child: Padding(
@@ -56,12 +69,6 @@ class AppScaffold extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ...?actions,
-                      const CircleSwitcherButton(),
-                      IconButton(
-                        icon: const Icon(Icons.home_outlined),
-                        tooltip: t('appbar.home'),
-                        onPressed: () => context.go('/'),
-                      ),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined),
                         tooltip: t('appbar.settings'),
