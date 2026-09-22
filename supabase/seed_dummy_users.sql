@@ -69,32 +69,32 @@ insert into user_sports (user_id, sport, level, unit, value_low, value_high) val
 -- whatever you've already entered there).
 insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
   ('11111111-1111-4111-8111-111111111101', 'laufen', 7, '18:00', '19:00', 'Prater, Wien', 48.2141, 16.4053, 3, 5, 10, 5.0, 5.5, null);
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111102', 'laufen', 7, '18:15', '19:15', 'Prater, Wien', 48.2141, 16.4053, 3, 6, 12, 4.83, 5.33, null);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111102', 'laufen', 7, '18:15', '19:15', 'Prater, Wien', 48.2141, 16.4053, 3, 6, 12, 4.83, 5.33, null, 'request');
 
 -- Other recurring slots across the week.
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111102', 'radfahren', 4, '17:30', '19:00', 'Donauinsel, Wien', 48.2364, 16.4229, 5, 20, 40, 27, 32, null);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111102', 'radfahren', 4, '17:30', '19:00', 'Donauinsel, Wien', 48.2364, 16.4229, 5, 20, 40, 27, 32, null, 'hidden');
 insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
   ('11111111-1111-4111-8111-111111111103', 'schwimmen', 2, '19:00', '20:00', 'Stadthallenbad, Wien', 48.1959, 16.3364, 3, 1, 3, 22, 26, null);
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111103', 'schwimmen', 5, '07:00', '08:00', 'Stadthallenbad, Wien', 48.1959, 16.3364, 3, 1, 3, 22, 26, null);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111103', 'schwimmen', 5, '07:00', '08:00', 'Stadthallenbad, Wien', 48.1959, 16.3364, 3, 1, 3, 22, 26, null, 'request');
 insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
   ('11111111-1111-4111-8111-111111111106', 'radfahren', 6, '09:00', '11:00', 'Donaukanal, Wien', 48.2132, 16.3789, 5, 30, 60, 25, 28, null);
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111107', 'tennis', 7, '10:00', '11:30', 'Tennisplatz Prater, Wien', 48.2158, 16.4021, 3, null, null, null, null, null);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111107', 'tennis', 7, '10:00', '11:30', 'Tennisplatz Prater, Wien', 48.2158, 16.4021, 3, null, null, null, null, null, 'hidden');
 
 -- One-off dates (specific_date); day_of_week derived from the date so the
 -- two stay consistent.
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111104', 'laufen', extract(isodow from current_date + 2)::int, '18:30', '19:30', 'Alte Donau, Wien', 48.2389, 16.4436, 3, 4, 8, 6.5, 7.5, current_date + 2);
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111105', 'wandern', extract(isodow from current_date + 5)::int, '09:00', '13:00', 'Kahlenberg, Wien', 48.2634, 16.3167, 5, 10, 16, 10, 14, current_date + 5);
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date) values
-  ('11111111-1111-4111-8111-111111111101', 'laufen', extract(isodow from current_date + 1)::int, '06:30', '07:30', 'Donauinsel, Wien', 48.2364, 16.4229, 3, 5, 8, 5.0, 5.5, current_date + 1);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111104', 'laufen', extract(isodow from current_date + 2)::int, '18:30', '19:30', 'Alte Donau, Wien', 48.2389, 16.4436, 3, 4, 8, 6.5, 7.5, current_date + 2, 'hidden');
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111105', 'wandern', extract(isodow from current_date + 5)::int, '09:00', '13:00', 'Kahlenberg, Wien', 48.2634, 16.3167, 5, 10, 16, 10, 14, current_date + 5, 'request');
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, distance_min_km, distance_max_km, pace_min, pace_max, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111101', 'laufen', extract(isodow from current_date + 1)::int, '06:30', '07:30', 'Donauinsel, Wien', 48.2364, 16.4229, 3, 5, 8, 5.0, 5.5, current_date + 1, 'request');
 
 -- Sanity check: should return 10 rows.
-select p.full_name, p.age, p.gender, a.sport, a.day_of_week, a.specific_date, a.start_time
+select p.full_name, p.age, p.gender, a.sport, a.day_of_week, a.specific_date, a.start_time, a.discover_visibility
 from activities a
 join profiles p on p.id = a.user_id
 where p.id in (

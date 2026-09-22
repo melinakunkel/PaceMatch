@@ -34,11 +34,11 @@ update activities set level = 'Fortgeschritten', venue_status = 'has_venue'
 
 -- Bonus: one activity for the new Schwangerschafts-/Rückbildungssport type,
 -- so there's something to see for it in Entdecken/Matches.
-insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, level, specific_date) values
-  ('11111111-1111-4111-8111-111111111101', 'schwangerschaftssport', 3, '10:00', '11:00', 'Yogastudio Prater, Wien', 48.2145, 16.4030, 3, 'Anfänger', null);
+insert into activities (user_id, sport, day_of_week, start_time, end_time, location_name, latitude, longitude, radius_km, level, specific_date, discover_visibility) values
+  ('11111111-1111-4111-8111-111111111101', 'schwangerschaftssport', 3, '10:00', '11:00', 'Yogastudio Prater, Wien', 48.2145, 16.4030, 3, 'Anfänger', null, 'hidden');
 
 -- Sanity check.
-select p.full_name, p.languages, p.interests, a.sport, a.level, a.bike_type, a.venue_status
+select p.full_name, p.languages, p.interests, a.sport, a.level, a.bike_type, a.venue_status, a.discover_visibility
 from profiles p
 left join activities a on a.user_id = p.id
 where p.id in (
