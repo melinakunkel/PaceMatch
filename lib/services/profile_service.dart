@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/home_layout.dart';
 import '../models/profile.dart';
 import '../models/sport_type.dart';
 import '../models/user_sport.dart';
@@ -234,6 +235,31 @@ class ProfileService {
   Future<void> reactivateAccount(String userId) async {
     await SupabaseService.ensureFreshSession();
     await _client.from('profiles').update({'paused_at': null}).eq('id', userId);
+  }
+
+  /// Syncs the Home screen's sport-grid order/visibility across
+  /// devices/logins, same as [updateThemeVariant] does for the design.
+  Future<HomeLayout> getHomeLayout(String userId) async {
+    final row = await _client
+        .from('profiles')
+        .select('home_sport_order, home_hidden_sports')
+        .eq('id', userId)
+        .maybeSingle();
+    return HomeLayout(
+      order: (row?['home_sport_order'] as List?)?.cast<String>() ?? const [],
+      hidden: (row?['home_hidden_sports'] as List?)?.cast<String>() ?? const [],
+    );
+  }
+
+  Future<void> updateHomeLayout(String userId, HomeLayout layout) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({
+          'home_sport_order': layout.order,
+          'home_hidden_sports': layout.hidden,
+        })
+        .eq('id', userId);
   }
 
   /// Permanently deletes the caller's account — the auth user and

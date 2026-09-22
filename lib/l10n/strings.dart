@@ -98,6 +98,14 @@ const _de = <String, String>{
   // Home screen.
   'home.question': 'Was möchtest du diese Woche machen?',
   'home.tutorialTooltip': 'Tutorial',
+  'home.configureTooltip': 'Startbildschirm anpassen',
+
+  // Home layout screen (reorder/hide sport buttons).
+  'homeLayout.title': 'Startbildschirm anpassen',
+  'homeLayout.subtitle': 'Ziehen zum Anordnen, Haken zum Ein-/Ausblenden.',
+  'homeLayout.save': 'Speichern',
+  'homeLayout.saveFailed': 'Speichern fehlgeschlagen: {error}',
+  'homeLayout.saved': 'Gespeichert.',
 
   // Bottom nav / app bar (AppScaffold).
   'nav.discover': 'Entdecken',
@@ -719,6 +727,14 @@ const _en = <String, String>{
 
   'home.question': 'What do you want to do this week?',
   'home.tutorialTooltip': 'Tutorial',
+  'home.configureTooltip': 'Customize home screen',
+
+  // Home layout screen (reorder/hide sport buttons).
+  'homeLayout.title': 'Customize home screen',
+  'homeLayout.subtitle': 'Drag to reorder, tick to show or hide.',
+  'homeLayout.save': 'Save',
+  'homeLayout.saveFailed': 'Save failed: {error}',
+  'homeLayout.saved': 'Saved.',
 
   'nav.discover': 'Discover',
   'nav.plan': 'Plan',

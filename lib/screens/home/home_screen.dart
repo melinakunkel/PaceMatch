@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/strings.dart';
+import '../../models/home_layout.dart';
 import '../../models/sport_type.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
@@ -10,6 +11,7 @@ import '../../theme/stock_photos.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/network_photo.dart';
 import '../tutorial/tutorial_screen.dart';
+import 'home_layout_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,11 +22,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _profileService = ProfileService();
+  List<SportType> _sports = SportType.values.toList();
 
   @override
   void initState() {
     super.initState();
     _maybeShowTutorial();
+    _loadLayout();
+  }
+
+  Future<void> _loadLayout() async {
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    final layout = await _profileService.getHomeLayout(userId);
+    if (mounted) setState(() => _sports = layout.resolve());
+  }
+
+  Future<void> _configureLayout() async {
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    final currentLayout = await _profileService.getHomeLayout(userId);
+    if (!mounted) return;
+    final result = await Navigator.of(context).push<HomeLayout>(
+      MaterialPageRoute(
+        builder: (_) => HomeLayoutScreen(initial: currentLayout),
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() => _sports = result.resolve());
+    }
   }
 
   // Checked against the account, not local browser storage: an in-app or
@@ -62,6 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    Icons.dashboard_customize_outlined,
+                    color: AppColors.primary,
+                  ),
+                  tooltip: t('home.configureTooltip'),
+                  onPressed: _configureLayout,
+                ),
                 IconButton(
                   icon: Icon(Icons.help_outline, color: AppColors.primary),
                   tooltip: t('home.tutorialTooltip'),
@@ -125,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.3,
-                children: SportType.values
+                children: _sports
                     .map((sport) => _SportCard(sport: sport))
                     .toList(),
               ),
