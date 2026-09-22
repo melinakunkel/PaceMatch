@@ -809,25 +809,11 @@ class _DayColumn extends StatelessWidget {
                         ),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            a.sport.icon,
-                            size: 12,
-                            color: AppColors.primary,
-                          ),
-                          if (blockHeight > 34)
-                            Text(
-                              a.startTime.hour.toString().padLeft(2, '0'),
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
+                      alignment: Alignment.center,
+                      child: Icon(
+                        a.sport.icon,
+                        size: 12,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
