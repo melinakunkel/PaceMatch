@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/circle.dart';
+import '../models/profile.dart';
 import 'supabase_service.dart';
 
 class CircleService {
@@ -61,6 +62,23 @@ class CircleService {
       }
       rethrow;
     }
+  }
+
+  /// Everyone in [circleId], newest-joined first — relies on the "members
+  /// viewable by fellow members" RLS policy, so only works for a circle the
+  /// caller is themselves a member of.
+  Future<List<Profile>> getMembers(String circleId) async {
+    final rows = await _client
+        .from('circle_members')
+        .select('joined_at, profiles(*)')
+        .eq('circle_id', circleId)
+        .order('joined_at', ascending: false)
+        .limit(300);
+    return rows
+        .map((row) => row['profiles'] as Map<String, dynamic>?)
+        .whereType<Map<String, dynamic>>()
+        .map(Profile.fromMap)
+        .toList();
   }
 
   Future<void> leaveCircle({

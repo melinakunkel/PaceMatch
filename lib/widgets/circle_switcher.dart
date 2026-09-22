@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../l10n/strings.dart';
 import '../models/circle.dart';
+import '../models/profile.dart';
 import '../services/circle_controller.dart';
 import '../services/circle_service.dart';
 import '../services/supabase_service.dart';
@@ -136,6 +138,13 @@ class _CircleSheetState extends State<_CircleSheet> {
     }
   }
 
+  Future<void> _showMembers(Circle circle) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _CircleMembersDialog(circle: circle),
+    );
+  }
+
   Future<void> _joinCircle() async {
     final code = await showDialog<String>(
       context: context,
@@ -220,10 +229,20 @@ class _CircleSheetState extends State<_CircleSheet> {
                           contentPadding: EdgeInsets.zero,
                           value: c.id,
                           enabled: !_busy,
-                          secondary: IconButton(
-                            icon: const Icon(Icons.exit_to_app),
-                            tooltip: t('circles.leaveCircle'),
-                            onPressed: _busy ? null : () => _leave(c),
+                          secondary: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.people_outline),
+                                tooltip: t('circles.members'),
+                                onPressed: () => _showMembers(c),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.exit_to_app),
+                                tooltip: t('circles.leaveCircle'),
+                                onPressed: _busy ? null : () => _leave(c),
+                              ),
+                            ],
                           ),
                           title: Text(c.name),
                           subtitle: Text(
@@ -340,6 +359,100 @@ class _JoinDialogState extends State<_JoinDialog> {
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(_ctrl.text),
           child: Text(t('circles.join')),
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleMembersDialog extends StatefulWidget {
+  const _CircleMembersDialog({required this.circle});
+  final Circle circle;
+
+  @override
+  State<_CircleMembersDialog> createState() => _CircleMembersDialogState();
+}
+
+class _CircleMembersDialogState extends State<_CircleMembersDialog> {
+  late final Future<List<Profile>> _future = CircleService().getMembers(
+    widget.circle.id,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(t('circles.membersTitle', {'circle': widget.circle.name})),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: FutureBuilder<List<Profile>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  t('circles.membersLoadFailed', {
+                    'error': '${snapshot.error}',
+                  }),
+                  style: TextStyle(color: AppColors.danger),
+                ),
+              );
+            }
+            final members = snapshot.data ?? [];
+            if (members.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  t('circles.membersEmpty'),
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              );
+            }
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 360),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: members.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, i) {
+                  final member = members[i];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.secondaryLight,
+                      backgroundImage: member.avatarUrl != null
+                          ? NetworkImage(member.avatarUrl!)
+                          : null,
+                      child: member.avatarUrl != null
+                          ? null
+                          : Text(
+                              member.firstName.isNotEmpty
+                                  ? member.firstName[0].toUpperCase()
+                                  : '?',
+                            ),
+                    ),
+                    title: Text(member.firstName),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/profile/${member.id}');
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('common.close')),
         ),
       ],
     );

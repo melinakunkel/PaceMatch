@@ -404,6 +404,12 @@ const _de = <String, String>{
   'circles.inviteCode': 'Einladungscode',
   'circles.createdTitle': '"{circle}" erstellt',
   'circles.shareCode': 'Teile diesen Code, damit andere beitreten können:',
+  'circles.members': 'Mitglieder',
+  'circles.membersTitle': 'Mitglieder von {circle}',
+  'circles.membersEmpty': 'Noch keine Mitglieder.',
+  'circles.membersLoadFailed':
+      'Mitglieder konnten nicht geladen werden: {error}',
+  'circles.memberCount': '{count} Mitglieder',
 
   // Chat list.
   'chatList.leaveTitle': 'Chat verlassen?',
@@ -994,6 +1000,11 @@ const _en = <String, String>{
   'circles.inviteCode': 'Invite code',
   'circles.createdTitle': '"{circle}" created',
   'circles.shareCode': 'Share this code so others can join:',
+  'circles.members': 'Members',
+  'circles.membersTitle': 'Members of {circle}',
+  'circles.membersEmpty': 'No members yet.',
+  'circles.membersLoadFailed': 'Couldn\'t load members: {error}',
+  'circles.memberCount': '{count} members',
 
   'chatList.leaveTitle': 'Leave chat?',
   'chatList.leaveConfirm': 'You\'re leaving the group "{name}".',
