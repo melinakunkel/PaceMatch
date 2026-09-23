@@ -8,6 +8,7 @@ enum SportType {
   schwimmen,
   wandern,
   tennis,
+  padel,
   schwangerschaftssport,
   hundeGassi,
   kinderSpielen,
@@ -30,6 +31,8 @@ enum SportType {
         return t('sport.wandern');
       case SportType.tennis:
         return t('sport.tennis');
+      case SportType.padel:
+        return t('sport.padel');
       case SportType.schwangerschaftssport:
         return t('sport.schwangerschaftssport');
       case SportType.hundeGassi:
@@ -52,6 +55,8 @@ enum SportType {
       case SportType.wandern:
         return Icons.terrain;
       case SportType.tennis:
+        return Icons.sports_tennis;
+      case SportType.padel:
         return Icons.sports_tennis;
       case SportType.schwangerschaftssport:
         return Icons.pregnant_woman;
@@ -81,6 +86,7 @@ enum SportType {
   /// a skill level fits better than a numeric pace.
   bool get usesPace =>
       this != SportType.tennis &&
+      this != SportType.padel &&
       this != SportType.wandern &&
       this != SportType.schwangerschaftssport &&
       this != SportType.hundeGassi &&
@@ -90,6 +96,7 @@ enum SportType {
   /// which isn't measured in km.
   bool get usesDistance =>
       this != SportType.tennis &&
+      this != SportType.padel &&
       this != SportType.schwangerschaftssport &&
       this != SportType.hundeGassi &&
       this != SportType.kinderSpielen;
@@ -97,7 +104,8 @@ enum SportType {
   /// Whether this sport typically needs a reserved venue (a court, a
   /// booked slot), so activities should ask whether the creator already
   /// has one or is still looking for one.
-  bool get usesVenueQuestion => this == SportType.tennis;
+  bool get usesVenueQuestion =>
+      this == SportType.tennis || this == SportType.padel;
 
   /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
   bool get usesBikeType => this == SportType.radfahren;
