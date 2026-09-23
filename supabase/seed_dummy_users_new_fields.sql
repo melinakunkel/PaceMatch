@@ -3,21 +3,24 @@
 -- status. Updates the same 7 demo users from seed_dummy_users.sql (run that
 -- one first if you haven't). Plain statements, safe to run multiple times.
 
--- Profile photos, just for a nicer-looking demo (stable placeholder
--- headshots from randomuser.me, matched to each dummy's gender).
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/44.jpg'
+-- Profile photos, just for a nicer-looking demo. Generated (not hotlinked)
+-- avatars from dicebear.com, one per person by name — chosen over a
+-- photo-hosting site because those often don't send the cross-origin
+-- header Flutter Web's image renderer needs, which fails silently (a
+-- blank circle, not an error) instead of showing anything.
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Anna&size=300'
   where id = '11111111-1111-4111-8111-111111111101';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/32.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=David&size=300'
   where id = '11111111-1111-4111-8111-111111111102';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/68.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Lisa&size=300'
   where id = '11111111-1111-4111-8111-111111111103';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/75.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Jonas&size=300'
   where id = '11111111-1111-4111-8111-111111111104';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/21.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Sophie&size=300'
   where id = '11111111-1111-4111-8111-111111111105';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/86.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Michael&size=300'
   where id = '11111111-1111-4111-8111-111111111106';
-update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/12.jpg'
+update profiles set avatar_url = 'https://api.dicebear.com/7.x/avataaars/png?seed=Julia&size=300'
   where id = '11111111-1111-4111-8111-111111111107';
 
 -- Interests & languages per profile.
