@@ -441,7 +441,7 @@ const _de = <String, String>{
   'circles.leaveConfirm': 'Du verlässt den Kreis "{circle}". Über den Einladungscode kannst du später wieder beitreten.',
   'circles.deleteCircle': 'Kreis löschen',
   'circles.deleteCircleTitle': 'Kreis löschen?',
-  'circles.deleteConfirm': 'Der Kreis "{circle}" wird für alle Mitglieder endgültig gelöscht. Aktivitäten, die nur diesem Kreis zugeordnet waren, werden danach wieder öffentlich sichtbar. Das kann nicht rückgängig gemacht werden.',
+  'circles.deleteConfirm': 'Der Kreis "{circle}" wird für alle Mitglieder endgültig gelöscht. Aktivitäten, die nur diesem Kreis zugeordnet waren, werden mitgelöscht. Das kann nicht rückgängig gemacht werden.',
   'circles.deleteFailed': 'Löschen fehlgeschlagen: {error}',
 
   // Chat list.
@@ -1070,7 +1070,7 @@ const _en = <String, String>{
   'circles.leaveConfirm': 'You\'re leaving the circle "{circle}". You can rejoin later with the invite code.',
   'circles.deleteCircle': 'Delete circle',
   'circles.deleteCircleTitle': 'Delete circle?',
-  'circles.deleteConfirm': 'The circle "{circle}" will be permanently deleted for everyone. Activities scoped only to it will become public again. This can\'t be undone.',
+  'circles.deleteConfirm': 'The circle "{circle}" will be permanently deleted for everyone. Activities scoped only to it will be deleted too. This can\'t be undone.',
   'circles.deleteFailed': 'Delete failed: {error}',
 
   'chatList.leaveTitle': 'Leave chat?',

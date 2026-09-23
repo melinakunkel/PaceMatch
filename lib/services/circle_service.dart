@@ -146,8 +146,8 @@ class CircleService {
   }
 
   /// Permanently deletes a circle — only an admin's RLS policy allows this.
-  /// Its members are removed along with it; activities that were scoped to
-  /// it (activities.circle_id) fall back to public instead of vanishing.
+  /// Its members and any activities scoped to it are deleted along with it
+  /// (on delete cascade — see 0035_circle_delete_cascades_activities.sql).
   Future<void> deleteCircle(String circleId) async {
     await SupabaseService.ensureFreshSession();
     await _client.from('circles').delete().eq('id', circleId);
