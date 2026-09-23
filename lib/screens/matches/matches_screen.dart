@@ -17,6 +17,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/match_scoring.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
@@ -57,6 +58,15 @@ class _MatchesScreenState extends State<MatchesScreen> {
   bool _loading = true;
   String? _error;
 
+  // "Same time"/"same pace" filters — a candidate only counts as a match
+  // for these at all once their time overlap (and, for pace sports, pace
+  // overlap) already passed [MatchService.findMatches]'s score > 0 cutoff,
+  // so this threshold picks out the closer half of that overlap range
+  // rather than merely "any overlap".
+  static const _sameThreshold = 0.5;
+  bool _filterSameTime = false;
+  bool _filterSamePace = false;
+
   // Rewind state for the most recent swipe only (matches the standard
   // "undo last swipe" behavior in swipe apps, not a full history).
   MatchCandidate? _lastSwiped;
@@ -66,11 +76,43 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   bool get _canUndo => _lastSwiped != null && !_lastPending && !_lastMutual;
 
-  /// Candidates still to decide on — liked ones drop out immediately;
-  /// passed ones stay so the list view can still offer them.
-  List<MatchCandidate> get _pending => _candidates
+  /// Candidates still to decide on, before the same-time/same-pace filters
+  /// — liked ones drop out immediately; passed ones stay so the list view
+  /// can still offer them. Used to tell "you're out of candidates" apart
+  /// from "the filters hid everyone".
+  List<MatchCandidate> get _pendingUnfiltered => _candidates
       .where((c) => !_likedThisSession.contains(c.profile.id))
       .toList();
+
+  bool _matchesFilters(MatchCandidate c) {
+    final mine = _activity!;
+    if (_filterSameTime &&
+        timeOverlapRatio(
+              mine.startTime,
+              mine.endTime,
+              c.theirActivity.startTime,
+              c.theirActivity.endTime,
+            ) <
+            _sameThreshold) {
+      return false;
+    }
+    if (_filterSamePace &&
+        paceOverlapRatio(
+              mine.paceMin,
+              mine.paceMax,
+              c.theirActivity.paceMin,
+              c.theirActivity.paceMax,
+            ) <
+            _sameThreshold) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Candidates still to decide on — [_pendingUnfiltered] narrowed by the
+  /// same-time/same-pace filters.
+  List<MatchCandidate> get _pending =>
+      _pendingUnfiltered.where(_matchesFilters).toList();
 
   /// What the swipe view shows — [_pending] minus anyone already passed on.
   List<MatchCandidate> get _swipeable =>
@@ -300,9 +342,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Widget _buildListBody() {
     final activity = _activity!;
     final pending = _pending;
+    final filteredOutEverything =
+        pending.isEmpty && _pendingUnfiltered.isNotEmpty;
     return Column(
       children: [
         _buildHeader(activity),
+        _buildFilterRow(activity),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -311,8 +356,10 @@ class _MatchesScreenState extends State<MatchesScreen> {
             child: Text(
               _candidates.isEmpty
                   ? t('matches.noneFoundYet')
-                  : pending.isEmpty
+                  : _pendingUnfiltered.isEmpty
                   ? t('matches.allDoneForToday')
+                  : filteredOutEverything
+                  ? t('matches.noneMatchFilters')
                   : t('matches.listPrompt'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
@@ -332,27 +379,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   ),
                 )
               : pending.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 48,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          t('matches.noMoreSuggestions'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
+              ? _buildPendingEmptyState(filteredOutEverything)
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: pending.length,
@@ -364,6 +391,69 @@ class _MatchesScreenState extends State<MatchesScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  /// Filter chips for narrowing candidates down to (roughly) the same time
+  /// and/or pace as [activity] — "same pace" only makes sense for
+  /// pace-tracked sports, so it's hidden for e.g. Tennis/Wandern.
+  Widget _buildFilterRow(Activity activity) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Wrap(
+        spacing: 8,
+        children: [
+          FilterChip(
+            label: Text(t('matches.filterSameTime')),
+            selected: _filterSameTime,
+            onSelected: (v) => setState(() => _filterSameTime = v),
+          ),
+          if (activity.sport.usesPace)
+            FilterChip(
+              label: Text(t('matches.filterSamePace')),
+              selected: _filterSamePace,
+              onSelected: (v) => setState(() => _filterSamePace = v),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingEmptyState(bool filteredOutEverything) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              filteredOutEverything
+                  ? Icons.filter_alt_off_outlined
+                  : Icons.check_circle_outline,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              filteredOutEverything
+                  ? t('matches.noneMatchFiltersHint')
+                  : t('matches.noMoreSuggestions'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            if (filteredOutEverything) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => setState(() {
+                  _filterSameTime = false;
+                  _filterSamePace = false;
+                }),
+                child: Text(t('matches.clearFilters')),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -389,9 +479,12 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Widget _buildSwipeBody() {
     final activity = _activity!;
     final swipeable = _swipeable;
+    final filteredOutEverything =
+        _pending.isEmpty && _pendingUnfiltered.isNotEmpty;
     return Column(
       children: [
         _buildHeader(activity),
+        _buildFilterRow(activity),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -402,6 +495,8 @@ class _MatchesScreenState extends State<MatchesScreen> {
                   ? t('matches.noneFoundYet')
                   : swipeable.isNotEmpty
                   ? t('matches.swipePrompt')
+                  : filteredOutEverything
+                  ? t('matches.noneMatchFilters')
                   : t('matches.allDoneForToday'),
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
@@ -428,16 +523,30 @@ class _MatchesScreenState extends State<MatchesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.check_circle_outline,
+                          filteredOutEverything
+                              ? Icons.filter_alt_off_outlined
+                              : Icons.check_circle_outline,
                           size: 48,
                           color: AppColors.textSecondary,
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          t('matches.noMoreSuggestions'),
+                          filteredOutEverything
+                              ? t('matches.noneMatchFiltersHint')
+                              : t('matches.noMoreSuggestions'),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
+                        if (filteredOutEverything) ...[
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: () => setState(() {
+                              _filterSameTime = false;
+                              _filterSamePace = false;
+                            }),
+                            child: Text(t('matches.clearFilters')),
+                          ),
+                        ],
                         if (_canUndo) ...[
                           const SizedBox(height: 16),
                           TextButton.icon(

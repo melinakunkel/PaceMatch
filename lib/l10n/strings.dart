@@ -377,6 +377,11 @@ const _de = <String, String>{
   'matches.emptyHint': 'Sobald jemand eine ähnliche Sportzeit einträgt, erscheint er oder sie hier.',
   'matches.noMoreSuggestions':
       'Keine weiteren Vorschläge — schau später nochmal vorbei.',
+  'matches.filterSameTime': 'Gleiche Zeit',
+  'matches.filterSamePace': 'Gleiche Pace',
+  'matches.noneMatchFilters': 'Niemand passt zu diesen Filtern.',
+  'matches.noneMatchFiltersHint': 'Mit diesen Filtern passt gerade niemand. Versuch es mit weniger Filtern.',
+  'matches.clearFilters': 'Filter zurücksetzen',
   'matches.undoLast': 'Letztes rückgängig machen',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',
@@ -997,6 +1002,12 @@ const _en = <String, String>{
   'matches.emptyHint':
       'As soon as someone adds a similar sport time, they\'ll show up here.',
   'matches.noMoreSuggestions': 'No more suggestions — check back later.',
+  'matches.filterSameTime': 'Same time',
+  'matches.filterSamePace': 'Same pace',
+  'matches.noneMatchFilters': 'No one matches these filters.',
+  'matches.noneMatchFiltersHint':
+      'No one matches these filters right now. Try fewer filters.',
+  'matches.clearFilters': 'Clear filters',
   'matches.undoLast': 'Undo last swipe',
   'matches.like': 'LIKE',
   'matches.nope': 'NOPE',

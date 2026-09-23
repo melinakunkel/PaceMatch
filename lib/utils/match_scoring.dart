@@ -33,6 +33,29 @@ int matchScore({
 
 int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
 
+/// How much two time windows overlap, as a 0-1 ratio of their combined
+/// span — used both for [matchScore] and to power the "same time" filter.
+double timeOverlapRatio(
+  TimeOfDay aStart,
+  TimeOfDay aEnd,
+  TimeOfDay bStart,
+  TimeOfDay bEnd,
+) => _overlapRatio(
+  _toMinutes(aStart),
+  _toMinutes(aEnd),
+  _toMinutes(bStart),
+  _toMinutes(bEnd),
+);
+
+/// How much two pace ranges overlap, as a 0-1 ratio — used both for
+/// [matchScore] and to power the "same pace" filter.
+double paceOverlapRatio(
+  double? aMin,
+  double? aMax,
+  double? bMin,
+  double? bMax,
+) => _rangeOverlapRatio(aMin, aMax, bMin, bMax);
+
 double _overlapRatio(int aStart, int aEnd, int bStart, int bEnd) {
   final overlapStart = aStart > bStart ? aStart : bStart;
   final overlapEnd = aEnd < bEnd ? aEnd : bEnd;
