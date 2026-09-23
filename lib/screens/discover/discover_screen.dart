@@ -127,6 +127,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String? _timelineError;
   List<CommunityEvent> _timelineCommunityEvents = [];
   List<OpenEvent> _timelineOpenEvents = [];
+  Set<SportType> _timelineSportFilter = {};
   static const _timelineDaysAhead = 120;
 
   bool get _filtersActive =>
@@ -311,12 +312,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  bool get _timelineFiltersActive => _timelineSportFilter.isNotEmpty;
+
   List<_TimelineEntry> get _timelineEntries {
     final today = _dateOnly(DateTime.now());
     final to = today.add(const Duration(days: _timelineDaysAhead));
     final entries = <_TimelineEntry>[];
     if (_timelineShowCommunity) {
       for (final event in _timelineCommunityEvents) {
+        if (_timelineSportFilter.isNotEmpty &&
+            !_timelineSportFilter.contains(event.sport)) {
+          continue;
+        }
         for (final date in event.occurrencesBetween(today, to)) {
           entries.add(_TimelineEntry.community(date, event));
         }
@@ -324,6 +331,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
     if (_timelineShowOpen) {
       for (final event in _timelineOpenEvents) {
+        if (_timelineSportFilter.isNotEmpty &&
+            !_timelineSportFilter.contains(event.sport)) {
+          continue;
+        }
         entries.add(_TimelineEntry.open(_dateOnly(event.eventDate), event));
       }
     }
@@ -588,6 +599,71 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
+  /// Same sport-filter chip picker as [_openFilters], scoped to the "all
+  /// events" timeline instead — its own filter (community/open shown, time
+  /// range, ...) doesn't map onto a multi-month list the same way.
+  Future<void> _openTimelineFilters() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t('newActivity.sport'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: SportType.values.map((sport) {
+                  final selected = _timelineSportFilter.contains(sport);
+                  return FilterChip(
+                    label: Text(sport.label),
+                    selected: selected,
+                    onSelected: (_) {
+                      setSheetState(() {
+                        if (selected) {
+                          _timelineSportFilter.remove(sport);
+                        } else {
+                          _timelineSportFilter.add(sport);
+                        }
+                      });
+                      setState(() {});
+                    },
+                  );
+                }).toList(),
+              ),
+              if (_timelineFiltersActive) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    setSheetState(() => _timelineSportFilter = {});
+                    setState(() {});
+                  },
+                  child: Text(t('discover.filters.reset')),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   static String _formatHour(double h) {
     final hour = h.floor().clamp(0, 24);
     final minute = ((h - h.floor()) * 60).round();
@@ -605,14 +681,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           tooltip: t('discover.hostEvent'),
           onPressed: _hostEvent,
         ),
-        if (!_timelineView)
-          IconButton(
-            icon: Icon(
-              _filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
-            ),
-            tooltip: t('discover.filters.title'),
-            onPressed: _openFilters,
+        IconButton(
+          icon: Icon(
+            (_timelineView ? _timelineFiltersActive : _filtersActive)
+                ? Icons.filter_alt
+                : Icons.filter_alt_outlined,
           ),
+          tooltip: t('discover.filters.title'),
+          onPressed: _timelineView ? _openTimelineFilters : _openFilters,
+        ),
         IconButton(
           icon: Icon(
             _timelineView ? Icons.calendar_view_day : Icons.event_note,
@@ -811,6 +888,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(
+            t('discover.timelineTitle'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Wrap(
             spacing: 8,
             children: [
@@ -862,8 +946,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         children: [
                           if (newMonth) _MonthHeader(date: entry.date),
                           entry.community != null
-                              ? _buildCommunityEventCard(entry.community!)
-                              : _buildOpenEventCard(entry.open!),
+                              ? _buildCommunityEventCard(
+                                  entry.community!,
+                                  entry.date,
+                                )
+                              : _buildOpenEventCard(entry.open!, entry.date),
                         ],
                       );
                     },
@@ -874,7 +961,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
-  Widget _buildCommunityEventCard(CommunityEvent event) {
+  Widget _buildCommunityEventCard(CommunityEvent event, [DateTime? date]) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: AppColors.secondaryLight.withValues(alpha: 0.4),
@@ -901,6 +988,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         fontSize: 12,
                       ),
                     ),
+                  if (date != null) ...[
+                    const SizedBox(height: 4),
+                    _EventDateLabel(date: date),
+                  ],
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -961,7 +1052,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
-  Widget _buildOpenEventCard(OpenEvent event) {
+  Widget _buildOpenEventCard(OpenEvent event, [DateTime? date]) {
     final joining = _joining.contains(event.id);
     final myId = SupabaseService.currentUserId;
     final isHost = event.hostId == myId;
@@ -1026,6 +1117,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         fontSize: 12,
                       ),
                     ),
+                  if (date != null) ...[
+                    const SizedBox(height: 4),
+                    _EventDateLabel(date: date),
+                  ],
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -1320,6 +1415,29 @@ class _MonthHeader extends StatelessWidget {
         _monthYearLabel(date),
         style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
       ),
+    );
+  }
+}
+
+/// The concrete day an event card falls on ("Do, 24.09.") — shown only in
+/// the "all events" timeline, where a month can span many dates; the
+/// day-picker view already implies the date via its selected day.
+class _EventDateLabel extends StatelessWidget {
+  const _EventDateLabel({required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final label =
+        '${weekdayLabels[date.weekday - 1]}, '
+        '${date.day.toString().padLeft(2, '0')}.'
+        '${date.month.toString().padLeft(2, '0')}.';
+    return Row(
+      children: [
+        Icon(Icons.event_outlined, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }
