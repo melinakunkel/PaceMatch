@@ -9,6 +9,8 @@ enum SportType {
   wandern,
   tennis,
   schwangerschaftssport,
+  hundeGassi,
+  kinderSpielen,
   sonstige;
 
   static SportType fromDb(String value) => SportType.values.firstWhere(
@@ -30,6 +32,10 @@ enum SportType {
         return t('sport.tennis');
       case SportType.schwangerschaftssport:
         return t('sport.schwangerschaftssport');
+      case SportType.hundeGassi:
+        return t('sport.hundeGassi');
+      case SportType.kinderSpielen:
+        return t('sport.kinderSpielen');
       case SportType.sonstige:
         return t('sport.sonstige');
     }
@@ -49,6 +55,10 @@ enum SportType {
         return Icons.sports_tennis;
       case SportType.schwangerschaftssport:
         return Icons.pregnant_woman;
+      case SportType.hundeGassi:
+        return Icons.pets;
+      case SportType.kinderSpielen:
+        return Icons.child_care;
       case SportType.sonstige:
         return Icons.more_horiz;
     }
@@ -72,12 +82,17 @@ enum SportType {
   bool get usesPace =>
       this != SportType.tennis &&
       this != SportType.wandern &&
-      this != SportType.schwangerschaftssport;
+      this != SportType.schwangerschaftssport &&
+      this != SportType.hundeGassi &&
+      this != SportType.kinderSpielen;
 
   /// Whether a distance range makes sense for this sport. False for tennis,
   /// which isn't measured in km.
   bool get usesDistance =>
-      this != SportType.tennis && this != SportType.schwangerschaftssport;
+      this != SportType.tennis &&
+      this != SportType.schwangerschaftssport &&
+      this != SportType.hundeGassi &&
+      this != SportType.kinderSpielen;
 
   /// Whether this sport typically needs a reserved venue (a court, a
   /// booked slot), so activities should ask whether the creator already
@@ -86,6 +101,14 @@ enum SportType {
 
   /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
   bool get usesBikeType => this == SportType.radfahren;
+
+  /// Whether to ask if the creator has their own dog along — only for
+  /// [SportType.hundeGassi].
+  bool get usesDogQuestion => this == SportType.hundeGassi;
+
+  /// Whether to ask for the child's age/gender — only for
+  /// [SportType.kinderSpielen].
+  bool get usesChildInfo => this == SportType.kinderSpielen;
 
   /// Whether a run type (normal/long run/speed run) makes sense to ask.
   bool get usesRunType => this == SportType.laufen;

@@ -97,6 +97,9 @@ class ActivityService {
     String? level,
     String? bikeType,
     String? runType,
+    bool? hasDog,
+    int? childAge,
+    String? childGender,
     DateTime? specificDate,
     String? circleId,
     String discoverVisibility = 'open',
@@ -122,6 +125,9 @@ class ActivityService {
           'level': level,
           'bike_type': bikeType,
           'run_type': runType,
+          'has_dog': hasDog,
+          'child_age': childAge,
+          'child_gender': childGender,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),
@@ -162,6 +168,9 @@ class ActivityService {
     String? level,
     String? bikeType,
     String? runType,
+    bool? hasDog,
+    int? childAge,
+    String? childGender,
     DateTime? specificDate,
     String discoverVisibility = 'open',
   }) async {
@@ -185,6 +194,9 @@ class ActivityService {
           'level': level,
           'bike_type': bikeType,
           'run_type': runType,
+          'has_dog': hasDog,
+          'child_age': childAge,
+          'child_gender': childGender,
           'specific_date': specificDate == null
               ? null
               : _formatDate(specificDate),

@@ -39,6 +39,7 @@ class NewActivityScreen extends StatefulWidget {
 
 class _NewActivityScreenState extends State<NewActivityScreen> {
   static const _levels = ['Anfänger', 'Fortgeschritten', 'Profi'];
+  static const _childGenders = ['weiblich', 'männlich', 'divers'];
 
   final _activityService = ActivityService();
   late final _radiusCtrl = TextEditingController(
@@ -74,6 +75,11 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   late String? _level = widget.existing?.level;
   late String? _bikeType = widget.existing?.bikeType;
   late String? _runType = widget.existing?.runType;
+  late bool? _hasDog = widget.existing?.hasDog;
+  late final _childAgeCtrl = TextEditingController(
+    text: widget.existing?.childAge?.toString() ?? '',
+  );
+  late String? _childGender = widget.existing?.childGender;
   late bool _isRecurring = widget.existing?.isRecurring ?? true;
   late DateTime? _specificDate = widget.existing?.specificDate;
   late String _discoverVisibility =
@@ -116,6 +122,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     _radiusCtrl.dispose();
     _distanceMinCtrl.dispose();
     _distanceMaxCtrl.dispose();
+    _childAgeCtrl.dispose();
     super.dispose();
   }
 
@@ -172,6 +179,11 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final level = _sport.usesPace ? null : _level;
       final bikeType = _sport.usesBikeType ? _bikeType : null;
       final runType = _sport.usesRunType ? _runType : null;
+      final hasDog = _sport.usesDogQuestion ? _hasDog : null;
+      final childAge = _sport.usesChildInfo
+          ? int.tryParse(_childAgeCtrl.text)
+          : null;
+      final childGender = _sport.usesChildInfo ? _childGender : null;
       final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
@@ -193,6 +205,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           level: level,
           bikeType: bikeType,
           runType: runType,
+          hasDog: hasDog,
+          childAge: childAge,
+          childGender: childGender,
           specificDate: specificDate,
           discoverVisibility: _discoverVisibility,
         );
@@ -224,6 +239,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             level: level,
             bikeType: bikeType,
             runType: runType,
+            hasDog: hasDog,
+            childAge: childAge,
+            childGender: childGender,
             specificDate: specificDate,
             circleId: CircleController.active.value?.id,
             discoverVisibility: _discoverVisibility,
@@ -375,6 +393,47 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     selected: selected,
                     onSelected: (_) =>
                         setState(() => _runType = selected ? null : r.name),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (_sport.usesDogQuestion) ...[
+              const SizedBox(height: 20),
+              _SectionLabel(t('newActivity.hasDog')),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: Text(t('newActivity.hasDogYes')),
+                    selected: _hasDog == true,
+                    onSelected: (_) => setState(() => _hasDog = true),
+                  ),
+                  ChoiceChip(
+                    label: Text(t('newActivity.hasDogNo')),
+                    selected: _hasDog == false,
+                    onSelected: (_) => setState(() => _hasDog = false),
+                  ),
+                ],
+              ),
+            ],
+            if (_sport.usesChildInfo) ...[
+              const SizedBox(height: 20),
+              _SectionLabel(t('newActivity.childInfo')),
+              TextField(
+                controller: _childAgeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: t('newActivity.childAge'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _childGenders.map((g) {
+                  return ChoiceChip(
+                    label: Text(genderLabel(g)),
+                    selected: _childGender == g,
+                    onSelected: (_) => setState(() => _childGender = g),
                   );
                 }).toList(),
               ),

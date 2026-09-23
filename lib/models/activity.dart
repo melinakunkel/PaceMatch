@@ -57,6 +57,14 @@ class Activity {
   /// 'normal' / 'longRun' / 'speedRun' — only set for [SportType.laufen].
   final String? runType;
 
+  /// Whether the creator is bringing their own dog — only set for
+  /// [SportType.hundeGassi].
+  final bool? hasDog;
+
+  /// The child's age/gender — only set for [SportType.kinderSpielen].
+  final int? childAge;
+  final String? childGender;
+
   /// Set for a one-off activity on this exact calendar date; null for a
   /// plain weekly recurrence on [dayOfWeek].
   final DateTime? specificDate;
@@ -90,6 +98,9 @@ class Activity {
     this.level,
     this.bikeType,
     this.runType,
+    this.hasDog,
+    this.childAge,
+    this.childGender,
     this.specificDate,
     this.circleId,
     this.discoverVisibility = 'open',
@@ -145,6 +156,9 @@ class Activity {
     level: map['level'] as String?,
     bikeType: map['bike_type'] as String?,
     runType: map['run_type'] as String?,
+    hasDog: map['has_dog'] as bool?,
+    childAge: map['child_age'] as int?,
+    childGender: map['child_gender'] as String?,
     specificDate: map['specific_date'] == null
         ? null
         : DateTime.parse(map['specific_date'] as String),
@@ -174,6 +188,12 @@ class Activity {
 
   String? get bikeTypeLabel => BikeType.fromDb(bikeType)?.label;
   String? get runTypeLabel => RunType.fromDb(runType)?.label;
+
+  String? get hasDogLabel => switch (hasDog) {
+    true => t('newActivity.hasDogYes'),
+    false => t('newActivity.hasDogNo'),
+    null => null,
+  };
 
   bool get hasVenue => venueStatus == 'has_venue';
   bool get needsVenue => venueStatus == 'needs_venue';

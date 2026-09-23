@@ -1,3 +1,4 @@
+import '../l10n/strings.dart';
 import '../models/activity.dart';
 import '../models/user_sport.dart';
 import 'display_labels.dart';
@@ -30,6 +31,18 @@ String? activityStatsLabel(Activity activity, UserSport? theirSport) {
   }
   if (activity.runTypeLabel != null) {
     parts.add(activity.runTypeLabel!);
+  }
+  if (activity.hasDogLabel != null) {
+    parts.add(activity.hasDogLabel!);
+  }
+  if (activity.childAge != null || activity.childGender != null) {
+    parts.add(
+      [
+        if (activity.childAge != null)
+          t('newActivity.childAgeYears', {'age': '${activity.childAge}'}),
+        if (activity.childGender != null) genderLabel(activity.childGender!),
+      ].join(', '),
+    );
   }
   return parts.isEmpty ? null : parts.join(' · ');
 }

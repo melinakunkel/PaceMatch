@@ -123,6 +123,8 @@ const _de = <String, String>{
   'sport.wandern': 'Wandern',
   'sport.tennis': 'Tennis',
   'sport.schwangerschaftssport': 'Schwangerschafts-/Rückbildungssport',
+  'sport.hundeGassi': 'Hunde spazieren',
+  'sport.kinderSpielen': 'Kinder spielen',
   'sport.sonstige': 'Weitere',
 
   // Bike types (BikeType.label).
@@ -594,6 +596,14 @@ const _de = <String, String>{
   'runType.longRun': 'Long Run',
   'runType.speedRun': 'Speed Run',
 
+  // Hunde spazieren / Kinder spielen.
+  'newActivity.hasDog': 'Hast du einen Hund dabei?',
+  'newActivity.hasDogYes': 'Habe einen Hund',
+  'newActivity.hasDogNo': 'Habe keinen Hund',
+  'newActivity.childInfo': 'Dein Kind',
+  'newActivity.childAge': 'Alter',
+  'newActivity.childAgeYears': '{age} Jahre',
+
   // Settings: legal & support section.
   'settings.legal': 'Rechtliches & Support',
   'settings.faq': 'Häufige Fragen',
@@ -776,6 +786,8 @@ const _en = <String, String>{
   'sport.wandern': 'Hiking',
   'sport.tennis': 'Tennis',
   'sport.schwangerschaftssport': 'Pregnancy / postnatal fitness',
+  'sport.hundeGassi': 'Dog walking',
+  'sport.kinderSpielen': 'Kids playdate',
   'sport.sonstige': 'Other',
 
   'bikeType.rennrad': 'Road bike',
@@ -1211,6 +1223,13 @@ const _en = <String, String>{
   'runType.normal': 'Normal Run',
   'runType.longRun': 'Long Run',
   'runType.speedRun': 'Speed Run',
+
+  'newActivity.hasDog': 'Bringing a dog?',
+  'newActivity.hasDogYes': 'Have a dog',
+  'newActivity.hasDogNo': 'No dog',
+  'newActivity.childInfo': 'Your child',
+  'newActivity.childAge': 'Age',
+  'newActivity.childAgeYears': '{age} years old',
 
   // Settings: legal & support section.
   'settings.legal': 'Legal & support',
