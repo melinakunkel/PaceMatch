@@ -87,6 +87,30 @@ class _CircleSheetState extends State<_CircleSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _confirmLeave(Circle circle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('circles.leaveCircle')),
+        content: Text(t('circles.leaveConfirm', {'circle': circle.name})),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              t('circles.leaveCircle'),
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _leave(circle);
+  }
+
   Future<void> _leave(Circle circle) async {
     setState(() => _busy = true);
     try {
@@ -138,15 +162,21 @@ class _CircleSheetState extends State<_CircleSheet> {
     }
   }
 
+  /// Always re-fetches the circle list on return — covers a rename, a
+  /// deletion, or nothing changed alike — and re-syncs the active circle if
+  /// this one was it (picking up a new name, or falling back to Öffentlich
+  /// if it no longer exists).
   Future<void> _openDetail(Circle circle) async {
-    final updated = await Navigator.of(context).push<Circle>(
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => CircleDetailScreen(circle: circle)),
     );
-    if (updated != null) {
-      if (CircleController.active.value?.id == updated.id) {
-        await CircleController.setActive(updated);
-      }
-      await _refresh();
+    await _refresh();
+    if (CircleController.active.value?.id == circle.id) {
+      final circles = await _future;
+      final stillThere = circles.where((c) => c.id == circle.id);
+      await CircleController.setActive(
+        stillThere.isEmpty ? null : stillThere.first,
+      );
     }
   }
 
@@ -245,7 +275,9 @@ class _CircleSheetState extends State<_CircleSheet> {
                               IconButton(
                                 icon: const Icon(Icons.exit_to_app),
                                 tooltip: t('circles.leaveCircle'),
-                                onPressed: _busy ? null : () => _leave(c),
+                                onPressed: _busy
+                                    ? null
+                                    : () => _confirmLeave(c),
                               ),
                             ],
                           ),

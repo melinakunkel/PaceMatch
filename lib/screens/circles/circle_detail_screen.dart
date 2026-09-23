@@ -12,8 +12,9 @@ import '../../theme/app_theme.dart';
 
 /// Circle details: name/description (editable by admins), invite code with
 /// WhatsApp/SMS sharing, and the member list — admins can promote/demote
-/// other members and remove them. Always pops with the (possibly updated)
-/// [Circle], so the switcher sheet can refresh its list and active circle.
+/// other members, remove them, and delete the circle entirely. The
+/// switcher sheet re-fetches its list whenever this screen is popped, so
+/// it always ends up in sync (renamed, deleted, or unchanged).
 class CircleDetailScreen extends StatefulWidget {
   const CircleDetailScreen({super.key, required this.circle});
   final Circle circle;
@@ -159,13 +160,49 @@ class _CircleDetailScreenState extends State<CircleDetailScreen> {
         .showSnackBar(SnackBar(content: Text(t('circles.codeCopied'))));
   }
 
+  Future<void> _deleteCircle() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('circles.deleteCircleTitle')),
+        content: Text(t('circles.deleteConfirm', {'circle': _circle.name})),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              t('circles.deleteCircle'),
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _busy = true);
+    try {
+      await _circleService.deleteCircle(_circle.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('circles.deleteFailed', {'error': '$e'}))),
+      );
+      setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(_circle),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(_circle.name, overflow: TextOverflow.ellipsis),
       ),
@@ -370,6 +407,22 @@ class _CircleDetailScreenState extends State<CircleDetailScreen> {
                     ),
                   );
                 }),
+                if (isAdmin) ...[
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: _busy ? null : _deleteCircle,
+                      icon: Icon(Icons.delete_outline, color: AppColors.danger),
+                      label: Text(
+                        t('circles.deleteCircle'),
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             );
           },

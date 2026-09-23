@@ -438,6 +438,11 @@ const _de = <String, String>{
   'circles.removeMember': 'Aus Kreis entfernen',
   'circles.removeMemberTitle': 'Mitglied entfernen',
   'circles.removeMemberConfirm': '{name} wirklich aus dem Kreis entfernen?',
+  'circles.leaveConfirm': 'Du verlässt den Kreis "{circle}". Über den Einladungscode kannst du später wieder beitreten.',
+  'circles.deleteCircle': 'Kreis löschen',
+  'circles.deleteCircleTitle': 'Kreis löschen?',
+  'circles.deleteConfirm': 'Der Kreis "{circle}" wird für alle Mitglieder endgültig gelöscht. Aktivitäten, die nur diesem Kreis zugeordnet waren, werden danach wieder öffentlich sichtbar. Das kann nicht rückgängig gemacht werden.',
+  'circles.deleteFailed': 'Löschen fehlgeschlagen: {error}',
 
   // Chat list.
   'chatList.leaveTitle': 'Chat verlassen?',
@@ -1062,6 +1067,11 @@ const _en = <String, String>{
   'circles.removeMember': 'Remove from circle',
   'circles.removeMemberTitle': 'Remove member',
   'circles.removeMemberConfirm': 'Really remove {name} from the circle?',
+  'circles.leaveConfirm': 'You\'re leaving the circle "{circle}". You can rejoin later with the invite code.',
+  'circles.deleteCircle': 'Delete circle',
+  'circles.deleteCircleTitle': 'Delete circle?',
+  'circles.deleteConfirm': 'The circle "{circle}" will be permanently deleted for everyone. Activities scoped only to it will become public again. This can\'t be undone.',
+  'circles.deleteFailed': 'Delete failed: {error}',
 
   'chatList.leaveTitle': 'Leave chat?',
   'chatList.leaveConfirm': 'You\'re leaving the group "{name}".',
