@@ -1,7 +1,24 @@
--- Fills in the fields added since the original dummy-user seed: interests,
--- languages, and per-activity level/bike type/venue status. Updates the same
--- 7 demo users from seed_dummy_users.sql (run that one first if you haven't).
--- Plain statements, safe to run multiple times.
+-- Fills in the fields added since the original dummy-user seed: avatar
+-- photos, interests, languages, and per-activity level/bike type/venue
+-- status. Updates the same 7 demo users from seed_dummy_users.sql (run that
+-- one first if you haven't). Plain statements, safe to run multiple times.
+
+-- Profile photos, just for a nicer-looking demo (stable placeholder
+-- headshots from randomuser.me, matched to each dummy's gender).
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/44.jpg'
+  where id = '11111111-1111-4111-8111-111111111101';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/32.jpg'
+  where id = '11111111-1111-4111-8111-111111111102';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/68.jpg'
+  where id = '11111111-1111-4111-8111-111111111103';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/75.jpg'
+  where id = '11111111-1111-4111-8111-111111111104';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/21.jpg'
+  where id = '11111111-1111-4111-8111-111111111105';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/men/86.jpg'
+  where id = '11111111-1111-4111-8111-111111111106';
+update profiles set avatar_url = 'https://randomuser.me/api/portraits/women/12.jpg'
+  where id = '11111111-1111-4111-8111-111111111107';
 
 -- Interests & languages per profile.
 update profiles set interests = array['Natur & Outdoor', 'Café & Brunch', 'Musik'], languages = array['de']
@@ -38,7 +55,7 @@ insert into activities (user_id, sport, day_of_week, start_time, end_time, locat
   ('11111111-1111-4111-8111-111111111101', 'schwangerschaftssport', 3, '10:00', '11:00', 'Yogastudio Prater, Wien', 48.2145, 16.4030, 3, 'Anfänger', null, 'hidden');
 
 -- Sanity check.
-select p.full_name, p.languages, p.interests, a.sport, a.level, a.bike_type, a.venue_status, a.discover_visibility
+select p.full_name, p.avatar_url, p.languages, p.interests, a.sport, a.level, a.bike_type, a.venue_status, a.discover_visibility
 from profiles p
 left join activities a on a.user_id = p.id
 where p.id in (
