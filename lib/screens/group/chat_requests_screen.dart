@@ -88,30 +88,16 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
     final key = '${entry.profile.id}:${entry.activity.id}';
     setState(() => _responding.add(key));
     try {
-      final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findSharedGroupId(
-        entry.profile.id,
+      final groupId = await _groupService.openDirectChat(
+        myId: SupabaseService.currentUserId!,
+        otherUserId: entry.profile.id,
+        sport: entry.activity.sport,
+        meetingPoint: entry.activity.locationName,
+        latitude: entry.activity.latitude,
+        longitude: entry.activity.longitude,
+        meetingTime: entry.activity.nextOccurrence,
+        activityId: entry.activity.id,
       );
-      String groupId;
-      if (existingId != null) {
-        groupId = existingId;
-      } else {
-        final group = await _groupService.createGroup(
-          createdBy: me,
-          sport: entry.activity.sport,
-          name: t('publicProfile.chatWith', {'name': entry.profile.firstName}),
-          meetingPoint: entry.activity.locationName,
-          latitude: entry.activity.latitude,
-          longitude: entry.activity.longitude,
-          meetingTime: entry.activity.nextOccurrence,
-          activityId: entry.activity.id,
-        );
-        await _groupService.joinGroup(
-          groupId: group.id,
-          userId: entry.profile.id,
-        );
-        groupId = group.id;
-      }
       await _chatRequestService.respond(
         fromUser: entry.profile.id,
         activityId: entry.activity.id,

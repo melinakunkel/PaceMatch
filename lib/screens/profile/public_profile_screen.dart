@@ -72,22 +72,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<void> _contact() async {
     setState(() => _contacting = true);
     try {
-      final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findSharedGroupId(widget.userId);
-      String groupId;
-      if (existingId != null) {
-        groupId = existingId;
-      } else {
-        final group = await _groupService.createGroup(
-          createdBy: me,
-          sport: _sports.isNotEmpty ? _sports.first.sport : SportType.sonstige,
-          name: t('publicProfile.chatWith', {
-            'name': _profile?.firstName ?? '',
-          }),
-        );
-        await _groupService.joinGroup(groupId: group.id, userId: widget.userId);
-        groupId = group.id;
-      }
+      final groupId = await _groupService.openDirectChat(
+        myId: SupabaseService.currentUserId!,
+        otherUserId: widget.userId,
+        sport: _sports.isNotEmpty ? _sports.first.sport : SportType.sonstige,
+      );
       if (!mounted) return;
       context.push('/group/$groupId');
     } catch (e) {

@@ -69,9 +69,12 @@ void main() {
     expect(anna.mismatches, {ReviewMismatch.pace, ReviewMismatch.punctuality});
     final david = result!.firstWhere((r) => r.revieweeId == 'b');
     expect(david.showedUp, isFalse);
-    expect(
-      david.toMap(groupId: 'g', reviewerId: 'me')['details_matched'],
-      isNull,
+    final davidRow = david.toMap(
+      groupId: 'g',
+      reviewerId: 'me',
+      meetingTime: DateTime.utc(2026, 9, 20, 18),
     );
+    expect(davidRow['details_matched'], isNull);
+    expect(davidRow['meeting_time'], '2026-09-20T18:00:00.000Z');
   });
 }

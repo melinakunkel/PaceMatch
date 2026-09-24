@@ -40,7 +40,9 @@ class _GroupScreenState extends State<GroupScreen> {
 
   SportGroup? _group;
   List<Profile> _members = [];
-  bool? _myAttendance;
+
+  /// The meeting time I last answered "did it happen?" for.
+  DateTime? _checkedInFor;
   bool _checkingIn = false;
   bool _loading = true;
 
@@ -71,20 +73,24 @@ class _GroupScreenState extends State<GroupScreen> {
     final group = await _groupService.getGroup(widget.groupId);
     final members = await _groupService.getGroupMembers(widget.groupId);
     final myId = SupabaseService.currentUserId;
-    bool? myAttendance;
+    DateTime? checkedInFor;
     if (myId != null) {
       await _groupService.markGroupRead(groupId: widget.groupId, userId: myId);
       UnreadController.refresh();
-      myAttendance = await _groupService.getAttendance(
-        groupId: widget.groupId,
-        userId: myId,
-      );
+      try {
+        checkedInFor = await _groupService.getCheckedInFor(
+          groupId: widget.groupId,
+          userId: myId,
+        );
+      } catch (_) {
+        // Only drives the "did it happen?" prompt — never block the chat.
+      }
     }
     if (!mounted) return;
     setState(() {
       _group = group;
       _members = members;
-      _myAttendance = myAttendance;
+      _checkedInFor = checkedInFor;
       _loading = false;
     });
   }
@@ -110,22 +116,25 @@ class _GroupScreenState extends State<GroupScreen> {
     List<MeetupReview> reviews = const [],
   }) async {
     final myId = SupabaseService.currentUserId;
-    if (myId == null || _checkingIn) return;
+    final meetingTime = _group?.meetingTime;
+    if (myId == null || meetingTime == null || _checkingIn) return;
     setState(() => _checkingIn = true);
     try {
       await _groupService.submitReviews(
         groupId: widget.groupId,
         reviewerId: myId,
+        meetingTime: meetingTime,
         reviews: reviews,
       );
       await _groupService.checkIn(
         groupId: widget.groupId,
         userId: myId,
         attended: attended,
+        meetingTime: meetingTime,
       );
       if (!mounted) return;
       setState(() {
-        _myAttendance = attended;
+        _checkedInFor = meetingTime;
         _checkingIn = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -254,6 +263,16 @@ class _GroupScreenState extends State<GroupScreen> {
     final meetingTime = group?.meetingTime;
     if (group == null || meetingTime == null) return;
     final end = meetingTime.add(const Duration(hours: 1));
+    final myId = SupabaseService.currentUserId;
+    final partner = group.isDirect
+        ? _members.where((m) => m.id != myId).firstOrNull
+        : null;
+    final title = partner == null
+        ? group.name
+        : t('discover.groupNameWith', {
+            'sport': group.sport.label,
+            'name': partner.firstName,
+          });
     final choice = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -278,7 +297,7 @@ class _GroupScreenState extends State<GroupScreen> {
     final uri = choice == 'google'
         ? Uri.parse(
             buildGoogleCalendarUrl(
-              title: group.name,
+              title: title,
               start: meetingTime,
               end: end,
               location: group.meetingPoint,
@@ -286,7 +305,7 @@ class _GroupScreenState extends State<GroupScreen> {
           )
         : Uri.parse(
             buildIcsDataUri(
-              title: group.name,
+              title: title,
               start: meetingTime,
               end: end,
               location: group.meetingPoint,
@@ -303,6 +322,12 @@ class _GroupScreenState extends State<GroupScreen> {
     final group = _group!;
     final myId = SupabaseService.currentUserId;
     final isCreator = group.createdBy == myId;
+    // A private chat is about the other person: their name is the title and
+    // both of them can set the next meetup.
+    final partner = group.isDirect
+        ? _members.where((m) => m.id != myId).firstOrNull
+        : null;
+    final canEditMeetingPoint = isCreator || group.isDirect;
 
     return Scaffold(
       appBar: AppBar(
@@ -310,7 +335,26 @@ class _GroupScreenState extends State<GroupScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => safeBack(context, '/chat'),
         ),
-        title: Text(group.name),
+        title: partner == null
+            ? Text(group.isDirect ? t('chatList.directChat') : group.name)
+            : InkWell(
+                onTap: () => context.push('/profile/${partner.id}'),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _Avatar(profile: partner, radius: 16),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        partner.firstName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
         actions: [
           IconButton(
             icon: const Icon(Icons.flag_outlined),
@@ -350,54 +394,58 @@ class _GroupScreenState extends State<GroupScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          t('chatList.participants', {
-                            'count': '${group.memberCount}',
-                          }),
+                          group.isDirect
+                              ? group.sport.label
+                              : t('chatList.participants', {
+                                  'count': '${group.memberCount}',
+                                }),
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    SizedBox(
-                      height: 36,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: _members
-                            .map(
-                              (m) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: GestureDetector(
-                                  onTap: () => context.push(
-                                    m.id == myId
-                                        ? '/profile'
-                                        : '/profile/${m.id}',
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppColors.secondaryLight,
-                                    backgroundImage: m.avatarUrl != null
-                                        ? NetworkImage(m.avatarUrl!)
-                                        : null,
-                                    child: m.avatarUrl != null
-                                        ? null
-                                        : Text(
-                                            m.fullName.isNotEmpty
-                                                ? m.fullName[0].toUpperCase()
-                                                : '?',
-                                            style: TextStyle(
-                                              color: AppColors.primary,
-                                              fontSize: 13,
+                    if (!group.isDirect) ...[
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        height: 36,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: _members
+                              .map(
+                                (m) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: GestureDetector(
+                                    onTap: () => context.push(
+                                      m.id == myId
+                                          ? '/profile'
+                                          : '/profile/${m.id}',
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: AppColors.secondaryLight,
+                                      backgroundImage: m.avatarUrl != null
+                                          ? NetworkImage(m.avatarUrl!)
+                                          : null,
+                                      child: m.avatarUrl != null
+                                          ? null
+                                          : Text(
+                                              m.fullName.isNotEmpty
+                                                  ? m.fullName[0].toUpperCase()
+                                                  : '?',
+                                              style: TextStyle(
+                                                color: AppColors.primary,
+                                                fontSize: 13,
+                                              ),
                                             ),
-                                          ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            )
-                            .toList(),
+                              )
+                              .toList(),
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 12),
-                    if (isCreator)
+                    if (canEditMeetingPoint)
                       InkWell(
                         onTap: _pickMeetingPoint,
                         borderRadius: BorderRadius.circular(12),
@@ -478,7 +526,8 @@ class _GroupScreenState extends State<GroupScreen> {
             if (!_inputFocus.hasFocus &&
                 group.meetingTime != null &&
                 group.meetingTime!.isBefore(DateTime.now()) &&
-                _myAttendance == null &&
+                !(_checkedInFor?.isAtSameMomentAs(group.meetingTime!) ??
+                    false) &&
                 _members.length > 1)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -793,6 +842,34 @@ class _DateDivider extends StatelessWidget {
           Expanded(child: Divider(color: AppColors.border)),
         ],
       ),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.profile, required this.radius});
+
+  final Profile profile;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = profile.avatarUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppColors.secondaryLight,
+      backgroundImage: url != null ? NetworkImage(url) : null,
+      child: url != null
+          ? null
+          : Text(
+              profile.fullName.isNotEmpty
+                  ? profile.fullName[0].toUpperCase()
+                  : '?',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: radius * 0.8,
+              ),
+            ),
     );
   }
 }

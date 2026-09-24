@@ -63,7 +63,6 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
   final _groupService = GroupService();
 
   late Future<_HubData> _future;
-  final Map<String, String?> _chatByUnassignedBuddy = {};
 
   @override
   void initState() {
@@ -128,20 +127,14 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       }
     }
 
-    final unassignedChatMap = <String, String?>{};
-    for (final p in unassignedBuddies) {
-      unassignedChatMap[p.id] = await _groupService.findSharedGroupId(p.id);
-    }
-    _chatByUnassignedBuddy
-      ..clear()
-      ..addAll(unassignedChatMap);
-
     final results = <_ActivityGroup>[];
     for (final a in activities) {
       final candidates = await _matchService.findMatches(a);
       final activityBuddies = buddiesByActivity[a.id] ?? [];
       if (candidates.isEmpty && activityBuddies.isEmpty) continue;
-      final groupId = activityBuddies.isEmpty
+      // A group chat only makes sense with at least two buddies — with one,
+      // it's simply the private chat.
+      final groupId = activityBuddies.length < 2
           ? null
           : await _groupService.findGroupIdForActivity(a.id);
       results.add(
@@ -294,23 +287,20 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     }
   }
 
-  Future<void> _startChatWithUnassignedBuddy(Profile buddy) async {
-    final existing = _chatByUnassignedBuddy[buddy.id];
+  /// My private chat with [buddy] — for [activity]'s meetup when given.
+  Future<void> _openDirectChat(Profile buddy, {Activity? activity}) async {
     try {
-      String groupId;
-      if (existing != null) {
-        groupId = existing;
-      } else {
-        final me = SupabaseService.currentUserId!;
-        final created = await _groupService.createGroup(
-          createdBy: me,
-          sport: SportType.sonstige,
-          name: t('matchesHub.sportbuddyChatName', {'name': buddy.firstName}),
-          isMatch: true,
-        );
-        await _groupService.joinGroup(groupId: created.id, userId: buddy.id);
-        groupId = created.id;
-      }
+      final groupId = await _groupService.openDirectChat(
+        myId: SupabaseService.currentUserId!,
+        otherUserId: buddy.id,
+        sport: activity?.sport ?? SportType.sonstige,
+        meetingPoint: activity?.locationName,
+        latitude: activity?.latitude,
+        longitude: activity?.longitude,
+        meetingTime: activity?.nextOccurrence,
+        activityId: activity?.id,
+        isMatch: true,
+      );
       if (!mounted) return;
       context.push('/group/$groupId');
       _refresh();
@@ -400,52 +390,47 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: 10),
-            ...buddies.map(
-              (b) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: AppColors.secondaryLight,
-                      backgroundImage: b.avatarUrl != null
-                          ? NetworkImage(b.avatarUrl!)
-                          : null,
-                      child: b.avatarUrl != null
-                          ? null
-                          : Text(
-                              b.fullName.isNotEmpty
-                                  ? b.fullName[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(b.firstName)),
-                    OutlinedButton(
-                      // Theme's default minimumSize is full-width
-                      // (Size.fromHeight) — inside a Row that gets unbounded
-                      // incoming width and silently breaks layout, so this
-                      // needs its own compact minimumSize.
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                      ),
-                      onPressed: () => _startChatWithUnassignedBuddy(b),
-                      child: Text(
-                        _chatByUnassignedBuddy[b.id] == null
-                            ? t('matchesHub.startChat')
-                            : t('discover.openChat'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            ...buddies.map((b) => _buddyRow(b, () => _openDirectChat(b))),
           ],
         ),
+      ),
+    );
+  }
+
+  /// One buddy with a button into our private chat.
+  Widget _buddyRow(Profile b, VoidCallback onMessage) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.push('/profile/${b.id}'),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.secondaryLight,
+              backgroundImage: b.avatarUrl != null
+                  ? NetworkImage(b.avatarUrl!)
+                  : null,
+              child: b.avatarUrl != null
+                  ? null
+                  : Text(
+                      b.fullName.isNotEmpty ? b.fullName[0].toUpperCase() : '?',
+                      style: TextStyle(fontSize: 12, color: AppColors.primary),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(b.firstName)),
+          OutlinedButton.icon(
+            // Theme's default minimumSize is full-width (Size.fromHeight) —
+            // inside a Row that gets unbounded incoming width and silently
+            // breaks layout, so this needs its own compact minimumSize.
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 36)),
+            onPressed: onMessage,
+            icon: const Icon(Icons.chat_bubble_outline, size: 16),
+            label: Text(t('matchesHub.message')),
+          ),
+        ],
       ),
     );
   }
@@ -488,69 +473,25 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
             ),
             if (g.buddies.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  SizedBox(
-                    height: 36,
-                    child: Stack(
-                      children: [
-                        for (var i = 0; i < g.buddies.length.clamp(0, 4); i++)
-                          Positioned(
-                            left: i * 24.0,
-                            child: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: AppColors.surface,
-                              child: CircleAvatar(
-                                radius: 14,
-                                backgroundColor: AppColors.secondaryLight,
-                                backgroundImage: g.buddies[i].avatarUrl != null
-                                    ? NetworkImage(g.buddies[i].avatarUrl!)
-                                    : null,
-                                child: g.buddies[i].avatarUrl != null
-                                    ? null
-                                    : Text(
-                                        g.buddies[i].fullName.isNotEmpty
-                                            ? g.buddies[i].fullName[0]
-                                                  .toUpperCase()
-                                            : '?',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: g.buddies.length.clamp(0, 4) * 24.0 + 4),
-                  Expanded(
-                    child: Text(
-                      g.buddies.length == 1
-                          ? t('matchesHub.buddyCountOne')
-                          : t('matchesHub.buddyCountMany', {
-                              'count': '${g.buddies.length}',
-                            }),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  OutlinedButton(
-                    // Same fix as above: force a compact minimumSize instead
-                    // of the theme's full-width default, which breaks inside
-                    // a Row's unbounded width constraints.
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 36),
-                    ),
-                    onPressed: () => _openGroupSheet(g),
-                    child: Text(
-                      g.groupId == null
-                          ? t('matchesHub.groupChat')
-                          : t('nav.chat'),
-                    ),
-                  ),
-                ],
+              ...g.buddies.map(
+                (b) => _buddyRow(b, () => _openDirectChat(b, activity: a)),
               ),
+              // With two or more buddies for the same time, they can also
+              // meet as a group — a separate group chat, on purpose.
+              if (g.buddies.length > 1)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(minimumSize: const Size(0, 36)),
+                    onPressed: () => _openGroupSheet(g),
+                    icon: const Icon(Icons.groups_outlined, size: 20),
+                    label: Text(
+                      g.groupId == null
+                          ? t('matchesHub.groupChatAll')
+                          : t('matchesHub.groupChat'),
+                    ),
+                  ),
+                ),
             ],
             if (g.candidateCount > 0) ...[
               const SizedBox(height: 8),

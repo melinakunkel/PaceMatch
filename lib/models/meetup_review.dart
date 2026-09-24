@@ -70,10 +70,12 @@ class MeetupReview {
   Map<String, dynamic> toMap({
     required String groupId,
     required String reviewerId,
+    required DateTime meetingTime,
   }) => {
     'group_id': groupId,
     'reviewer_id': reviewerId,
     'reviewee_id': revieweeId,
+    'meeting_time': meetingTime.toUtc().toIso8601String(),
     'showed_up': showedUp,
     'details_matched': showedUp ? detailsMatched : null,
     'mismatches': showedUp && detailsMatched == false

@@ -158,38 +158,25 @@ class _MatchesScreenState extends State<MatchesScreen> {
     }
   }
 
-  /// Creates (or reuses) this activity's group chat and adds [userId] to it
-  /// — called right after a mutual match so the celebration dialog can open
+  /// Opens (or reuses) my private chat with [userId] for this activity —
+  /// called right after a mutual match so the celebration dialog can open
   /// straight into the chat instead of sending the user on a detour through
-  /// the Sportbuddys hub to manually set one up.
+  /// the Sportbuddys hub.
   Future<String?> _ensureGroupFor(String userId) async {
     final activity = _activity;
     if (activity == null) return null;
     try {
-      final me = SupabaseService.currentUserId!;
-      final existingGroupId = await _groupService.findGroupIdForActivity(
-        activity.id,
+      return await _groupService.openDirectChat(
+        myId: SupabaseService.currentUserId!,
+        otherUserId: userId,
+        sport: activity.sport,
+        meetingPoint: activity.locationName,
+        latitude: activity.latitude,
+        longitude: activity.longitude,
+        meetingTime: activity.nextOccurrence,
+        activityId: activity.id,
+        isMatch: true,
       );
-      String groupId;
-      if (existingGroupId != null) {
-        groupId = existingGroupId;
-      } else {
-        final created = await _groupService.createGroup(
-          createdBy: me,
-          sport: activity.sport,
-          name:
-              '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
-          meetingPoint: activity.locationName,
-          latitude: activity.latitude,
-          longitude: activity.longitude,
-          meetingTime: activity.nextOccurrence,
-          activityId: activity.id,
-          isMatch: true,
-        );
-        groupId = created.id;
-      }
-      await _groupService.joinGroup(groupId: groupId, userId: userId);
-      return groupId;
     } catch (_) {
       // Best-effort — the celebration dialog falls back to the Hub if this
       // fails, so a chat can still be set up manually from there.

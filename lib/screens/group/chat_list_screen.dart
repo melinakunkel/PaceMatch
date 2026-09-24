@@ -94,7 +94,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(t('chatList.leaveTitle')),
-        content: Text(t('chatList.leaveConfirm', {'name': g.name})),
+        content: Text(t('chatList.leaveConfirm', {'name': g.displayName})),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
@@ -121,7 +121,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(t('chatList.deleteTitle')),
-        content: Text(t('chatList.deleteConfirm', {'name': g.name})),
+        content: Text(t('chatList.deleteConfirm', {'name': g.displayName})),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
@@ -205,109 +205,180 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ),
             );
           }
-          return ListView.builder(
+          // Private chats (one per person) first, newest activity on top;
+          // group chats (events, deliberate group chats) below.
+          final direct = groups.where((g) => g.isDirect).toList()
+            ..sort(
+              (a, b) => (b.lastActivityAt ?? DateTime(2000)).compareTo(
+                a.lastActivityAt ?? DateTime(2000),
+              ),
+            );
+          final grouped = groups.where((g) => !g.isDirect).toList();
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final g = groups[index];
-              final isCreator = g.createdBy == myId;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.secondaryLight,
-                        child: Icon(g.sport.icon, color: AppColors.primary),
-                      ),
-                      if (g.hasUnread)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: AppColors.danger,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.surface,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  title: Text(
-                    g.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: g.hasUnread
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  subtitle: Text(
-                    [
-                      if (g.meetingTime != null)
-                        _formatMeetingTime(g.meetingTime!),
-                      if (g.meetingPoint != null) g.meetingPoint!,
-                      t('chatList.participants', {'count': '${g.memberCount}'}),
-                    ].join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'archive':
-                          _archive(g, true);
-                          break;
-                        case 'unarchive':
-                          _archive(g, false);
-                          break;
-                        case 'leave':
-                          _leave(g);
-                          break;
-                        case 'delete':
-                          _delete(g);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      if (!_showArchived)
-                        PopupMenuItem(
-                          value: 'archive',
-                          child: Text(t('chatList.archive')),
-                        )
-                      else
-                        PopupMenuItem(
-                          value: 'unarchive',
-                          child: Text(t('chatList.unarchive')),
-                        ),
-                      if (isCreator)
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(t('common.delete')),
-                        )
-                      else
-                        PopupMenuItem(
-                          value: 'leave',
-                          child: Text(t('chatList.leave')),
-                        ),
-                    ],
-                  ),
-                  onTap: () =>
-                      context.push('/group/${g.id}').then((_) => _reload()),
+            children: [
+              if (direct.isNotEmpty) ...[
+                _SectionHeader(
+                  icon: Icons.person_outline,
+                  label: t('chatList.directSection'),
                 ),
-              );
-            },
+                ...direct.map((g) => _buildTile(g, myId)),
+              ],
+              if (grouped.isNotEmpty) ...[
+                if (direct.isNotEmpty) const SizedBox(height: 8),
+                _SectionHeader(
+                  icon: Icons.groups_outlined,
+                  label: t('chatList.groupSection'),
+                ),
+                ...grouped.map((g) => _buildTile(g, myId)),
+              ],
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTile(SportGroup g, String? myId) {
+    final isCreator = g.createdBy == myId;
+    final partner = g.partner;
+    final avatarUrl = partner?.avatarUrl;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (g.isDirect)
+              CircleAvatar(
+                backgroundColor: AppColors.secondaryLight,
+                backgroundImage: avatarUrl != null
+                    ? NetworkImage(avatarUrl)
+                    : null,
+                child: avatarUrl != null
+                    ? null
+                    : Text(
+                        g.displayName.isNotEmpty
+                            ? g.displayName[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(color: AppColors.primary),
+                      ),
+              )
+            else
+              CircleAvatar(
+                backgroundColor: AppColors.secondaryLight,
+                child: Icon(g.sport.icon, color: AppColors.primary),
+              ),
+            if (g.hasUnread)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(
+          g.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontWeight: g.hasUnread ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        subtitle: Text(
+          _subtitle(g),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          onSelected: (value) {
+            switch (value) {
+              case 'archive':
+                _archive(g, true);
+                break;
+              case 'unarchive':
+                _archive(g, false);
+                break;
+              case 'leave':
+                _leave(g);
+                break;
+              case 'delete':
+                _delete(g);
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            if (!_showArchived)
+              PopupMenuItem(
+                value: 'archive',
+                child: Text(t('chatList.archive')),
+              )
+            else
+              PopupMenuItem(
+                value: 'unarchive',
+                child: Text(t('chatList.unarchive')),
+              ),
+            if (isCreator)
+              PopupMenuItem(value: 'delete', child: Text(t('common.delete')))
+            else
+              PopupMenuItem(value: 'leave', child: Text(t('chatList.leave'))),
+          ],
+        ),
+        onTap: () => context.push('/group/${g.id}').then((_) => _reload()),
+      ),
+    );
+  }
+
+  /// Private chat: which sport and when/where they meet next. Group chat:
+  /// when/where, plus how many are in it.
+  static String _subtitle(SportGroup g) {
+    final upcoming =
+        g.meetingTime != null &&
+        g.meetingTime!.isAfter(
+          DateTime.now().subtract(const Duration(hours: 12)),
+        );
+    return [
+      if (g.isDirect) g.sport.label,
+      if (g.meetingTime != null && (upcoming || !g.isDirect))
+        _formatMeetingTime(g.meetingTime!),
+      if (g.meetingPoint != null && (upcoming || !g.isDirect)) g.meetingPoint!,
+      if (!g.isDirect)
+        t('chatList.participants', {'count': '${g.memberCount}'}),
+    ].join(' · ');
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

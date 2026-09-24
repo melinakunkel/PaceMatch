@@ -433,39 +433,22 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Future<void> _contact(_DiscoverEntry entry) async {
     setState(() => _contacting.add(entry.activity.id));
     try {
-      final me = SupabaseService.currentUserId!;
-      final existingId = await _groupService.findSharedGroupId(
-        entry.profile.id,
+      final groupId = await _groupService.openDirectChat(
+        myId: SupabaseService.currentUserId!,
+        otherUserId: entry.profile.id,
+        sport: entry.activity.sport,
+        meetingPoint: entry.activity.locationName,
+        latitude: entry.activity.latitude,
+        longitude: entry.activity.longitude,
+        meetingTime: DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          entry.activity.startTime.hour,
+          entry.activity.startTime.minute,
+        ),
+        activityId: entry.activity.id,
       );
-      String groupId;
-      if (existingId != null) {
-        groupId = existingId;
-      } else {
-        final group = await _groupService.createGroup(
-          createdBy: me,
-          sport: entry.activity.sport,
-          name: t('discover.groupNameWith', {
-            'sport': entry.activity.sport.label,
-            'name': entry.profile.firstName,
-          }),
-          meetingPoint: entry.activity.locationName,
-          latitude: entry.activity.latitude,
-          longitude: entry.activity.longitude,
-          meetingTime: DateTime(
-            _selectedDate.year,
-            _selectedDate.month,
-            _selectedDate.day,
-            entry.activity.startTime.hour,
-            entry.activity.startTime.minute,
-          ),
-          activityId: entry.activity.id,
-        );
-        await _groupService.joinGroup(
-          groupId: group.id,
-          userId: entry.profile.id,
-        );
-        groupId = group.id;
-      }
       if (!mounted) return;
       context.push('/group/$groupId');
     } catch (e) {
