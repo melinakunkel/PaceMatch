@@ -67,14 +67,23 @@ class TutorialScreen extends StatefulWidget {
   State<TutorialScreen> createState() => _TutorialScreenState();
 }
 
-class _TutorialScreenState extends State<TutorialScreen> {
+class _TutorialScreenState extends State<TutorialScreen>
+    with SingleTickerProviderStateMixin {
   final _pageController = PageController();
   int _page = 0;
   bool _dontShowAgain = false;
 
+  /// Drives the little running shoe's up/down bob so it looks like it's
+  /// jogging in place while it also slides along the progress track.
+  late final AnimationController _bounceController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 480),
+  )..repeat(reverse: true);
+
   @override
   void dispose() {
     _pageController.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
@@ -378,26 +387,9 @@ class _TutorialScreenState extends State<TutorialScreen> {
               onPressed: _dismiss,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Row(
-              children: List.generate(slideCount, (i) {
-                final active = i <= _page;
-                return Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: active ? AppColors.secondary : AppColors.border,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
+          Expanded(child: _buildProgressTrack(slideCount)),
+          const SizedBox(width: 12),
           SizedBox(
             width: 68,
             child: widget.showSkip && !isLast
@@ -419,4 +411,154 @@ class _TutorialScreenState extends State<TutorialScreen> {
       ),
     );
   }
+
+  /// A route the tutorial's little running shoe jogs along, from the left
+  /// edge (slide 1) to the right edge (the last slide) — a playful stand-in
+  /// for the old row of progress dots.
+  Widget _buildProgressTrack(int slideCount) {
+    final progress = slideCount <= 1 ? 1.0 : _page / (slideCount - 1);
+    const shoeSize = 30.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final trackWidth = constraints.maxWidth;
+        final shoeLeft =
+            (trackWidth - shoeSize).clamp(0.0, double.infinity) * progress;
+        return SizedBox(
+          height: 40,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 18,
+                child: Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                left: 0,
+                top: 18,
+                width: trackWidth * progress,
+                child: Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                left: shoeLeft,
+                top: 0,
+                child: AnimatedBuilder(
+                  animation: _bounceController,
+                  builder: (context, child) {
+                    final bounce = Curves.easeInOut.transform(
+                      _bounceController.value,
+                    );
+                    return Transform.translate(
+                      offset: Offset(0, -4 * bounce),
+                      child: Transform.rotate(
+                        angle: (bounce - 0.5) * 0.12,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _RunningShoeIcon(
+                    color: AppColors.secondary,
+                    size: shoeSize,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A small hand-drawn running-shoe silhouette, facing right — the direction
+/// it jogs across the tutorial's progress track.
+class _RunningShoeIcon extends StatelessWidget {
+  const _RunningShoeIcon({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size * 0.62),
+      painter: _ShoePainter(color),
+    );
+  }
+}
+
+class _ShoePainter extends CustomPainter {
+  _ShoePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sx = size.width / 100;
+    final sy = size.height / 62;
+
+    final body = Path()
+      ..moveTo(8 * sx, 50 * sy)
+      ..lineTo(84 * sx, 47 * sy)
+      ..quadraticBezierTo(97 * sx, 45 * sy, 92 * sx, 34 * sy)
+      ..quadraticBezierTo(89 * sx, 28 * sy, 78 * sx, 27 * sy)
+      ..lineTo(48 * sx, 21 * sy)
+      ..quadraticBezierTo(34 * sx, 13 * sy, 19 * sx, 11 * sy)
+      ..quadraticBezierTo(8 * sx, 11 * sy, 5 * sx, 22 * sy)
+      ..lineTo(4 * sx, 39 * sy)
+      ..quadraticBezierTo(3 * sx, 47 * sy, 8 * sx, 50 * sy)
+      ..close();
+    canvas.drawPath(body, Paint()..color = color);
+
+    final sole = Path()
+      ..moveTo(6 * sx, 50 * sy)
+      ..lineTo(85 * sx, 47 * sy)
+      ..quadraticBezierTo(93 * sx, 46 * sy, 90 * sx, 54 * sy)
+      ..quadraticBezierTo(88 * sx, 60 * sy, 76 * sx, 59 * sy)
+      ..lineTo(12 * sx, 59 * sy)
+      ..quadraticBezierTo(4 * sx, 58 * sy, 6 * sx, 50 * sy)
+      ..close();
+    canvas.drawPath(sole, Paint()..color = Colors.white);
+
+    final lacePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85)
+      ..strokeWidth = 2.2 * ((sx + sy) / 2)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(28 * sx, 24 * sy),
+      Offset(38 * sx, 34 * sy),
+      lacePaint,
+    );
+    canvas.drawLine(
+      Offset(38 * sx, 20 * sy),
+      Offset(48 * sx, 30 * sy),
+      lacePaint,
+    );
+    canvas.drawLine(
+      Offset(48 * sx, 17 * sy),
+      Offset(58 * sx, 27 * sy),
+      lacePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShoePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:samepace/screens/tutorial/tutorial_screen.dart';
 
+/// Advances past the slide-change animation. Not `pumpAndSettle()`: the
+/// progress track's running-shoe icon bobs via a continuously repeating
+/// AnimationController, which never "settles" and would make
+/// `pumpAndSettle()` time out. A single large `pump(duration)` isn't enough
+/// either — the page-transition animation needs several smaller frames to
+/// actually advance — so step through it in small increments instead.
+Future<void> _pumpPastTransition(WidgetTester tester) async {
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 void main() {
   testWidgets('Weiter/Los gehts button is visible and advances every slide', (
     tester,
@@ -18,9 +30,10 @@ void main() {
       expect(button, findsOneWidget);
       expect(button.hitTestable(), findsOneWidget);
       await tester.tap(button);
-      await tester.pumpAndSettle();
+      await _pumpPastTransition(tester);
     }
 
+    expect(tester.takeException(), isNull);
     expect(find.text('Profil'), findsWidgets);
     final finalButton = find.text('Los geht\'s');
     expect(finalButton, findsOneWidget);
@@ -41,7 +54,7 @@ void main() {
     expect(button.hitTestable(), findsOneWidget);
 
     await tester.tap(button);
-    await tester.pumpAndSettle();
+    await _pumpPastTransition(tester);
     expect(tester.takeException(), isNull);
     expect(find.text('Mein Sportplan'), findsOneWidget);
   });

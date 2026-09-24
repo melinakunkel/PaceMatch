@@ -172,31 +172,27 @@ const _de = <String, String>{
   'tutorial.step': 'Schritt {current}/{total}',
   'tutorial.welcome.title': 'Willkommen bei SAMEPACE',
   'tutorial.welcome.description':
-      'Finde Leute, die zur gleichen Zeit und im gleichen Tempo Sport '
-      'machen möchten wie du — zum Laufen, Radfahren, Schwimmen, Wandern, '
-      'Tennis und mehr.',
+      'Finde Leute, die im gleichen Tempo und zur gleichen Zeit Sport '
+      'machen wie du.',
   'tutorial.plan.title': 'Mein Sportplan',
   'tutorial.plan.description':
-      'Trag deine Sportzeiten ein — wiederkehrend jede Woche oder '
-      'einmalig an einem bestimmten Tag. Pace, Level oder Distanz je nach '
-      'Sportart.',
+      'Trag deine Sportzeiten ein — jede Woche oder nur einmal. Dazu dein '
+      'Tempo oder Level.',
   'tutorial.buddies.title': 'Sportbuddys',
   'tutorial.buddies.description':
-      'Sobald jemand eine passende Sportzeit einträgt, seht ihr euch '
-      'gegenseitig als Vorschlag — mit Pace, Level und ob schon ein Platz '
-      'gebucht ist. Wischt beide nach rechts, seid ihr Sportbuddys.',
+      'Passt jemand zu deiner Zeit und deinem Tempo, schlagen wir euch '
+      'gegenseitig vor. Wischt beide nach rechts, seid ihr Sportbuddys.',
   'tutorial.discover.title': 'Entdecken',
   'tutorial.discover.description':
-      'Stöbere nach Datum durch alle Sportzeiten in deiner Nähe und nach '
-      'kuratierten Community-Events — filterbar nach Sportart und Uhrzeit.',
+      'Entdecke Sporttermine und Events in deiner Nähe — filterbar nach '
+      'Sportart, Datum und Uhrzeit.',
   'tutorial.chat.title': 'Chat',
   'tutorial.chat.description':
-      'Sprich dich in der Gruppe ab, legt einen Treffpunkt auf der Karte '
-      'fest und seht direkt, wo es losgeht.',
+      'Chattet in der Gruppe und legt euren Treffpunkt auf der Karte fest.',
   'tutorial.profile.title': 'Profil',
   'tutorial.profile.description':
-      'Zeig deine Sportarten, dein Level, deine Interessen und Sprachen — '
-      'so finden andere leichter heraus, ob ihr zusammenpasst.',
+      'Zeig deine Sportarten, dein Level und deine Interessen — so sehen '
+      'andere, ob ihr zusammenpasst.',
 
   // Onboarding wizard.
   'onboarding.title': 'Los geht\'s',
@@ -836,29 +832,26 @@ const _en = <String, String>{
   'tutorial.step': 'Step {current}/{total}',
   'tutorial.welcome.title': 'Welcome to SAMEPACE',
   'tutorial.welcome.description':
-      'Find people who want to do sport at the same time and pace as you '
-      '— running, cycling, swimming, hiking, tennis and more.',
+      'Find people who train at the same pace and time as you.',
   'tutorial.plan.title': 'My Sport Plan',
   'tutorial.plan.description':
-      'Add your sport times — recurring every week or a one-off on a '
-      'specific day. Pace, level or distance depending on the sport.',
+      'Add your sport times — every week or just once. With your pace or '
+      'level.',
   'tutorial.buddies.title': 'Sportbuddys',
   'tutorial.buddies.description':
-      'As soon as someone adds a matching sport time, you\'ll show up as a '
-      'suggestion for each other — with pace, level and whether a venue is '
-      'already booked. Both swipe right, and you\'re Sportbuddys.',
+      'If someone matches your time and pace, we suggest you to each '
+      'other. Both swipe right, and you\'re Sportbuddys.',
   'tutorial.discover.title': 'Discover',
   'tutorial.discover.description':
-      'Browse by date through all sport times near you and curated '
-      'community events — filterable by sport and time.',
+      'Discover sport times and events near you — filterable by sport, '
+      'date and time.',
   'tutorial.chat.title': 'Chat',
   'tutorial.chat.description':
-      'Coordinate in the group, set a meeting point on the map and see '
-      'right away where it\'s happening.',
+      'Chat with the group and set your meeting point on the map.',
   'tutorial.profile.title': 'Profile',
   'tutorial.profile.description':
-      'Show your sports, your level, your interests and languages — so '
-      'others can easily see if you\'re a good match.',
+      'Show your sports, your level and your interests — so others can '
+      'see if you\'re a match.',
 
   'onboarding.title': 'Let\'s go',
   'onboarding.later': 'Later',
