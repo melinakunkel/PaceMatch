@@ -456,7 +456,9 @@ class _MatchesScreenState extends State<MatchesScreen> {
           Icon(Icons.place_outlined, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(activity.locationName ?? t('matches.flexibleLocation')),
+            child: Text(
+              activity.locationLabel ?? t('matches.flexibleLocation'),
+            ),
           ),
         ],
       ),
@@ -840,7 +842,7 @@ class _MatchCard extends StatelessWidget {
                     [
                       if (profile.gender != null) genderLabel(profile.gender!),
                       candidate.theirActivity.timeRangeLabel,
-                      candidate.theirActivity.locationName ??
+                      candidate.theirActivity.locationLabel ??
                           t('matches.flexibleLocation'),
                     ].join(' · '),
                     style: TextStyle(color: AppColors.textSecondary),
@@ -987,7 +989,7 @@ class _CandidateListTile extends StatelessWidget {
                     Text(
                       [
                         candidate.theirActivity.timeRangeLabel,
-                        candidate.theirActivity.locationName ??
+                        candidate.theirActivity.locationLabel ??
                             t('matches.flexibleLocation'),
                       ].join(' · '),
                       style: TextStyle(

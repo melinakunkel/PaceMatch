@@ -279,7 +279,9 @@ class _GroupScreenState extends State<GroupScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      title ?? t('group.meetingPoint'),
+                      title == null
+                          ? t('group.meetingPoint')
+                          : placeLabel(title),
                       style: const TextStyle(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -496,7 +498,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    place,
+                    placeLabel(place),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -678,7 +680,9 @@ class _GroupScreenState extends State<GroupScreen> {
                             isDense: true,
                           ),
                           child: Text(
-                            group.meetingPoint ?? t('group.setMeetingPoint'),
+                            group.meetingPoint == null
+                                ? t('group.setMeetingPoint')
+                                : placeLabel(group.meetingPoint!),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: group.meetingPoint == null
@@ -703,7 +707,7 @@ class _GroupScreenState extends State<GroupScreen> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                group.meetingPoint!,
+                                placeLabel(group.meetingPoint!),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

@@ -10,6 +10,7 @@ import '../../models/saved_location.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/saved_location_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 
 /// Full-screen OpenStreetMap picker: search a place, tap the map to fine-tune
 /// the pin, confirm to return a [PickedLocation]. Also offers the user's
@@ -37,6 +38,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
   LatLng? _picked;
   String? _pickedName;
+
+  /// A tapped point's name is still being looked up.
+  bool _resolvingName = false;
   bool _saving = false;
 
   late Future<List<SavedLocation>> _savedFuture = _savedLocationService
@@ -48,7 +52,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     if (widget.initial != null) {
       _picked = LatLng(widget.initial!.latitude, widget.initial!.longitude);
       _pickedName = widget.initial!.name;
-      _searchCtrl.text = widget.initial!.name;
+      // Old coordinate-only names aren't worth showing — let the user type.
+      if (!isCoordinateName(widget.initial!.name)) {
+        _searchCtrl.text = widget.initial!.name;
+      }
     }
   }
 
@@ -91,6 +98,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     setState(() {
       _picked = point;
       _pickedName = null;
+      _resolvingName = true;
     });
     final name = await _geocoding.reverseGeocode(
       point.latitude,
@@ -98,10 +106,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     );
     if (!mounted || _picked != point) return;
     setState(() {
-      _pickedName =
-          name ??
-          '${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}';
-      _searchCtrl.text = _pickedName!;
+      _resolvingName = false;
+      // No name found: leave the field empty (its hint asks for one) rather
+      // than filling it with raw coordinates.
+      _pickedName = name;
+      _searchCtrl.text = name ?? '';
     });
   }
 
@@ -109,8 +118,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     if (_picked == null || _saving) return;
     final name = _searchCtrl.text.trim().isNotEmpty
         ? _searchCtrl.text.trim()
-        : (_pickedName ??
-              '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}');
+        : (_pickedName ?? t('location.pinOnMap'));
     setState(() => _saving = true);
     try {
       await _savedLocationService.saveLocation(
@@ -167,8 +175,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       PickedLocation(
         name: typed.isNotEmpty
             ? typed
-            : (_pickedName ??
-                  '${_picked!.latitude.toStringAsFixed(5)}, ${_picked!.longitude.toStringAsFixed(5)}'),
+            : (_pickedName ?? t('location.pinOnMap')),
         latitude: _picked!.latitude,
         longitude: _picked!.longitude,
       ),
@@ -229,9 +236,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     controller: _searchCtrl,
                     onChanged: _onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: t('locationPicker.search'),
+                      // A pin without a found name: ask for one instead of
+                      // saving raw coordinates.
+                      hintText: _picked != null && !_resolvingName
+                          ? t('locationPicker.nameThisPlace')
+                          : t('locationPicker.search'),
                       prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searching
+                      suffixIcon: _searching || _resolvingName
                           ? const Padding(
                               padding: EdgeInsets.all(14),
                               child: SizedBox(
@@ -308,7 +319,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                             return InputChip(
                               avatar: const Icon(Icons.star, size: 16),
                               label: Text(
-                                s.name,
+                                placeLabel(s.name),
                                 overflow: TextOverflow.ellipsis,
                               ),
                               onPressed: () =>

@@ -352,7 +352,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       if (g.isDirect) g.sport.label,
       if (g.meetingTime != null && (upcoming || !g.isDirect))
         formatMeetupTime(g.meetingTime!),
-      if (g.meetingPoint != null && (upcoming || !g.isDirect)) g.meetingPoint!,
+      if (g.meetingPoint != null && (upcoming || !g.isDirect))
+        placeLabel(g.meetingPoint!),
       if (!g.isDirect)
         t('chatList.participants', {'count': '${g.memberCount}'}),
     ].join(' · ');

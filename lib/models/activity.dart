@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
+import '../utils/display_labels.dart';
 import 'sport_type.dart';
 
 /// Not `const` so it always reflects the active language — a top-level
@@ -176,6 +177,11 @@ class Activity {
 
   String get timeRangeLabel =>
       '${formatTime(startTime)} - ${formatTime(endTime)}';
+
+  /// [locationName] for display — old coordinate-only names read as
+  /// "Punkt auf der Karte".
+  String? get locationLabel =>
+      locationName == null ? null : placeLabel(locationName!);
 
   String get dayLabel => weekdayFullLabels[dayOfWeek - 1];
   String get dayShortLabel => weekdayLabels[dayOfWeek - 1];

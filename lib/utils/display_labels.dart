@@ -74,3 +74,15 @@ String formatMeetupTime(DateTime t) {
   final mm = local.minute.toString().padLeft(2, '0');
   return '$day, ${local.day}.${local.month}. $hh:$mm';
 }
+
+final _coordinates = RegExp(r'^\s*-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\s*$');
+
+/// Whether a stored place name is just raw coordinates ("47.80487,
+/// 15.97940") — what older versions saved when the map point had no name.
+bool isCoordinateName(String? name) =>
+    name != null && _coordinates.hasMatch(name);
+
+/// A place name for display: raw coordinates become "Punkt auf der Karte"
+/// (the pin itself is still stored, so the map still opens at it).
+String placeLabel(String name) =>
+    isCoordinateName(name) ? t('location.pinOnMap') : name;

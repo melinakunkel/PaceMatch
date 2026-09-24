@@ -261,7 +261,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
           createdBy: me,
           sport: activity.sport,
           name:
-              '${activity.sport.label} · ${activity.locationName ?? activity.dayLabel}',
+              '${activity.sport.label} · ${activity.locationLabel ?? activity.dayLabel}',
           meetingPoint: activity.locationName,
           latitude: activity.latitude,
           longitude: activity.longitude,

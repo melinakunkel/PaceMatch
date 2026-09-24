@@ -421,12 +421,12 @@ class _DayList extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 a.isRecurring
-                                    ? (a.locationName ??
+                                    ? (a.locationLabel ??
                                           t('plan.noFixedLocation'))
                                     : t('plan.oneOffLocation', {
                                         'date': a.specificDateLabel,
                                         'location':
-                                            a.locationName ??
+                                            a.locationLabel ??
                                             t('plan.noFixedLocation'),
                                       }),
                                 maxLines: 2,
@@ -859,10 +859,10 @@ Future<void> _showActivitySheet(
             const SizedBox(height: 6),
             Text(
               a.isRecurring
-                  ? (a.locationName ?? t('plan.noFixedLocation'))
+                  ? (a.locationLabel ?? t('plan.noFixedLocation'))
                   : t('plan.oneOffLocation', {
                       'date': a.specificDateLabel,
-                      'location': a.locationName ?? t('plan.noFixedLocation'),
+                      'location': a.locationLabel ?? t('plan.noFixedLocation'),
                     }),
               style: TextStyle(color: AppColors.textSecondary),
             ),

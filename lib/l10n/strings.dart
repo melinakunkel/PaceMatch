@@ -276,6 +276,9 @@ const _de = <String, String>{
 
   // Location picker.
   'locationPicker.title': 'Ort auswählen',
+  'locationPicker.nameThisPlace':
+      'Namen für den Treffpunkt eingeben (z. B. Parkplatz Hohe Wand)',
+  'location.pinOnMap': 'Punkt auf der Karte',
   'locationPicker.search': 'Ort suchen, z.B. Prater',
   'locationPicker.confirm': 'Diesen Ort übernehmen',
   'locationPicker.saveFavorite': 'Als Favorit merken',
@@ -979,6 +982,9 @@ const _en = <String, String>{
   'newActivity.added': '{count} sport times added.',
 
   'locationPicker.title': 'Pick a location',
+  'locationPicker.nameThisPlace':
+      'Name this meeting point (e.g. Hohe Wand car park)',
+  'location.pinOnMap': 'Pin on the map',
   'locationPicker.search': 'Search for a place, e.g. Central Park',
   'locationPicker.confirm': 'Use this location',
   'locationPicker.saveFavorite': 'Save as favorite',

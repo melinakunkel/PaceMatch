@@ -17,7 +17,8 @@ class GeocodingService {
           'format': 'json',
           'q': query,
           'limit': '6',
-          'addressdetails': '0',
+          'addressdetails': '1',
+          'accept-language': 'de',
         },
       );
       final response = await http.get(uri);
@@ -26,7 +27,7 @@ class GeocodingService {
       return results
           .map(
             (r) => PickedLocation(
-              name: r['display_name'] as String,
+              name: shortPlaceName(r as Map<String, dynamic>),
               latitude: double.parse(r['lat'] as String),
               longitude: double.parse(r['lon'] as String),
             ),
@@ -37,21 +38,81 @@ class GeocodingService {
     }
   }
 
-  /// Null on any failure (network error, non-200, unexpected body) — the
-  /// caller falls back to showing raw coordinates, but should let the user
-  /// type a real name over them since this can genuinely fail (rate
-  /// limiting, connectivity).
+  /// A short, readable name for a tapped map point ("Hohe Wand, Maiersdorf")
+  /// — null when Nominatim can't be reached even after one retry (rate
+  /// limiting, connectivity), so the caller can let the user type a name.
   Future<String?> reverseGeocode(double lat, double lon) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/reverse').replace(
-        queryParameters: {'format': 'json', 'lat': '$lat', 'lon': '$lon'},
-      );
-      final response = await http.get(uri);
-      if (response.statusCode != 200) return null;
-      final result = jsonDecode(response.body) as Map<String, dynamic>;
-      return result['display_name'] as String?;
-    } catch (_) {
-      return null;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await Future.delayed(const Duration(seconds: 1));
+      try {
+        final uri = Uri.parse('$_baseUrl/reverse').replace(
+          queryParameters: {
+            'format': 'json',
+            'lat': '$lat',
+            'lon': '$lon',
+            'zoom': '17',
+            'addressdetails': '1',
+            'accept-language': 'de',
+          },
+        );
+        final response = await http.get(uri);
+        if (response.statusCode != 200) continue;
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        if (result['error'] != null) return null;
+        final name = shortPlaceName(result);
+        return name.isEmpty ? null : name;
+      } catch (_) {
+        continue;
+      }
     }
+    return null;
   }
+}
+
+/// Nominatim's display_name is the whole address chain ("Weg, Ort, Bezirk,
+/// Bundesland, PLZ, Österreich") — too long for a meeting point. This keeps
+/// the place itself plus its town: "Prater Hauptallee, Wien".
+String shortPlaceName(Map<String, dynamic> result) {
+  final address = (result['address'] as Map?)?.cast<String, dynamic>() ?? {};
+  String? pick(List<String> keys) {
+    for (final key in keys) {
+      final value = (address[key] as String?)?.trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  final road = pick(['road', 'pedestrian', 'footway', 'path', 'track']);
+  final houseNumber = pick(['house_number']);
+  final ownName = (result['name'] as String?)?.trim();
+  final place = ownName != null && ownName.isNotEmpty
+      ? ownName
+      : road == null
+      ? pick([
+          'leisure',
+          'amenity',
+          'tourism',
+          'natural',
+          'park',
+          'neighbourhood',
+          'hamlet',
+        ])
+      : houseNumber == null
+      ? road
+      : '$road $houseNumber';
+  final town = pick([
+    'village',
+    'town',
+    'city',
+    'municipality',
+    'suburb',
+    'city_district',
+    'county',
+  ]);
+
+  final parts = <String>[?place, if (town != null && town != place) town];
+  if (parts.isNotEmpty) return parts.join(', ');
+
+  final display = (result['display_name'] as String?) ?? '';
+  return display.split(',').map((s) => s.trim()).take(2).join(', ');
 }

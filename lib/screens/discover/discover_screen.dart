@@ -1495,7 +1495,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            e.activity.locationName!,
+                            e.activity.locationLabel!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
