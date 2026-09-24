@@ -12,30 +12,39 @@ where not exists (select 1 from open_events e where e.group_id = g.id)
 
 -- If the same two people ended up with several private chats, merge them
 -- into the newest one: messages move over, the older chats are removed.
-create temporary table direct_chat_merge as
-with pairs as (
-  select g.id as group_id, g.created_at, a.user_id as u1, b.user_id as u2
-  from groups g
-  join group_members a on a.group_id = g.id
-  join group_members b on b.group_id = g.id and a.user_id < b.user_id
-  where g.is_direct
-),
-ranked as (
-  select group_id,
-         first_value(group_id) over (
-           partition by u1, u2 order by created_at desc, group_id
-         ) as keep_id
-  from pairs
-)
-select group_id as old_id, keep_id from ranked where group_id <> keep_id;
-
+-- (No temporary table: the Supabase SQL editor may run each statement on
+-- its own connection.)
 update messages m set group_id = d.keep_id
-from direct_chat_merge d
+from (
+  select group_id as old_id, keep_id
+  from (
+    select g.id as group_id,
+           first_value(g.id) over (
+             partition by a.user_id, b.user_id order by g.created_at desc, g.id
+           ) as keep_id
+    from groups g
+    join group_members a on a.group_id = g.id
+    join group_members b on b.group_id = g.id and a.user_id < b.user_id
+    where g.is_direct
+  ) ranked
+  where group_id <> keep_id
+) d
 where m.group_id = d.old_id;
 
-delete from groups where id in (select old_id from direct_chat_merge);
-
-drop table direct_chat_merge;
+delete from groups where id in (
+  select group_id
+  from (
+    select g.id as group_id,
+           first_value(g.id) over (
+             partition by a.user_id, b.user_id order by g.created_at desc, g.id
+           ) as keep_id
+    from groups g
+    join group_members a on a.group_id = g.id
+    join group_members b on b.group_id = g.id and a.user_id < b.user_id
+    where g.is_direct
+  ) ranked
+  where group_id <> keep_id
+);
 
 -- Both people in a private chat may change its meeting details (sport,
 -- meeting point, time) — it's reused for every meetup of the two.
