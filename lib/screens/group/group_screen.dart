@@ -44,10 +44,27 @@ class _GroupScreenState extends State<GroupScreen> {
   bool _checkingIn = false;
   bool _loading = true;
 
+  /// The message field's focus: while typing, the header (members, meeting
+  /// point, check-in card) is hidden so the messages still fit above the
+  /// on-screen keyboard.
+  final _inputFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
+    _inputFocus.addListener(_onInputFocusChanged);
     _load();
+  }
+
+  void _onInputFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _inputFocus.removeListener(_onInputFocusChanged);
+    _inputFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -297,144 +314,148 @@ class _GroupScreenState extends State<GroupScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        group.sport.icon,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        t('chatList.participants', {
-                          'count': '${group.memberCount}',
-                        }),
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    height: 36,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: _members
-                          .map(
-                            (m) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: GestureDetector(
-                                onTap: () => context.push(
-                                  m.id == myId
-                                      ? '/profile'
-                                      : '/profile/${m.id}',
-                                ),
-                                child: CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: AppColors.secondaryLight,
-                                  backgroundImage: m.avatarUrl != null
-                                      ? NetworkImage(m.avatarUrl!)
-                                      : null,
-                                  child: m.avatarUrl != null
-                                      ? null
-                                      : Text(
-                                          m.fullName.isNotEmpty
-                                              ? m.fullName[0].toUpperCase()
-                                              : '?',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontSize: 13,
+            if (!_inputFocus.hasFocus)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          group.sport.icon,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          t('chatList.participants', {
+                            'count': '${group.memberCount}',
+                          }),
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: 36,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: _members
+                            .map(
+                              (m) => Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: GestureDetector(
+                                  onTap: () => context.push(
+                                    m.id == myId
+                                        ? '/profile'
+                                        : '/profile/${m.id}',
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: AppColors.secondaryLight,
+                                    backgroundImage: m.avatarUrl != null
+                                        ? NetworkImage(m.avatarUrl!)
+                                        : null,
+                                    child: m.avatarUrl != null
+                                        ? null
+                                        : Text(
+                                            m.fullName.isNotEmpty
+                                                ? m.fullName[0].toUpperCase()
+                                                : '?',
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 13,
+                                            ),
                                           ),
-                                        ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (isCreator)
-                    InkWell(
-                      onTap: _pickMeetingPoint,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          hintText: t('group.setMeetingPoint'),
-                          prefixIcon: const Icon(Icons.place_outlined),
-                          suffixIcon: const Icon(Icons.map_outlined),
-                          isDense: true,
-                        ),
-                        child: Text(
-                          group.meetingPoint ?? t('group.setMeetingPoint'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: group.meetingPoint == null
-                              ? TextStyle(color: AppColors.textSecondary)
-                              : null,
-                        ),
-                      ),
-                    )
-                  else if (group.meetingPoint != null)
-                    InkWell(
-                      onTap: group.hasMapLocation ? _showMeetingPointMap : null,
-                      borderRadius: BorderRadius.circular(8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.place_outlined,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              group.meetingPoint!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (group.hasMapLocation) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.map_outlined,
-                              size: 16,
-                              color: AppColors.secondary,
-                            ),
-                          ],
-                        ],
+                            )
+                            .toList(),
                       ),
                     ),
-                  if (group.sport == SportType.kinderSpielen) ...[
                     const SizedBox(height: 12),
-                    SafetyNotice(text: t('safety.childMeetupNotice')),
-                  ],
-                  if (group.meetingTime != null &&
-                      group.meetingTime!.isAfter(DateTime.now()))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: _addToCalendar,
-                          icon: const Icon(Icons.calendar_month, size: 18),
-                          label: Text(t('group.addToCalendar')),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(0, 36),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    if (isCreator)
+                      InkWell(
+                        onTap: _pickMeetingPoint,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            hintText: t('group.setMeetingPoint'),
+                            prefixIcon: const Icon(Icons.place_outlined),
+                            suffixIcon: const Icon(Icons.map_outlined),
+                            isDense: true,
+                          ),
+                          child: Text(
+                            group.meetingPoint ?? t('group.setMeetingPoint'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: group.meetingPoint == null
+                                ? TextStyle(color: AppColors.textSecondary)
+                                : null,
+                          ),
+                        ),
+                      )
+                    else if (group.meetingPoint != null)
+                      InkWell(
+                        onTap: group.hasMapLocation
+                            ? _showMeetingPointMap
+                            : null,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.place_outlined,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                group.meetingPoint!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (group.hasMapLocation) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.map_outlined,
+                                size: 16,
+                                color: AppColors.secondary,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    if (group.sport == SportType.kinderSpielen) ...[
+                      const SizedBox(height: 12),
+                      SafetyNotice(text: t('safety.childMeetupNotice')),
+                    ],
+                    if (group.meetingTime != null &&
+                        group.meetingTime!.isAfter(DateTime.now()))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: _addToCalendar,
+                            icon: const Icon(Icons.calendar_month, size: 18),
+                            label: Text(t('group.addToCalendar')),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 36),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            if (group.meetingTime != null &&
+            if (!_inputFocus.hasFocus &&
+                group.meetingTime != null &&
                 group.meetingTime!.isBefore(DateTime.now()) &&
                 _myAttendance == null)
               Padding(
@@ -489,7 +510,9 @@ class _GroupScreenState extends State<GroupScreen> {
                 ),
               ),
             const Divider(height: 1),
-            Expanded(child: _ChatView(groupId: widget.groupId)),
+            Expanded(
+              child: _ChatView(groupId: widget.groupId, focusNode: _inputFocus),
+            ),
           ],
         ),
       ),
@@ -498,8 +521,9 @@ class _GroupScreenState extends State<GroupScreen> {
 }
 
 class _ChatView extends StatefulWidget {
-  const _ChatView({required this.groupId});
+  const _ChatView({required this.groupId, required this.focusNode});
   final String groupId;
+  final FocusNode focusNode;
 
   @override
   State<_ChatView> createState() => _ChatViewState();
@@ -600,6 +624,10 @@ class _ChatViewState extends State<_ChatView> {
               });
               return ListView.builder(
                 controller: _scrollCtrl,
+                // Swiping the messages closes the keyboard, which also
+                // brings the header back.
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.all(16),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
@@ -675,6 +703,7 @@ class _ChatViewState extends State<_ChatView> {
                 Expanded(
                   child: TextField(
                     controller: _textCtrl,
+                    focusNode: widget.focusNode,
                     decoration: InputDecoration(
                       hintText: t('group.messagePlaceholder'),
                       isDense: true,
