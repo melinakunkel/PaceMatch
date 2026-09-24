@@ -32,7 +32,7 @@ class GroupService {
           'meeting_point': meetingPoint,
           'latitude': latitude,
           'longitude': longitude,
-          'meeting_time': meetingTime?.toIso8601String(),
+          'meeting_time': meetingTime?.toUtc().toIso8601String(),
           'activity_id': activityId,
           'is_match': isMatch,
         })
@@ -94,7 +94,7 @@ class GroupService {
           'latitude': latitude,
           'longitude': longitude,
           if (meetingTime != null)
-            'meeting_time': meetingTime.toIso8601String(),
+            'meeting_time': meetingTime.toUtc().toIso8601String(),
         })
         .eq('id', groupId);
   }

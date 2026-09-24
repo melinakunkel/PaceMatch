@@ -14,10 +14,11 @@ import '../../widgets/app_scaffold.dart';
 import 'chat_requests_screen.dart';
 
 String _formatMeetingTime(DateTime t) {
-  final day = weekdayLabels[t.weekday - 1];
-  final hh = t.hour.toString().padLeft(2, '0');
-  final mm = t.minute.toString().padLeft(2, '0');
-  return '$day, ${t.day}.${t.month}. $hh:$mm';
+  final local = t.toLocal();
+  final day = weekdayLabels[local.weekday - 1];
+  final hh = local.hour.toString().padLeft(2, '0');
+  final mm = local.minute.toString().padLeft(2, '0');
+  return '$day, ${local.day}.${local.month}. $hh:$mm';
 }
 
 class ChatListScreen extends StatefulWidget {
