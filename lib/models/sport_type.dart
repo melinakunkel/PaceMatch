@@ -118,6 +118,12 @@ enum SportType {
   /// [SportType.kinderSpielen].
   bool get usesChildInfo => this == SportType.kinderSpielen;
 
+  /// Whether a skill level (Anfänger/Fortgeschritten/Profi) makes sense —
+  /// true for every non-pace sport except Hunde spazieren/Kinder spielen,
+  /// which aren't really a "skill" someone has.
+  bool get usesLevel =>
+      this != SportType.hundeGassi && this != SportType.kinderSpielen;
+
   /// Whether a run type (normal/long run/speed run) makes sense to ask.
   bool get usesRunType => this == SportType.laufen;
 }

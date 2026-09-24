@@ -176,7 +176,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final paceMin = _sport.usesPace ? _paceMin : null;
       final paceMax = _sport.usesPace ? _paceMax : null;
       final venueStatus = _sport.usesVenueQuestion ? _venueStatus : null;
-      final level = _sport.usesPace ? null : _level;
+      final level = (!_sport.usesPace && _sport.usesLevel) ? _level : null;
       final bikeType = _sport.usesBikeType ? _bikeType : null;
       final runType = _sport.usesRunType ? _runType : null;
       final hasDog = _sport.usesDogQuestion ? _hasDog : null;
@@ -438,7 +438,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 }).toList(),
               ),
             ],
-            if (!_sport.usesPace) ...[
+            if (!_sport.usesPace && _sport.usesLevel) ...[
               const SizedBox(height: 20),
               _SectionLabel(t('newActivity.level')),
               Wrap(

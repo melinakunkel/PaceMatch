@@ -80,7 +80,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         await _profileService.upsertUserSport(
           userId: userId,
           sport: sport,
-          level: _sportLevels[sport] ?? 'Fortgeschritten',
+          level: sport.usesLevel
+              ? (_sportLevels[sport] ?? 'Fortgeschritten')
+              : null,
           unit: sport.defaultUnit,
           valueLow: sport.usesPace ? _paceLow[sport] : null,
           valueHigh: sport.usesPace ? _paceHigh[sport] : null,
@@ -291,18 +293,20 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: _levels.map((l) {
-                        return ChoiceChip(
-                          label: Text(levelLabel(l)),
-                          selected: _sportLevels[sport] == l,
-                          onSelected: (_) =>
-                              setState(() => _sportLevels[sport] = l),
-                        );
-                      }).toList(),
-                    ),
+                    if (sport.usesLevel) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: _levels.map((l) {
+                          return ChoiceChip(
+                            label: Text(levelLabel(l)),
+                            selected: _sportLevels[sport] == l,
+                            onSelected: (_) =>
+                                setState(() => _sportLevels[sport] = l),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                     if (sport.usesPace) ...[
                       const SizedBox(height: 12),
                       Text(

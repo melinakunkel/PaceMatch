@@ -34,7 +34,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
       await _profileService.upsertUserSport(
         userId: widget.userId,
         sport: _sport,
-        level: _level,
+        level: _sport.usesLevel ? _level : null,
         unit: _sport.defaultUnit,
         valueLow: _sport.usesPace ? _valueLow : null,
         valueHigh: _sport.usesPace ? _valueHigh : null,
@@ -75,17 +75,19 @@ class _EditSportSheetState extends State<EditSportSheet> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: _levels.map((l) {
-              return ChoiceChip(
-                label: Text(levelLabel(l)),
-                selected: l == _level,
-                onSelected: (_) => setState(() => _level = l),
-              );
-            }).toList(),
-          ),
+          if (_sport.usesLevel) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: _levels.map((l) {
+                return ChoiceChip(
+                  label: Text(levelLabel(l)),
+                  selected: l == _level,
+                  onSelected: (_) => setState(() => _level = l),
+                );
+              }).toList(),
+            ),
+          ],
           if (_sport.usesPace) ...[
             const SizedBox(height: 16),
             Text(
