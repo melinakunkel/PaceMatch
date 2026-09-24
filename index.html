@@ -37,6 +37,33 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!--
+    Android Chrome (108+) no longer shrinks the page when the on-screen
+    keyboard opens, it just draws the keyboard over it, so Flutter never lifts
+    the focused text field above it. interactive-widget=resizes-content
+    restores the resizing. Flutter replaces the viewport tag with its own at
+    startup, so re-apply it to whichever viewport tag ends up in the head.
+  -->
+  <script>
+    (function () {
+      function patch() {
+        var metas = document.querySelectorAll('meta[name="viewport"]');
+        for (var i = 0; i < metas.length; i++) {
+          var content = metas[i].getAttribute('content') || '';
+          if (content.indexOf('interactive-widget') === -1) {
+            metas[i].setAttribute('content', content + ', interactive-widget=resizes-content');
+          }
+        }
+      }
+      patch();
+      new MutationObserver(patch).observe(document.head, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['content'],
+      });
+    })();
+  </script>
   <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
