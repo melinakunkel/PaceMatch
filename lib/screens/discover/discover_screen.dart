@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/community_event.dart';
 import '../../models/open_event.dart';
+import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../models/user_sport.dart';
@@ -21,10 +23,12 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/geo.dart';
 import '../../utils/matching_preferences.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
+import '../plan/location_picker_screen.dart';
 
 class _DiscoverEntry {
   _DiscoverEntry({required this.profile, required this.activity});
@@ -118,6 +122,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Set<SportType> _sportFilter = {};
   RangeValues _timeRange = const RangeValues(0, 24);
 
+  /// "Nur im Umkreis" — shared between the day and timeline views, since
+  /// it's about where the viewer wants to look, not which view they're in.
+  /// Null center means the filter is off (shows everything, as before).
+  /// Persisted locally (not per-account) like the other Entdecken filters.
+  PickedLocation? _radiusCenter;
+  double _radiusKm = 10;
+
   /// Chronological "all events" view, as an alternative to picking one day
   /// at a time — see [_buildTimelineBody].
   bool _timelineView = false;
@@ -134,10 +145,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       !_showCommunityEvents ||
       _sportFilter.isNotEmpty ||
       _timeRange.start > 0 ||
-      _timeRange.end < 24;
+      _timeRange.end < 24 ||
+      _radiusCenter != null;
 
   List<_DiscoverEntry> get _filteredEntries => _entries.where((e) {
     if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.activity.sport)) {
+      return false;
+    }
+    if (!_withinRadius(e.activity.latitude, e.activity.longitude)) {
       return false;
     }
     return _withinTimeRange(
@@ -152,6 +167,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.sport)) {
         return false;
       }
+      if (!_withinRadius(e.latitude, e.longitude)) return false;
       final parts = e.startTime.split(':');
       return _withinTimeRange(int.parse(parts[0]), int.parse(parts[1]));
     }).toList();
@@ -162,6 +178,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       if (_sportFilter.isNotEmpty && !_sportFilter.contains(e.sport)) {
         return false;
       }
+      if (!_withinRadius(e.latitude, e.longitude)) return false;
       return _withinTimeRange(e.startTime.hour, e.startTime.minute);
     }).toList();
   }
@@ -169,6 +186,73 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _withinTimeRange(int hour, int minute) {
     final t = hour + minute / 60;
     return t >= _timeRange.start && t <= _timeRange.end;
+  }
+
+  /// True when there's no radius filter set, when a candidate has no
+  /// coordinates to check (never excluded for missing data), or when it
+  /// actually falls within [_radiusKm] of [_radiusCenter].
+  bool _withinRadius(double? lat, double? lng) {
+    final center = _radiusCenter;
+    if (center == null || lat == null || lng == null) return true;
+    return distanceKm(center.latitude, center.longitude, lat, lng) <= _radiusKm;
+  }
+
+  Future<void> _loadRadiusPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble('discover_radius_lat');
+    final lng = prefs.getDouble('discover_radius_lng');
+    final name = prefs.getString('discover_radius_name');
+    final km = prefs.getDouble('discover_radius_km');
+    if (!mounted) return;
+    setState(() {
+      if (lat != null && lng != null && name != null) {
+        _radiusCenter = PickedLocation(
+          name: name,
+          latitude: lat,
+          longitude: lng,
+        );
+      }
+      if (km != null) _radiusKm = km;
+    });
+  }
+
+  Future<void> _saveRadiusPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final center = _radiusCenter;
+    if (center == null) {
+      await prefs.remove('discover_radius_lat');
+      await prefs.remove('discover_radius_lng');
+      await prefs.remove('discover_radius_name');
+    } else {
+      await prefs.setDouble('discover_radius_lat', center.latitude);
+      await prefs.setDouble('discover_radius_lng', center.longitude);
+      await prefs.setString('discover_radius_name', center.name);
+    }
+    await prefs.setDouble('discover_radius_km', _radiusKm);
+  }
+
+  Future<void> _pickRadiusCenter(StateSetter setSheetState) async {
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(initial: _radiusCenter),
+      ),
+    );
+    if (picked == null) return;
+    setSheetState(() => _radiusCenter = picked);
+    setState(() {});
+    await _saveRadiusPrefs();
+  }
+
+  void _clearRadiusCenter(StateSetter setSheetState) {
+    setSheetState(() => _radiusCenter = null);
+    setState(() {});
+    _saveRadiusPrefs();
+  }
+
+  void _setRadiusKm(StateSetter setSheetState, double km) {
+    setSheetState(() => _radiusKm = km);
+    setState(() {});
+    _saveRadiusPrefs();
   }
 
   /// Level/pace for sports without a numeric pace (tennis, wandern), keyed
@@ -181,6 +265,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void initState() {
     super.initState();
     _load();
+    _loadRadiusPrefs();
     CircleController.active.addListener(_onCircleChanged);
   }
 
@@ -312,7 +397,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
-  bool get _timelineFiltersActive => _timelineSportFilter.isNotEmpty;
+  bool get _timelineFiltersActive =>
+      _timelineSportFilter.isNotEmpty || _radiusCenter != null;
 
   List<_TimelineEntry> get _timelineEntries {
     final today = _dateOnly(DateTime.now());
@@ -324,6 +410,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             !_timelineSportFilter.contains(event.sport)) {
           continue;
         }
+        if (!_withinRadius(event.latitude, event.longitude)) continue;
         for (final date in event.occurrencesBetween(today, to)) {
           entries.add(_TimelineEntry.community(date, event));
         }
@@ -335,6 +422,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             !_timelineSportFilter.contains(event.sport)) {
           continue;
         }
+        if (!_withinRadius(event.latitude, event.longitude)) continue;
         entries.add(_TimelineEntry.open(_dateOnly(event.eventDate), event));
       }
     }
@@ -578,7 +666,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     setState(() {});
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
+                _buildRadiusFilterSection(setSheetState),
+                const SizedBox(height: 4),
                 if (_filtersActive)
                   TextButton(
                     onPressed: () {
@@ -586,8 +676,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         _showCommunityEvents = true;
                         _sportFilter = {};
                         _timeRange = const RangeValues(0, 24);
+                        _radiusCenter = null;
                       });
                       setState(() {});
+                      _saveRadiusPrefs();
                     },
                     child: Text(t('discover.filters.reset')),
                   ),
@@ -596,6 +688,71 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Location + km picker for "Nur im Umkreis" — shared between
+  /// [_openFilters] and [_openTimelineFilters] since it's the same
+  /// underlying state either way.
+  Widget _buildRadiusFilterSection(StateSetter setSheetState) {
+    final center = _radiusCenter;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t('discover.filters.radius'),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _pickRadiusCenter(setSheetState),
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    hintText: t('discover.filters.pickCenter'),
+                    prefixIcon: const Icon(Icons.place_outlined),
+                    suffixIcon: const Icon(Icons.map_outlined),
+                  ),
+                  child: Text(
+                    center?.name ?? t('discover.filters.pickCenter'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: center == null
+                        ? TextStyle(color: AppColors.textSecondary)
+                        : null,
+                  ),
+                ),
+              ),
+            ),
+            if (center != null)
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: t('discover.filters.clearCenter'),
+                onPressed: () => _clearRadiusCenter(setSheetState),
+              ),
+          ],
+        ),
+        if (center != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            t('discover.filters.radiusKm', {
+              'km': _radiusKm.round().toString(),
+            }),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Slider(
+            value: _radiusKm,
+            min: 1,
+            max: 50,
+            divisions: 49,
+            label: '${_radiusKm.round()} km',
+            onChanged: (v) => _setRadiusKm(setSheetState, v),
+          ),
+        ],
+      ],
     );
   }
 
@@ -614,50 +771,63 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             top: 20,
             bottom: MediaQuery.of(context).viewInsets.bottom + 20,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t('newActivity.sport'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t('discover.filters.title'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: SportType.values.map((sport) {
-                  final selected = _timelineSportFilter.contains(sport);
-                  return FilterChip(
-                    label: Text(sport.label),
-                    selected: selected,
-                    onSelected: (_) {
+                const SizedBox(height: 16),
+                Text(
+                  t('newActivity.sport'),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: SportType.values.map((sport) {
+                    final selected = _timelineSportFilter.contains(sport);
+                    return FilterChip(
+                      label: Text(sport.label),
+                      selected: selected,
+                      onSelected: (_) {
+                        setSheetState(() {
+                          if (selected) {
+                            _timelineSportFilter.remove(sport);
+                          } else {
+                            _timelineSportFilter.add(sport);
+                          }
+                        });
+                        setState(() {});
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                _buildRadiusFilterSection(setSheetState),
+                if (_timelineFiltersActive) ...[
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () {
                       setSheetState(() {
-                        if (selected) {
-                          _timelineSportFilter.remove(sport);
-                        } else {
-                          _timelineSportFilter.add(sport);
-                        }
+                        _timelineSportFilter = {};
+                        _radiusCenter = null;
                       });
                       setState(() {});
+                      _saveRadiusPrefs();
                     },
-                  );
-                }).toList(),
-              ),
-              if (_timelineFiltersActive) ...[
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () {
-                    setSheetState(() => _timelineSportFilter = {});
-                    setState(() {});
-                  },
-                  child: Text(t('discover.filters.reset')),
-                ),
+                    child: Text(t('discover.filters.reset')),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
