@@ -13,6 +13,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../utils/safe_pop.dart';
+import '../../widgets/reliability_scores.dart';
 import '../../widgets/verified_badge.dart';
 
 /// Read-only view of another user's profile, reachable by tapping their
@@ -339,31 +340,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ],
         const SizedBox(height: 24),
-        Text(
-          t('profile.reliability'),
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: profile.reliabilityScore / 100,
-                  minHeight: 10,
-                  backgroundColor: AppColors.secondaryLight,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${profile.reliabilityScore.round()}%',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
+        ReliabilityScores(profile: profile),
         const SizedBox(height: 28),
         ElevatedButton.icon(
           onPressed: _contacting ? null : _contact,

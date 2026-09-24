@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/home_layout.dart';
+import '../models/meetup_review.dart';
 import '../models/profile.dart';
 import '../models/sport_type.dart';
 import '../models/user_sport.dart';
@@ -18,6 +19,14 @@ class ProfileService {
         .eq('id', userId)
         .single();
     return Profile.fromMap(map);
+  }
+
+  /// What lowered my own sub-scores — only ever readable for myself.
+  Future<ReviewSummary> getMyReviewSummary() async {
+    final json = await _client.rpc('my_review_summary');
+    return ReviewSummary.fromJson(
+      (json as Map?)?.cast<String, dynamic>() ?? const {},
+    );
   }
 
   Future<void> updateProfile(Profile profile) async {

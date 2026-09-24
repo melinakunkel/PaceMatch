@@ -10,6 +10,14 @@ class Profile {
   final String? bio;
   final double reliabilityScore;
 
+  /// % of meetups this person showed up to, per the others' reviews. Null
+  /// until they've been reviewed at least once.
+  final double? attendanceScore;
+
+  /// % of those meetups where their details (pace, level, ...) matched.
+  /// Null until someone has rated their details.
+  final double? accuracyScore;
+
   /// 'same_only' restricts matches to people who share [gender]; anything
   /// else (including null) means no restriction ("egal"). There is
   /// intentionally no "only the other gender" option.
@@ -53,6 +61,8 @@ class Profile {
     this.avatarUrl,
     this.bio,
     this.reliabilityScore = 100,
+    this.attendanceScore,
+    this.accuracyScore,
     this.genderPreference,
     this.ageRangeMin,
     this.ageRangeMax,
@@ -74,6 +84,8 @@ class Profile {
     avatarUrl: map['avatar_url'] as String?,
     bio: map['bio'] as String?,
     reliabilityScore: (map['reliability_score'] as num?)?.toDouble() ?? 100,
+    attendanceScore: (map['attendance_score'] as num?)?.toDouble(),
+    accuracyScore: (map['accuracy_score'] as num?)?.toDouble(),
     genderPreference: map['gender_preference'] as String?,
     ageRangeMin: map['age_range_min'] as int?,
     ageRangeMax: map['age_range_max'] as int?,
@@ -119,6 +131,8 @@ class Profile {
     avatarUrl: avatarUrl ?? this.avatarUrl,
     bio: bio ?? this.bio,
     reliabilityScore: reliabilityScore,
+    attendanceScore: attendanceScore,
+    accuracyScore: accuracyScore,
     genderPreference: genderPreference ?? this.genderPreference,
     ageRangeMin: ageRangeMin ?? this.ageRangeMin,
     ageRangeMax: ageRangeMax ?? this.ageRangeMax,

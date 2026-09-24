@@ -560,6 +560,13 @@ const _de = <String, String>{
   'profile.interestsAndLanguages': 'Interessen & Sprachen',
   'profile.myPrompts': 'Meine Prompts',
   'profile.reliability': 'Zuverlässigkeit',
+  'profile.noReviewsYet': 'Noch keine Bewertungen nach Treffen.',
+  'profile.attendanceScore': 'Erscheint zu Treffen',
+  'profile.accuracyScore': 'Angaben stimmen',
+  'profile.outOf': '{count} von {total}',
+  'profile.mismatchesTitle': 'Was nicht gepasst hat',
+  'profile.mismatchesOnlyYou':
+      'Nur für dich sichtbar — anonym aus allen Bewertungen.',
   'profile.activeLast7Days': 'Aktiv in den letzten 7 Tagen',
 
   // Public profile screen.
@@ -679,7 +686,12 @@ const _de = <String, String>{
   'faq.q3': 'Wie sicher ist ein Treffen mit einer fremden Person?',
   'faq.a3': 'Du kannst jederzeit ein Profil blockieren oder melden. Nach mehreren Meldungen wird ein Konto automatisch gesperrt. Trotzdem gilt: Trefft euch beim ersten Mal an einem öffentlichen Ort und gebt keine sensiblen Daten weiter.',
   'faq.q4': 'Was ist der Zuverlässigkeits-Score?',
-  'faq.a4': 'Nach einem Treffen kannst du bestätigen, ob dein Trainingspartner erschienen ist. Daraus ergibt sich ein Score, der anderen zeigt, wie verlässlich jemand ist.',
+  'faq.a4':
+      'Nach einem Treffen bewerten sich die Teilnehmer:innen gegenseitig '
+      'und anonym: War die Person da, und haben ihre Angaben (Pace, Level …) '
+      'gestimmt? Daraus ergeben sich zwei Werte, die alle sehen: wie oft '
+      'jemand erscheint und wie oft die Angaben stimmen. Was genau nicht '
+      'gepasst hat, siehst nur du selbst in deinem Profil.',
   'faq.q5': 'Was sind Circles?',
   'faq.a5': 'Circles sind private Trainingsgruppen, z. B. für Freunde oder eine feste Laufgruppe — getrennt vom offenen Matching.',
   'faq.q6': 'Warum sehe ich nur den Vornamen von anderen?',
@@ -1218,6 +1230,13 @@ const _en = <String, String>{
   'profile.interestsAndLanguages': 'Interests & languages',
   'profile.myPrompts': 'My prompts',
   'profile.reliability': 'Reliability',
+  'profile.noReviewsYet': 'No reviews after meetups yet.',
+  'profile.attendanceScore': 'Shows up to meetups',
+  'profile.accuracyScore': 'Details match',
+  'profile.outOf': '{count} of {total}',
+  'profile.mismatchesTitle': 'What didn\'t match',
+  'profile.mismatchesOnlyYou':
+      'Only visible to you — anonymous, from all reviews.',
   'profile.activeLast7Days': 'Active in the last 7 days',
 
   'publicProfile.chatWith': 'Chat with {name}',
@@ -1331,7 +1350,12 @@ const _en = <String, String>{
   'faq.q3': 'How safe is meeting up with a stranger?',
   'faq.a3': 'You can block or report any profile at any time. After several reports, an account is automatically suspended. Still: meet in a public place the first time and don\'t share sensitive personal details.',
   'faq.q4': 'What is the reliability score?',
-  'faq.a4': 'After a meetup you can confirm whether your training partner actually showed up. This builds a score that shows others how reliable someone is.',
+  'faq.a4':
+      'After a meetup, participants rate each other anonymously: did the '
+      'person show up, and did their details (pace, level, ...) match? This '
+      'gives two scores everyone can see: how often someone shows up and how '
+      'often their details match. What exactly didn\'t match is only '
+      'visible to you, on your own profile.',
   'faq.q5': 'What are Circles?',
   'faq.a5': 'Circles are private training groups, e.g. for friends or a fixed running group — separate from open matching.',
   'faq.q6': 'Why do I only see other people\'s first name?',

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../models/interest.dart';
+import '../../models/meetup_review.dart';
 import '../../models/profile.dart';
 import '../../models/user_sport.dart';
 import '../../services/auth_service.dart';
@@ -13,6 +14,7 @@ import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/reliability_scores.dart';
 import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
 import 'edit_sport_sheet.dart';
@@ -30,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Profile? _profile;
   List<UserSport> _sports = [];
   List<bool> _last7Days = List.filled(7, false);
+  ReviewSummary? _reviewSummary;
   bool _loading = true;
   bool _uploadingAvatar = false;
   String? _error;
@@ -51,12 +54,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _profileService.getProfile(userId),
         _profileService.getUserSports(userId),
         _profileService.getActivityLast7Days(userId),
+        // Optional extra — the profile still loads if this fails.
+        _profileService.getMyReviewSummary().then<ReviewSummary?>(
+          (s) => s,
+          onError: (_) => null,
+        ),
       ]);
       if (!mounted) return;
       setState(() {
         _profile = results[0] as Profile;
         _sports = results[1] as List<UserSport>;
         _last7Days = results[2] as List<bool>;
+        _reviewSummary = results[3] as ReviewSummary?;
         _loading = false;
       });
     } catch (e) {
@@ -421,33 +430,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Text(
-                    t('profile.reliability'),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: _profile!.reliabilityScore / 100,
-                            minHeight: 10,
-                            backgroundColor: AppColors.secondaryLight,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${_profile!.reliabilityScore.round()}%',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ],
+                  ReliabilityScores(
+                    profile: _profile!,
+                    summary: _reviewSummary,
                   ),
                   const SizedBox(height: 24),
                   Text(
