@@ -14,6 +14,7 @@ import '../../models/message.dart';
 import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
+import '../../services/giphy_service.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
 import '../../services/supabase_service.dart';
@@ -23,6 +24,7 @@ import '../../utils/calendar_export.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/safety_notice.dart';
 import '../plan/location_picker_screen.dart';
+import 'gif_picker_sheet.dart';
 import 'report_user_dialog.dart';
 import 'review_sheet.dart';
 
@@ -655,6 +657,30 @@ class _ChatViewState extends State<_ChatView> {
     );
   }
 
+  Future<void> _pickGif() async {
+    widget.focusNode.unfocus();
+    final gif = await showModalBottomSheet<Gif>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const GifPickerSheet(),
+    );
+    if (gif == null || !mounted) return;
+    if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
+    try {
+      await _messageService.sendMessage(
+        groupId: widget.groupId,
+        senderId: SupabaseService.currentUserId!,
+        content: 'GIF',
+        gifUrl: gif.url,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('group.gifSendFailed', {'error': '$e'}))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final myId = SupabaseService.currentUserId;
@@ -720,31 +746,49 @@ class _ChatViewState extends State<_ChatView> {
                               ? CrossAxisAlignment.end
                               : CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 2),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              constraints: const BoxConstraints(maxWidth: 280),
-                              decoration: BoxDecoration(
-                                color: mine
-                                    ? AppColors.secondary
-                                    : AppColors.surface,
-                                border: mine
-                                    ? null
-                                    : Border.all(color: AppColors.border),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                m.content,
-                                style: TextStyle(
+                            if (m.gifUrl != null &&
+                                GiphyService.allowedUrl.hasMatch(m.gifUrl!))
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 2),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 220,
+                                  maxHeight: 260,
+                                  minWidth: 80,
+                                  minHeight: 80,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: GifImage(url: m.gifUrl!),
+                                ),
+                              )
+                            else
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 280,
+                                ),
+                                decoration: BoxDecoration(
                                   color: mine
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
+                                      ? AppColors.secondary
+                                      : AppColors.surface,
+                                  border: mine
+                                      ? null
+                                      : Border.all(color: AppColors.border),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  m.content,
+                                  style: TextStyle(
+                                    color: mine
+                                        ? Colors.white
+                                        : AppColors.textPrimary,
+                                  ),
                                 ),
                               ),
-                            ),
                             Padding(
                               padding: const EdgeInsets.only(bottom: 10),
                               child: Text(
@@ -771,6 +815,18 @@ class _ChatViewState extends State<_ChatView> {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: Row(
               children: [
+                if (GiphyService.isEnabled) ...[
+                  IconButton(
+                    tooltip: t('group.sendGif'),
+                    onPressed: _pickGif,
+                    icon: Icon(
+                      Icons.gif_box_outlined,
+                      size: 30,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                ],
                 Expanded(
                   child: TextField(
                     controller: _textCtrl,

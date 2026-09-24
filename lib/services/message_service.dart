@@ -18,12 +18,14 @@ class MessageService {
     required String groupId,
     required String senderId,
     required String content,
+    String? gifUrl,
   }) async {
     await SupabaseService.ensureFreshSession();
     await _client.from('messages').insert({
       'group_id': groupId,
       'sender_id': senderId,
       'content': content,
+      'gif_url': ?gifUrl,
     });
     // Don't count my own message as unread for me.
     await GroupService().markGroupRead(groupId: groupId, userId: senderId);

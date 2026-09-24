@@ -5,12 +5,16 @@ class ChatMessage {
   final String content;
   final DateTime createdAt;
 
+  /// Set for a GIF message (then [content] is just a "GIF" fallback text).
+  final String? gifUrl;
+
   ChatMessage({
     required this.id,
     required this.groupId,
     required this.senderId,
     required this.content,
     required this.createdAt,
+    this.gifUrl,
   });
 
   factory ChatMessage.fromMap(Map<String, dynamic> map) => ChatMessage(
@@ -19,5 +23,6 @@ class ChatMessage {
     senderId: map['sender_id'] as String,
     content: map['content'] as String,
     createdAt: DateTime.parse(map['created_at'] as String),
+    gifUrl: map['gif_url'] as String?,
   );
 }
