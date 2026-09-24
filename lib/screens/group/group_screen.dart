@@ -81,8 +81,19 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   Future<void> _load() async {
-    final group = await _groupService.getGroup(widget.groupId);
-    final members = await _groupService.getGroupMembers(widget.groupId);
+    final SportGroup group;
+    final List<Profile> members;
+    try {
+      group = await _groupService.getGroup(widget.groupId);
+      members = await _groupService.getGroupMembers(widget.groupId);
+    } catch (_) {
+      // The chat is gone — e.g. the other person deleted our private chat.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('group.chatGone'))));
+      safeBack(context, '/chat');
+      return;
+    }
     final myId = SupabaseService.currentUserId;
     DateTime? checkedInFor;
     if (myId != null) {
@@ -859,11 +870,19 @@ class _ChatViewState extends State<_ChatView> {
     _textCtrl.clear();
     // Scrolled up to read older messages? Jump back down to my new one.
     if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
-    await _messageService.sendMessage(
-      groupId: widget.groupId,
-      senderId: SupabaseService.currentUserId!,
-      content: text,
-    );
+    try {
+      await _messageService.sendMessage(
+        groupId: widget.groupId,
+        senderId: SupabaseService.currentUserId!,
+        content: text,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      // Give the text back instead of silently losing it.
+      if (_textCtrl.text.isEmpty) _textCtrl.text = text;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('group.sendFailed'))));
+    }
   }
 
   Future<void> _pickGif() async {

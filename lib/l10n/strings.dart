@@ -458,6 +458,7 @@ const _de = <String, String>{
   'chatList.deleteTitle': 'Chat löschen?',
   'chatList.deleteConfirm':
       'Der Chat "{name}" wird für alle Teilnehmer unwiderruflich gelöscht.',
+  'chatList.deleteDirectConfirm': 'Der Chat mit {name} wird für euch beide gelöscht, inklusive aller Nachrichten.',
   'chatList.archivedTitle': 'Archivierte Chats',
   'chatList.title': 'Chats',
   'chatList.directChat': 'Privater Chat',
@@ -515,6 +516,9 @@ const _de = <String, String>{
   'group.otherSportTimeHint': 'Weitere gemeinsame Sportzeit von euch',
   'group.useAsMeetup': 'Als Treffen festlegen',
   'group.setMeetupFailed': 'Treffen konnte nicht festgelegt werden: {error}',
+  'group.chatGone': 'Diesen Chat gibt es nicht mehr.',
+  'group.sendFailed':
+      'Nachricht konnte nicht gesendet werden. Bitte versuch es nochmal.',
   'group.messagePlaceholder': 'Nachricht schreiben...',
   'group.today': 'Heute',
   'group.yesterday': 'Gestern',
@@ -1147,6 +1151,7 @@ const _en = <String, String>{
   'chatList.deleteTitle': 'Delete chat?',
   'chatList.deleteConfirm':
       'The chat "{name}" will be permanently deleted for all members.',
+  'chatList.deleteDirectConfirm': 'The chat with {name} will be deleted for both of you, including all messages.',
   'chatList.archivedTitle': 'Archived chats',
   'chatList.title': 'Chats',
   'chatList.directChat': 'Private chat',
@@ -1204,6 +1209,8 @@ const _en = <String, String>{
   'group.otherSportTimeHint': 'Another sport time you both have',
   'group.useAsMeetup': 'Make this our meetup',
   'group.setMeetupFailed': 'Couldn\'t set the meetup: {error}',
+  'group.chatGone': 'This chat no longer exists.',
+  'group.sendFailed': 'Couldn\'t send your message. Please try again.',
   'group.messagePlaceholder': 'Write a message...',
   'group.today': 'Today',
   'group.yesterday': 'Yesterday',

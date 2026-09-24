@@ -81,12 +81,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _reload();
   }
 
+  /// Leaving a private chat deletes it for both people (database trigger),
+  /// so it's worded as deleting — for either side.
   Future<void> _leave(SportGroup g) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(t('chatList.leaveTitle')),
-        content: Text(t('chatList.leaveConfirm', {'name': g.displayName})),
+        title: Text(
+          g.isDirect ? t('chatList.deleteTitle') : t('chatList.leaveTitle'),
+        ),
+        content: Text(
+          g.isDirect
+              ? t('chatList.deleteDirectConfirm', {'name': g.displayName})
+              : t('chatList.leaveConfirm', {'name': g.displayName}),
+        ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
@@ -94,7 +102,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: Text(t('chatList.leave')),
+            child: Text(g.isDirect ? t('common.delete') : t('chatList.leave')),
           ),
         ],
       ),
@@ -319,7 +327,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 value: 'unarchive',
                 child: Text(t('chatList.unarchive')),
               ),
-            if (isCreator)
+            if (g.isDirect)
+              PopupMenuItem(value: 'leave', child: Text(t('common.delete')))
+            else if (isCreator)
               PopupMenuItem(value: 'delete', child: Text(t('common.delete')))
             else
               PopupMenuItem(value: 'leave', child: Text(t('chatList.leave'))),
