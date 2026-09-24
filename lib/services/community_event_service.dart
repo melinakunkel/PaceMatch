@@ -17,7 +17,7 @@ class CommunityEventService {
         .select()
         .eq('city', city)
         .or('day_of_week.eq.${date.weekday},specific_date.eq.$dateStr')
-        .order('start_time');
+        .order('start_time', ascending: true);
     return rows.map((m) => CommunityEvent.fromMap(m)).toList();
   }
 

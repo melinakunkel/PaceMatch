@@ -21,7 +21,9 @@ class ActivityService {
     query = circleId == null
         ? query.isFilter('circle_id', null)
         : query.eq('circle_id', circleId);
-    final rows = await query.order('day_of_week').order('start_time');
+    final rows = await query
+        .order('day_of_week', ascending: true)
+        .order('start_time', ascending: true);
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
@@ -71,7 +73,7 @@ class ActivityService {
         : query.eq('circle_id', circleId);
     final rows = await query
         .or('specific_date.is.null,specific_date.eq.$dateStr')
-        .order('start_time')
+        .order('start_time', ascending: true)
         .limit(300);
     return rows.map((m) => Activity.fromMap(m)).toList();
   }

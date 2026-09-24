@@ -646,6 +646,8 @@ class _ChatViewState extends State<_ChatView> {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
     _textCtrl.clear();
+    // Scrolled up to read older messages? Jump back down to my new one.
+    if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
     await _messageService.sendMessage(
       groupId: widget.groupId,
       senderId: SupabaseService.currentUserId!,
@@ -686,20 +688,20 @@ class _ChatViewState extends State<_ChatView> {
                       .then((_) => UnreadController.refresh());
                 }
               }
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_scrollCtrl.hasClients) {
-                  _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
-                }
-              });
+              // Like WhatsApp: newest message at the bottom, right above the
+              // input. A reversed list starts there by itself and stays
+              // there as new messages arrive.
               return ListView.builder(
                 controller: _scrollCtrl,
+                reverse: true,
                 // Swiping the messages closes the keyboard, which also
                 // brings the header back.
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.all(16),
                 itemCount: messages.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (context, reversedIndex) {
+                  final index = messages.length - 1 - reversedIndex;
                   final m = messages[index];
                   final mine = m.senderId == myId;
                   final showDateDivider =

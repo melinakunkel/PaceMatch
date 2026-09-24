@@ -79,7 +79,7 @@ class OpenEventService {
         .select('*, groups(group_members(count))')
         .eq('city', city)
         .eq('event_date', _dateStr(date))
-        .order('start_time');
+        .order('start_time', ascending: true);
     return _withParticipantInfo(rows, userId);
   }
 
@@ -98,8 +98,8 @@ class OpenEventService {
         .eq('city', city)
         .gte('event_date', _dateStr(from))
         .lt('event_date', _dateStr(from.add(Duration(days: days))))
-        .order('event_date')
-        .order('start_time');
+        .order('event_date', ascending: true)
+        .order('start_time', ascending: true);
     return _withParticipantInfo(rows, userId);
   }
 

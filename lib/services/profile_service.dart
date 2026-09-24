@@ -51,7 +51,7 @@ class ProfileService {
         .from('user_sports')
         .select()
         .eq('user_id', userId)
-        .order('sport');
+        .order('sport', ascending: true);
     return rows.map((m) => UserSport.fromMap(m)).toList();
   }
 

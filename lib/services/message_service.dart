@@ -10,7 +10,7 @@ class MessageService {
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('group_id', groupId)
-        .order('created_at')
+        .order('created_at', ascending: true)
         .map((rows) => rows.map((m) => ChatMessage.fromMap(m)).toList());
   }
 
