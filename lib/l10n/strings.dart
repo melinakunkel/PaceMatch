@@ -605,6 +605,9 @@ const _de = <String, String>{
   'newActivity.childInfo': 'Dein Kind',
   'newActivity.childAge': 'Alter',
   'newActivity.childAgeYears': '{age} Jahre',
+  'safety.childMeetupNotice':
+      'Sicherheitshinweis: Trefft euch nur an öffentlichen, belebten Orten '
+      'wie Spielplätzen oder Parks — nie privat oder abgelegen.',
 
   // Settings: legal & support section.
   'settings.legal': 'Rechtliches & Support',
@@ -1235,6 +1238,9 @@ const _en = <String, String>{
   'newActivity.childInfo': 'Your child',
   'newActivity.childAge': 'Age',
   'newActivity.childAgeYears': '{age} years old',
+  'safety.childMeetupNotice':
+      'Safety note: Only meet at public, busy places like playgrounds or '
+      'parks — never in private or secluded ones.',
 
   // Settings: legal & support section.
   'settings.legal': 'Legal & support',

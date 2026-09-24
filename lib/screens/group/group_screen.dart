@@ -10,6 +10,7 @@ import '../../models/group.dart';
 import '../../models/message.dart';
 import '../../models/picked_location.dart';
 import '../../models/profile.dart';
+import '../../models/sport_type.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
 import '../../services/profile_service.dart';
@@ -18,6 +19,7 @@ import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/calendar_export.dart';
 import '../../utils/safe_pop.dart';
+import '../../widgets/safety_notice.dart';
 import '../plan/location_picker_screen.dart';
 import 'report_user_dialog.dart';
 
@@ -405,6 +407,10 @@ class _GroupScreenState extends State<GroupScreen> {
                         ],
                       ),
                     ),
+                  if (group.sport == SportType.kinderSpielen) ...[
+                    const SizedBox(height: 12),
+                    SafetyNotice(text: t('safety.childMeetupNotice')),
+                  ],
                   if (group.meetingTime != null &&
                       group.meetingTime!.isAfter(DateTime.now()))
                     Padding(

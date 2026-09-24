@@ -15,6 +15,7 @@ import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/pace_picker_field.dart';
+import '../../widgets/safety_notice.dart';
 import 'location_picker_screen.dart';
 
 class NewActivityScreen extends StatefulWidget {
@@ -437,6 +438,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 12),
+              SafetyNotice(text: t('safety.childMeetupNotice')),
             ],
             if (!_sport.usesPace && _sport.usesLevel) ...[
               const SizedBox(height: 20),
