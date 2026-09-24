@@ -9,13 +9,13 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/strings.dart';
 import '../../models/activity.dart' show weekdayLabels;
 import '../../models/group.dart';
+import '../../models/meetup_review.dart';
 import '../../models/message.dart';
 import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
-import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
@@ -24,6 +24,7 @@ import '../../utils/safe_pop.dart';
 import '../../widgets/safety_notice.dart';
 import '../plan/location_picker_screen.dart';
 import 'report_user_dialog.dart';
+import 'review_sheet.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key, required this.groupId});
@@ -36,7 +37,6 @@ class GroupScreen extends StatefulWidget {
 
 class _GroupScreenState extends State<GroupScreen> {
   final _groupService = GroupService();
-  final _profileService = ProfileService();
 
   SportGroup? _group;
   List<Profile> _members = [];
@@ -89,17 +89,40 @@ class _GroupScreenState extends State<GroupScreen> {
     });
   }
 
-  Future<void> _checkIn(bool attended) async {
+  Future<void> _openReview() async {
+    final myId = SupabaseService.currentUserId;
+    final group = _group;
+    if (myId == null || group == null) return;
+    final reviews = await showModalBottomSheet<List<MeetupReview>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ReviewSheet(
+        members: _members.where((m) => m.id != myId).toList(),
+        sport: group.sport,
+      ),
+    );
+    if (reviews == null) return;
+    await _checkIn(true, reviews: reviews);
+  }
+
+  Future<void> _checkIn(
+    bool attended, {
+    List<MeetupReview> reviews = const [],
+  }) async {
     final myId = SupabaseService.currentUserId;
     if (myId == null || _checkingIn) return;
     setState(() => _checkingIn = true);
     try {
+      await _groupService.submitReviews(
+        groupId: widget.groupId,
+        reviewerId: myId,
+        reviews: reviews,
+      );
       await _groupService.checkIn(
         groupId: widget.groupId,
         userId: myId,
         attended: attended,
       );
-      await _profileService.recomputeReliabilityScore(myId);
       if (!mounted) return;
       setState(() {
         _myAttendance = attended;
@@ -108,9 +131,7 @@ class _GroupScreenState extends State<GroupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            attended
-                ? t('group.checkinThanksAttended')
-                : t('group.checkinThanks'),
+            attended ? t('group.review.thanks') : t('group.checkinThanks'),
           ),
         ),
       );
@@ -457,7 +478,8 @@ class _GroupScreenState extends State<GroupScreen> {
             if (!_inputFocus.hasFocus &&
                 group.meetingTime != null &&
                 group.meetingTime!.isBefore(DateTime.now()) &&
-                _myAttendance == null)
+                _myAttendance == null &&
+                _members.length > 1)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Card(
@@ -489,17 +511,15 @@ class _GroupScreenState extends State<GroupScreen> {
                                     ? null
                                     : () => _checkIn(false),
                                 icon: const Icon(Icons.close, size: 18),
-                                label: Text(t('group.couldNotMake')),
+                                label: Text(t('group.review.notMet')),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: _checkingIn
-                                    ? null
-                                    : () => _checkIn(true),
+                                onPressed: _checkingIn ? null : _openReview,
                                 icon: const Icon(Icons.check, size: 18),
-                                label: Text(t('group.wasThere')),
+                                label: Text(t('group.review.start')),
                               ),
                             ),
                           ],

@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/activity.dart';
 import '../models/group.dart';
+import '../models/meetup_review.dart';
 import '../models/profile.dart';
 import '../models/sport_type.dart';
 import 'supabase_service.dart';
@@ -295,8 +296,9 @@ class GroupService {
     return row?['attended'] as bool?;
   }
 
-  /// Records whether I actually showed up to a past meetup — feeds into my
-  /// reliability score (see [ProfileService.recomputeReliabilityScore]).
+  /// Records whether I met up for this group's meetup, which hides the
+  /// "did it happen?" prompt. Doesn't affect my own reliability score —
+  /// that comes only from the others' [submitReviews].
   Future<void> checkIn({
     required String groupId,
     required String userId,
@@ -308,6 +310,24 @@ class GroupService {
         .update({'attended': attended})
         .eq('group_id', groupId)
         .eq('user_id', userId);
+  }
+
+  /// Anonymous reviews of the other participants after a meetup. The
+  /// database recomputes each reviewee's reliability score from them.
+  Future<void> submitReviews({
+    required String groupId,
+    required String reviewerId,
+    required List<MeetupReview> reviews,
+  }) async {
+    if (reviews.isEmpty) return;
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('meetup_reviews')
+        .upsert(
+          reviews
+              .map((r) => r.toMap(groupId: groupId, reviewerId: reviewerId))
+              .toList(),
+        );
   }
 
   Future<Activity?> getActivity(String? activityId) async {

@@ -162,26 +162,6 @@ class ProfileService {
         .eq('id', userId);
   }
 
-  /// Recomputes reliability_score from how many past meetups the user
-  /// confirmed attending vs. not (see [GroupService.checkIn]), and persists
-  /// it. Falls back to the default 100 until they've checked in anywhere.
-  Future<double> recomputeReliabilityScore(String userId) async {
-    final rows = await _client
-        .from('group_members')
-        .select('attended')
-        .eq('user_id', userId)
-        .not('attended', 'is', null);
-    if (rows.isEmpty) return 100;
-    final total = rows.length;
-    final attended = rows.where((r) => r['attended'] == true).length;
-    final score = (attended / total * 100).clamp(0, 100).toDouble();
-    await _client
-        .from('profiles')
-        .update({'reliability_score': score})
-        .eq('id', userId);
-    return score;
-  }
-
   /// When the user last opened the Matches tab — used to know whether a
   /// match-created group is "new" (see [GroupService.hasUnseenMatch]).
   Future<DateTime?> getMatchesSeenAt(String userId) async {
