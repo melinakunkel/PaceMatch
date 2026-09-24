@@ -198,7 +198,7 @@ class ProfileService {
     await SupabaseService.ensureFreshSession();
     await _client
         .from('profiles')
-        .update({'matches_seen_at': DateTime.now().toIso8601String()})
+        .update({'matches_seen_at': DateTime.now().toUtc().toIso8601String()})
         .eq('id', userId);
   }
 
@@ -228,7 +228,7 @@ class ProfileService {
     await SupabaseService.ensureFreshSession();
     await _client
         .from('profiles')
-        .update({'paused_at': DateTime.now().toIso8601String()})
+        .update({'paused_at': DateTime.now().toUtc().toIso8601String()})
         .eq('id', userId);
   }
 

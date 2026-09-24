@@ -219,7 +219,7 @@ class GroupService {
     await SupabaseService.ensureFreshSession();
     await _client
         .from('group_members')
-        .update({'last_read_at': DateTime.now().toIso8601String()})
+        .update({'last_read_at': DateTime.now().toUtc().toIso8601String()})
         .eq('group_id', groupId)
         .eq('user_id', userId);
   }
