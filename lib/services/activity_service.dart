@@ -27,6 +27,18 @@ class ActivityService {
     return rows.map((m) => Activity.fromMap(m)).toList();
   }
 
+  /// Every active sport time of [userId], across all "Kreise" — used to
+  /// find the sport times two people in a private chat have in common.
+  Future<List<Activity>> getActiveActivitiesOf(String userId) async {
+    final rows = await _client
+        .from('activities')
+        .select()
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .limit(100);
+    return rows.map((m) => Activity.fromMap(m)).toList();
+  }
+
   /// All other users' active activities for a sport, used for matching.
   /// [circleId] restricts candidates to the same "Kreis" as the activity
   /// being matched (or, when null, to the public pool).

@@ -105,18 +105,15 @@ class GroupService {
         final current = await getGroup(existingId);
         final upcoming = current.meetingTime?.isAfter(DateTime.now()) ?? false;
         if (!upcoming) {
-          await SupabaseService.ensureFreshSession();
-          await _client
-              .from('groups')
-              .update({
-                'sport': sport.name,
-                'meeting_point': meetingPoint,
-                'latitude': latitude,
-                'longitude': longitude,
-                'meeting_time': meetingTime.toUtc().toIso8601String(),
-                'activity_id': activityId,
-              })
-              .eq('id', existingId);
+          await setMeetup(
+            groupId: existingId,
+            sport: sport,
+            meetingPoint: meetingPoint,
+            latitude: latitude,
+            longitude: longitude,
+            meetingTime: meetingTime,
+            activityId: activityId,
+          );
         }
       } catch (_) {
         // Best-effort — the chat itself still opens; the meetup can be set
@@ -124,6 +121,31 @@ class GroupService {
       }
     }
     return existingId;
+  }
+
+  /// Makes this the chat's next meetup — in a private chat either person
+  /// may (RLS), e.g. when picking another of their shared sport times.
+  Future<void> setMeetup({
+    required String groupId,
+    required SportType sport,
+    required DateTime meetingTime,
+    String? meetingPoint,
+    double? latitude,
+    double? longitude,
+    String? activityId,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('groups')
+        .update({
+          'sport': sport.name,
+          'meeting_point': meetingPoint,
+          'latitude': latitude,
+          'longitude': longitude,
+          'meeting_time': meetingTime.toUtc().toIso8601String(),
+          'activity_id': activityId,
+        })
+        .eq('id', groupId);
   }
 
   /// The group chat already created for this activity, if any.

@@ -14,6 +14,7 @@ import '../../models/message.dart';
 import '../../models/picked_location.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
+import '../../services/activity_service.dart';
 import '../../services/giphy_service.dart';
 import '../../services/group_service.dart';
 import '../../services/message_service.dart';
@@ -21,7 +22,9 @@ import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/calendar_export.dart';
+import '../../utils/display_labels.dart';
 import '../../utils/safe_pop.dart';
+import '../../utils/shared_sport_times.dart';
 import '../../widgets/safety_notice.dart';
 import '../plan/location_picker_screen.dart';
 import 'gif_picker_sheet.dart';
@@ -47,6 +50,12 @@ class _GroupScreenState extends State<GroupScreen> {
   DateTime? _checkedInFor;
   bool _checkingIn = false;
   bool _loading = true;
+
+  /// In a private chat: the other sport times we have in common, besides
+  /// the chat's own meetup — the header pages through them (page 0 is the
+  /// chat's meetup, 1.. are these).
+  List<SharedSportTime> _otherTimes = [];
+  int _page = 0;
 
   /// The message field's focus: while typing, the header (members, meeting
   /// point, check-in card) is hidden so the messages still fit above the
@@ -88,13 +97,66 @@ class _GroupScreenState extends State<GroupScreen> {
         // Only drives the "did it happen?" prompt — never block the chat.
       }
     }
+    final otherTimes = await _loadOtherTimes(group, members, myId);
     if (!mounted) return;
     setState(() {
       _group = group;
       _members = members;
       _checkedInFor = checkedInFor;
+      _otherTimes = otherTimes;
+      _page = _page.clamp(0, otherTimes.length);
       _loading = false;
     });
+  }
+
+  Future<List<SharedSportTime>> _loadOtherTimes(
+    SportGroup group,
+    List<Profile> members,
+    String? myId,
+  ) async {
+    final partner = members.where((m) => m.id != myId).firstOrNull;
+    if (!group.isDirect || myId == null || partner == null) return [];
+    try {
+      final activityService = ActivityService();
+      final results = await Future.wait([
+        activityService.getActiveActivitiesOf(myId),
+        activityService.getActiveActivitiesOf(partner.id),
+      ]);
+      return sharedSportTimes(results[0], results[1])
+          .where(
+            (s) =>
+                !s.involves(group.activityId) &&
+                !(s.mine.sport == group.sport &&
+                    group.meetingTime != null &&
+                    s.nextOccurrence.isAtSameMomentAs(group.meetingTime!)),
+          )
+          .toList();
+    } catch (_) {
+      // Only extra paging — never block the chat.
+      return [];
+    }
+  }
+
+  /// Makes one of our other shared sport times the chat's meetup.
+  Future<void> _useAsMeetup(SharedSportTime time) async {
+    try {
+      await _groupService.setMeetup(
+        groupId: widget.groupId,
+        sport: time.mine.sport,
+        meetingTime: time.nextOccurrence,
+        meetingPoint: time.locationName,
+        latitude: time.latitude,
+        longitude: time.longitude,
+        activityId: time.mine.id,
+      );
+      _page = 0;
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('group.setMeetupFailed', {'error': '$e'}))),
+      );
+    }
   }
 
   Future<void> _openReview() async {
@@ -181,10 +243,18 @@ class _GroupScreenState extends State<GroupScreen> {
     _load();
   }
 
-  Future<void> _showMeetingPointMap() async {
+  Future<void> _showMeetingPointMap({
+    String? name,
+    double? latitude,
+    double? longitude,
+  }) async {
     final group = _group;
-    if (group == null || !group.hasMapLocation) return;
-    final point = LatLng(group.latitude!, group.longitude!);
+    if (group == null) return;
+    final lat = latitude ?? group.latitude;
+    final lng = longitude ?? group.longitude;
+    if (lat == null || lng == null) return;
+    final title = latitude != null ? name : group.meetingPoint;
+    final point = LatLng(lat, lng);
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -198,7 +268,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      group.meetingPoint ?? t('group.meetingPoint'),
+                      title ?? t('group.meetingPoint'),
                       style: const TextStyle(fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -260,10 +330,16 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 
-  Future<void> _addToCalendar() async {
+  Future<void> _addToCalendar({
+    DateTime? start,
+    SportType? sport,
+    String? location,
+  }) async {
     final group = _group;
-    final meetingTime = group?.meetingTime;
+    final meetingTime = start ?? group?.meetingTime;
     if (group == null || meetingTime == null) return;
+    final place = start != null ? location : group.meetingPoint;
+    final calendarSport = sport ?? group.sport;
     final end = meetingTime.add(const Duration(hours: 1));
     final myId = SupabaseService.currentUserId;
     final partner = group.isDirect
@@ -272,7 +348,7 @@ class _GroupScreenState extends State<GroupScreen> {
     final title = partner == null
         ? group.name
         : t('discover.groupNameWith', {
-            'sport': group.sport.label,
+            'sport': calendarSport.label,
             'name': partner.firstName,
           });
     final choice = await showModalBottomSheet<String>(
@@ -302,7 +378,7 @@ class _GroupScreenState extends State<GroupScreen> {
               title: title,
               start: meetingTime,
               end: end,
-              location: group.meetingPoint,
+              location: place,
             ),
           )
         : Uri.parse(
@@ -310,10 +386,154 @@ class _GroupScreenState extends State<GroupScreen> {
               title: title,
               start: meetingTime,
               end: end,
-              location: group.meetingPoint,
+              location: place,
             ),
           );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  /// Sport + next date. In a private chat with several shared sport times,
+  /// arrows page through them (page 0 = the chat's own meetup).
+  Widget _buildMeetupTitleRow(SportGroup group) {
+    final other = _page > 0 ? _otherTimes[_page - 1] : null;
+    final sport = other?.mine.sport ?? group.sport;
+    final time = other?.nextOccurrence ?? group.meetingTime;
+    final pageCount = _otherTimes.length + 1;
+    final showTime =
+        time != null &&
+        (other != null ||
+            time.isAfter(DateTime.now().subtract(const Duration(hours: 12))));
+    final label = group.isDirect
+        ? [sport.label, if (showTime) formatMeetupTime(time)].join(' · ')
+        : t('chatList.participants', {'count': '${group.memberCount}'});
+    final title = Row(
+      children: [
+        Icon(sport.icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      ],
+    );
+    if (pageCount < 2) return title;
+
+    void go(int delta) => setState(() => _page = (_page + delta) % pageCount);
+    return GestureDetector(
+      // Swiping works too, not just the arrows.
+      onHorizontalDragEnd: (details) {
+        final v = details.primaryVelocity ?? 0;
+        if (v.abs() < 200) return;
+        go(v < 0 ? 1 : pageCount - 1);
+      },
+      child: Row(
+        children: [
+          _PagerArrow(
+            icon: Icons.chevron_left,
+            tooltip: t('group.previousSportTime'),
+            onPressed: () => go(pageCount - 1),
+          ),
+          Expanded(child: title),
+          Text(
+            '${_page + 1}/$pageCount',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          _PagerArrow(
+            icon: Icons.chevron_right,
+            tooltip: t('group.nextSportTime'),
+            onPressed: () => go(1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Place, calendar and "make this our meetup" for another shared sport
+  /// time — read-only; its place comes from the sport times themselves.
+  Widget _buildOtherTimeDetails(SharedSportTime time) {
+    final place = time.locationName;
+    final hasMap = time.latitude != null && time.longitude != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t('group.otherSportTimeHint'),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        if (place != null) ...[
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: hasMap
+                ? () => _showMeetingPointMap(
+                    name: place,
+                    latitude: time.latitude,
+                    longitude: time.longitude,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.place_outlined,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    place,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (hasMap) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: AppColors.secondary,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 16,
+          children: [
+            TextButton.icon(
+              onPressed: () => _useAsMeetup(time),
+              icon: const Icon(Icons.event_available, size: 18),
+              label: Text(t('group.useAsMeetup')),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _addToCalendar(
+                start: time.nextOccurrence,
+                sport: time.mine.sport,
+                location: place,
+              ),
+              icon: const Icon(Icons.calendar_month, size: 18),
+              label: Text(t('group.addToCalendar')),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 36),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   @override
@@ -330,6 +550,9 @@ class _GroupScreenState extends State<GroupScreen> {
         ? _members.where((m) => m.id != myId).firstOrNull
         : null;
     final canEditMeetingPoint = isCreator || group.isDirect;
+    final shownSport = _page > 0
+        ? _otherTimes[_page - 1].mine.sport
+        : group.sport;
 
     return Scaffold(
       appBar: AppBar(
@@ -387,24 +610,7 @@ class _GroupScreenState extends State<GroupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          group.sport.icon,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          group.isDirect
-                              ? group.sport.label
-                              : t('chatList.participants', {
-                                  'count': '${group.memberCount}',
-                                }),
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+                    _buildMeetupTitleRow(group),
                     if (!group.isDirect) ...[
                       const SizedBox(height: 6),
                       SizedBox(
@@ -447,7 +653,9 @@ class _GroupScreenState extends State<GroupScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    if (canEditMeetingPoint)
+                    if (_page > 0)
+                      _buildOtherTimeDetails(_otherTimes[_page - 1])
+                    else if (canEditMeetingPoint)
                       InkWell(
                         onTap: _pickMeetingPoint,
                         borderRadius: BorderRadius.circular(12),
@@ -500,11 +708,12 @@ class _GroupScreenState extends State<GroupScreen> {
                           ],
                         ),
                       ),
-                    if (group.sport == SportType.kinderSpielen) ...[
+                    if (shownSport == SportType.kinderSpielen) ...[
                       const SizedBox(height: 12),
                       SafetyNotice(text: t('safety.childMeetupNotice')),
                     ],
-                    if (group.meetingTime != null &&
+                    if (_page == 0 &&
+                        group.meetingTime != null &&
                         group.meetingTime!.isAfter(DateTime.now()))
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
@@ -928,6 +1137,31 @@ class _Avatar extends StatelessWidget {
                 fontSize: radius * 0.8,
               ),
             ),
+    );
+  }
+}
+
+class _PagerArrow extends StatelessWidget {
+  const _PagerArrow({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      color: AppColors.primary,
     );
   }
 }

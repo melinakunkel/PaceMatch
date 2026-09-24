@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/strings.dart';
-import '../../models/activity.dart';
 import '../../models/group.dart';
 import '../../services/chat_request_service.dart';
 import '../../services/group_service.dart';
@@ -10,16 +9,9 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/display_labels.dart';
 import '../../widgets/app_scaffold.dart';
 import 'chat_requests_screen.dart';
-
-String _formatMeetingTime(DateTime t) {
-  final local = t.toLocal();
-  final day = weekdayLabels[local.weekday - 1];
-  final hh = local.hour.toString().padLeft(2, '0');
-  final mm = local.minute.toString().padLeft(2, '0');
-  return '$day, ${local.day}.${local.month}. $hh:$mm';
-}
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -349,7 +341,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return [
       if (g.isDirect) g.sport.label,
       if (g.meetingTime != null && (upcoming || !g.isDirect))
-        _formatMeetingTime(g.meetingTime!),
+        formatMeetupTime(g.meetingTime!),
       if (g.meetingPoint != null && (upcoming || !g.isDirect)) g.meetingPoint!,
       if (!g.isDirect)
         t('chatList.participants', {'count': '${g.memberCount}'}),

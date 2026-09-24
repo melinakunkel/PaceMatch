@@ -1,4 +1,5 @@
 import '../l10n/strings.dart';
+import '../models/activity.dart' show weekdayLabels;
 
 /// Translates a skill level stored in the database ('Anfänger',
 /// 'Fortgeschritten', 'Profi' — the raw values never change, only how
@@ -64,3 +65,12 @@ String interestLabel(String interest) => switch (interest) {
   'Nachhaltigkeit' => t('interest.sustainability'),
   _ => interest,
 };
+
+/// A meetup's date and time in local time, e.g. "Sa, 27.9. 09:00".
+String formatMeetupTime(DateTime t) {
+  final local = t.toLocal();
+  final day = weekdayLabels[local.weekday - 1];
+  final hh = local.hour.toString().padLeft(2, '0');
+  final mm = local.minute.toString().padLeft(2, '0');
+  return '$day, ${local.day}.${local.month}. $hh:$mm';
+}
