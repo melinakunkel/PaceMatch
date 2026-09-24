@@ -48,7 +48,7 @@ class ImprintScreen extends StatelessWidget {
             const LegalSection(
               heading: 'Unternehmensgegenstand',
               lines: [
-                'Betrieb der mobilen Anwendung SAMEPACE (PaceMatch) zur '
+                'Betrieb der mobilen Anwendung SAMEPACE zur '
                     'Vermittlung von Trainingspartner:innen im '
                     'Sportbereich.',
               ],

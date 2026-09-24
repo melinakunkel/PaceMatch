@@ -170,7 +170,7 @@ const _de = <String, String>{
   'tutorial.done': 'Los geht\'s',
   'tutorial.dontShowAgain': 'Nicht mehr anzeigen',
   'tutorial.step': 'Schritt {current}/{total}',
-  'tutorial.welcome.title': 'Willkommen bei PaceMatch',
+  'tutorial.welcome.title': 'Willkommen bei SAMEPACE',
   'tutorial.welcome.description':
       'Finde Leute, die zur gleichen Zeit und im gleichen Tempo Sport '
       'machen möchten wie du — zum Laufen, Radfahren, Schwimmen, Wandern, '
@@ -834,7 +834,7 @@ const _en = <String, String>{
   'tutorial.done': 'Let\'s go',
   'tutorial.dontShowAgain': 'Don\'t show again',
   'tutorial.step': 'Step {current}/{total}',
-  'tutorial.welcome.title': 'Welcome to PaceMatch',
+  'tutorial.welcome.title': 'Welcome to SAMEPACE',
   'tutorial.welcome.description':
       'Find people who want to do sport at the same time and pace as you '
       '— running, cycling, swimming, hiking, tennis and more.',
