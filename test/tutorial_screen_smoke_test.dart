@@ -8,7 +8,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: TutorialScreen()));
 
-    expect(find.text('Willkommen bei SAMEPACE'), findsOneWidget);
+    expect(find.text('Willkommen bei PaceMatch'), findsOneWidget);
 
     // 6 slides total: tap through slides 1-5 via "Weiter", then the last
     // slide's button reads "Los geht's".
