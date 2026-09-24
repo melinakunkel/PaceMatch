@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:samepace/screens/onboarding/onboarding_wizard_screen.dart';
+import 'package:samepace/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,7 +17,13 @@ void main() {
   testWidgets('Weiter button advances through all onboarding steps', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: OnboardingWizardScreen()));
+    // Uses the app's real theme, not Flutter's default — the theme's
+    // full-width button minimumSize has previously broken layout silently
+    // for buttons placed in a Row (see the fix on onboarding's Weiter
+    // button), a bug the default MaterialApp theme can't reproduce.
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.light, home: const OnboardingWizardScreen()),
+    );
 
     expect(find.text('Welche Sportarten machst du?'), findsOneWidget);
 
@@ -45,7 +52,9 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(390, 420));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const MaterialApp(home: OnboardingWizardScreen()));
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.light, home: const OnboardingWizardScreen()),
+    );
 
     expect(tester.takeException(), isNull);
     final weiterFinder = find.text('Weiter');

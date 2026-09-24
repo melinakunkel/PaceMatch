@@ -186,6 +186,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
                 ),
               const Spacer(),
               ElevatedButton(
+                // Theme's default minimumSize is full-width
+                // (Size.fromHeight) — inside a Row that gets unbounded
+                // incoming width and silently breaks layout, so this needs
+                // its own compact minimumSize.
+                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 52)),
                 onPressed: _saving ? null : _next,
                 child: _saving
                     ? const SizedBox(
