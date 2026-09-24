@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'browser_notification_service.dart';
@@ -14,7 +14,15 @@ class UnreadController {
   UnreadController._();
 
   static final ValueNotifier<bool> hasUnread = ValueNotifier(false);
+
+  /// Bumped on every incoming message (and on returning to the app), so an
+  /// open chat list can reload its rows — [hasUnread] alone doesn't change
+  /// when it was already true.
+  static final ValueNotifier<int> messageTick = ValueNotifier(0);
+
   static RealtimeChannel? _channel;
+  static Timer? _pollTimer;
+  static AppLifecycleListener? _lifecycle;
 
   static Future<void> refresh() async {
     final userId = SupabaseService.currentUserId;
@@ -40,11 +48,24 @@ class UnreadController {
           schema: 'public',
           table: 'messages',
           callback: (payload) {
+            messageTick.value++;
             refresh();
             _maybeNotify(payload.newRecord);
           },
         )
         .subscribe();
+    // Realtime events are lost while a mobile browser has the tab in the
+    // background, so don't rely on them alone for the dot.
+    _pollTimer ??= Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => refresh(),
+    );
+    _lifecycle ??= AppLifecycleListener(
+      onResume: () {
+        messageTick.value++;
+        refresh();
+      },
+    );
   }
 
   /// The realtime subscription above isn't filtered to my groups, so before
@@ -75,6 +96,10 @@ class UnreadController {
   }
 
   static Future<void> stopListening() async {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _lifecycle?.dispose();
+    _lifecycle = null;
     final channel = _channel;
     _channel = null;
     if (channel != null) await SupabaseService.client.removeChannel(channel);

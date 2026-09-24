@@ -41,6 +41,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
     super.initState();
     _future = _loadGroups();
     _loadRequestCount();
+    UnreadController.messageTick.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    UnreadController.messageTick.removeListener(_reload);
+    super.dispose();
   }
 
   Future<void> _loadRequestCount() async {

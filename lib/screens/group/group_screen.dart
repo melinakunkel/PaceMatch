@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
@@ -510,11 +512,41 @@ class _ChatViewState extends State<_ChatView> {
   final _scrollCtrl = ScrollController();
   String? _lastSeenMessageId;
 
+  // Created once, not in build(): every rebuild (keyboard opening, the
+  // parent's setState) would otherwise tear down the realtime subscription
+  // and start a new one, dropping messages that arrive in between.
+  late Stream<List<ChatMessage>> _messages = _messageService.streamMessages(
+    widget.groupId,
+  );
+  late final AppLifecycleListener _lifecycle;
+  Timer? _retryTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _resubscribe);
+  }
+
   @override
   void dispose() {
+    _lifecycle.dispose();
+    _retryTimer?.cancel();
     _textCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  /// Mobile browsers drop the realtime connection while the tab is in the
+  /// background, and it doesn't replay what was missed — start a fresh
+  /// subscription, which refetches the full history. The StreamBuilder
+  /// keeps showing the previous messages in the meantime.
+  void _resubscribe() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    if (!mounted) return;
+    setState(() {
+      _messages = _messageService.streamMessages(widget.groupId);
+    });
   }
 
   Future<void> _send() async {
@@ -535,8 +567,11 @@ class _ChatViewState extends State<_ChatView> {
       children: [
         Expanded(
           child: StreamBuilder<List<ChatMessage>>(
-            stream: _messageService.streamMessages(widget.groupId),
+            stream: _messages,
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                _retryTimer ??= Timer(const Duration(seconds: 3), _resubscribe);
+              }
               final messages = snapshot.data ?? [];
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());

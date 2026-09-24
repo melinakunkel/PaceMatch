@@ -118,13 +118,13 @@ class GroupService {
   }) async {
     final rows = await _client
         .from('group_members')
-        .select('last_read_at, groups(*, group_members(count))')
+        .select('last_read_at, archived, groups(*, group_members(count))')
         .eq('user_id', userId)
-        .eq('archived', archived)
         .limit(300);
 
     final groups = <SportGroup>[];
     final lastReadByGroupId = <String, DateTime?>{};
+    final archivedByGroupId = <String, bool>{};
     for (final row in rows) {
       final g = row['groups'] as Map<String, dynamic>?;
       if (g == null) continue;
@@ -132,33 +132,45 @@ class GroupService {
       final count = countRows != null && countRows.isNotEmpty
           ? (countRows.first['count'] as int? ?? 0)
           : 0;
-      final group = SportGroup.fromMap({
-        ...g,
-        'member_count': count,
-        'archived': archived,
-      });
+      final group = SportGroup.fromMap({...g, 'member_count': count});
       groups.add(group);
       lastReadByGroupId[group.id] = row['last_read_at'] == null
           ? null
           : DateTime.parse(row['last_read_at'] as String);
+      archivedByGroupId[group.id] = row['archived'] as bool? ?? false;
     }
     if (groups.isEmpty) return groups;
 
     final latestMessageByGroupId = await _latestMessageTimes(
       groups.map((g) => g.id).toList(),
     );
-    final withUnread = groups.map((g) {
+    final withUnread = <SportGroup>[];
+    final resurfaced = <String>[];
+    for (final g in groups) {
       final lastMessageAt = latestMessageByGroupId[g.id];
       final lastReadAt = lastReadByGroupId[g.id];
       final unread =
           lastMessageAt != null &&
           (lastReadAt == null || lastMessageAt.isAfter(lastReadAt));
-      return g.copyWith(
-        hasUnread: unread,
-        archived: archived,
-        lastMessageAt: lastMessageAt,
+      // A new message pulls an archived chat back into the active list —
+      // otherwise it would arrive with no dot and nowhere visible.
+      var isArchived = archivedByGroupId[g.id] ?? false;
+      if (isArchived && unread) {
+        resurfaced.add(g.id);
+        isArchived = false;
+      }
+      if (isArchived != archived) continue;
+      withUnread.add(
+        g.copyWith(
+          hasUnread: unread,
+          archived: isArchived,
+          lastMessageAt: lastMessageAt,
+        ),
       );
-    }).toList();
+    }
+    for (final id in resurfaced) {
+      await setArchived(groupId: id, userId: userId, archived: false);
+    }
 
     withUnread.sort(
       (a, b) => (b.meetingTime ?? DateTime(2100)).compareTo(
