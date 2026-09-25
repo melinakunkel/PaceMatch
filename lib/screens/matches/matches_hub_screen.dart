@@ -106,27 +106,46 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       circleId: CircleController.active.value?.id,
     );
     final activityIds = activities.map((a) => a.id).toSet();
-    // Candidates for all activities and the buddies load at the same time.
-    final candidatesFuture = _matchService.findMatchesForAll(activities);
+    // Everyone who fits each sport time (liked or not), who I've liked, and
+    // my buddies — all loading at the same time.
+    final fitsFuture = _matchService.findMatchesForAll(
+      activities,
+      includeLiked: true,
+    );
+    final likedFuture = _matchService.likedUserIds(userId);
     final buddies = await _likeService.getBuddies();
     final buddyProfiles = await _profileService.getProfilesByIds(
       buddies.map((b) => b.userId).toList(),
     );
-    final candidatesByActivity = await candidatesFuture;
+    final fitsByActivity = await fitsFuture;
+    final liked = await likedFuture;
+    // New suggestions: fits, but not liked yet.
+    final candidatesByActivity = {
+      for (final e in fitsByActivity.entries)
+        e.key: e.value.where((c) => !liked.contains(c.profile.id)).toList(),
+    };
     final profilesById = {for (final p in buddyProfiles) p.id: p};
     final buddiesByActivity = <String, List<Profile>>{};
     final unassignedBuddies = <Profile>[];
     for (final b in buddies) {
       final profile = profilesById[b.userId];
       if (profile == null) continue;
-      // A buddy's like might not carry a usable activity_id (missing, or
-      // pointing at an activity that's since been deleted) — still a real
-      // mutual match, so it goes in the unassigned bucket instead of
-      // vanishing.
-      if (b.activityId != null && activityIds.contains(b.activityId)) {
-        (buddiesByActivity[b.activityId!] ??= []).add(profile);
-      } else {
+      // A buddy shows at every sport time of mine they fit — plus the one
+      // the like was made for. A like without a usable activity_id (missing
+      // or since deleted) and no fitting time is still a real mutual match,
+      // so it goes in the unassigned bucket instead of vanishing.
+      final ids = {
+        if (b.activityId != null && activityIds.contains(b.activityId))
+          b.activityId!,
+        for (final e in fitsByActivity.entries)
+          if (e.value.any((c) => c.profile.id == b.userId)) e.key,
+      };
+      if (ids.isEmpty) {
         unassignedBuddies.add(profile);
+      } else {
+        for (final id in ids) {
+          (buddiesByActivity[id] ??= []).add(profile);
+        }
       }
     }
 

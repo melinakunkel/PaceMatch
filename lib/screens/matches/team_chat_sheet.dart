@@ -6,6 +6,7 @@ import '../../models/activity.dart';
 import '../../models/profile.dart';
 import '../../services/group_service.dart';
 import '../../services/like_service.dart';
+import '../../services/match_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
@@ -35,11 +36,19 @@ class _TeamChatSheetState extends State<TeamChatSheet> {
 
   Future<void> _load() async {
     try {
-      final likes = LikeService();
-      final liked = await likes.likedUserIdsForActivity(widget.activity.id);
-      final buddyIds = (await likes.getBuddies())
+      // Buddys liked for this sport time, or who simply fit it.
+      final fits =
+          (await MatchService().findMatchesForAll([
+            widget.activity,
+          ], includeLiked: true))[widget.activity.id] ??
+          [];
+      final fitIds = fits.map((c) => c.profile.id).toSet();
+      final buddyIds = (await LikeService().getBuddies())
+          .where(
+            (b) =>
+                b.activityId == widget.activity.id || fitIds.contains(b.userId),
+          )
           .map((b) => b.userId)
-          .where(liked.contains)
           .toSet();
       final profiles = <Profile>[];
       for (final id in buddyIds) {

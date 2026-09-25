@@ -22,9 +22,15 @@ class MatchService {
   /// [findMatches] for several of my activities at once (activity id →
   /// candidates) — one query per sport instead of five per activity, all
   /// in parallel. The Buddys tab used to take 10–20 s doing it one by one.
+  ///
+  /// People I've already liked (for any of my sport times) are left out —
+  /// likes are per person, so liking again elsewhere would only replay the
+  /// "It's a Match". [includeLiked] keeps them, for the Buddys tab to see
+  /// which of my sport times a buddy fits.
   Future<Map<String, List<MatchCandidate>>> findMatchesForAll(
-    List<Activity> mine,
-  ) async {
+    List<Activity> mine, {
+    bool includeLiked = false,
+  }) async {
     if (mine.isEmpty) return {};
     final myUserId = mine.first.userId;
 
@@ -72,20 +78,19 @@ class MatchService {
 
     final results = await Future.wait([
       _eligibleProfiles(myUserId, allUserIds),
-      _likedByActivity(myUserId),
+      includeLiked ? Future.value(<String>{}) : likedUserIds(myUserId),
     ]);
     final eligible = results[0] as Map<String, Profile>;
-    // Someone already liked (for this activity) shouldn't be offered again
-    // as a suggestion — whether or not it's mutual yet, that decision is
-    // already made.
-    final liked = results[1] as Map<String, Set<String>>;
+    // Someone already liked shouldn't be offered again as a suggestion —
+    // whether or not it's mutual yet, that decision is already made.
+    final liked = results[1] as Set<String>;
 
     return {
       for (final myActivity in mine)
         myActivity.id: [
           for (final entry in scoredByActivity[myActivity.id]!)
             if (eligible[entry.key.userId] != null &&
-                !(liked[myActivity.id]?.contains(entry.key.userId) ?? false))
+                !liked.contains(entry.key.userId))
               MatchCandidate(
                 profile: eligible[entry.key.userId]!,
                 theirActivity: entry.key,
@@ -96,19 +101,13 @@ class MatchService {
     };
   }
 
-  /// Who I've liked, per my activity — one query for all of them.
-  Future<Map<String, Set<String>>> _likedByActivity(String myUserId) async {
+  /// Everyone I've liked, for any sport time.
+  Future<Set<String>> likedUserIds(String myUserId) async {
     final rows = await _client
         .from('likes')
-        .select('to_user, activity_id')
+        .select('to_user')
         .eq('from_user', myUserId);
-    final result = <String, Set<String>>{};
-    for (final row in rows) {
-      final activityId = row['activity_id'] as String?;
-      if (activityId == null) continue;
-      (result[activityId] ??= {}).add(row['to_user'] as String);
-    }
-    return result;
+    return {for (final row in rows) row['to_user'] as String};
   }
 
   /// Almost-matches for [myActivity] — shown instead of an empty list while
