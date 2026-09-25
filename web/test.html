@@ -111,10 +111,6 @@
     }
     textarea { min-height: 70px; resize: vertical; }
     label { display: block; font-weight: 600; margin: 12px 0 6px; font-size: 15px; }
-    .tip {
-      background: var(--accent-light); border-radius: 12px; padding: 10px 12px;
-      font-size: 14px; margin: 8px 0 0;
-    }
     .actions { display: grid; gap: 10px; margin-top: 12px; }
     .btn {
       display: block; text-align: center; text-decoration: none;
@@ -122,7 +118,6 @@
       border: none; border-radius: 14px; padding: 14px; cursor: pointer;
       background: var(--primary); color: var(--bg);
     }
-    .btn.secondary { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
     .toast {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
       background: var(--primary); color: var(--bg);
@@ -197,15 +192,11 @@
 
   <h2>Fertig? Ergebnis senden</h2>
   <section class="card">
-    <p class="muted">Ein Tipp genügt, dann ist dein Ergebnis bei uns. Screenshots von Fehlern kannst du zusätzlich per WhatsApp oder E-Mail schicken.</p>
+    <p class="muted">Ein Tipp genügt, dann ist dein Ergebnis bei uns.</p>
     <div class="actions">
       <button class="btn" id="sendApp" type="button">🚀 An SAMEPACE senden</button>
       <p class="sent" id="sentNote" hidden>✅ Angekommen, danke! Du kannst die Seite jetzt schließen.</p>
-      <a class="btn secondary" id="sendMail" href="#">📧 Per E-Mail senden</a>
-      <a class="btn secondary" id="sendWhatsApp" href="#" target="_blank" rel="noopener">💬 Per WhatsApp teilen</a>
-      <button class="btn secondary" id="copy" type="button">📋 Text kopieren</button>
     </div>
-    <p class="tip">Du kannst den kopierten Text auch in der App einfügen: <strong>Profil → ⚙️ → „Feedback geben“</strong>.</p>
     <button class="reset" id="reset" type="button">Alles zurücksetzen</button>
   </section>
 </main>
@@ -388,7 +379,7 @@
     } catch (e) {
       sendApp.disabled = false;
       sendApp.textContent = '🚀 An SAMEPACE senden';
-      toast('Senden ging nicht – bitte per E-Mail schicken.');
+      toast('Senden ging nicht – bitte in ein paar Minuten nochmal versuchen.');
     }
   });
   if (state.sentAt) {
@@ -396,25 +387,6 @@
     sendApp.textContent = '🚀 Nochmal senden (mit Änderungen)';
   }
 
-  document.getElementById('sendMail').addEventListener('click', (e) => {
-    e.preventDefault();
-    const subject = `SAMEPACE Testprotokoll – ${state.name || 'Tester'}`;
-    location.href = `mailto:samepace@outlook.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(report())}`;
-  });
-  document.getElementById('sendWhatsApp').addEventListener('click', (e) => {
-    e.currentTarget.href = `https://wa.me/?text=${encodeURIComponent(report())}`;
-  });
-  document.getElementById('copy').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(report());
-      toast('Kopiert! Jetzt einfach einfügen.');
-    } catch (e) {
-      const ta = document.createElement('textarea');
-      ta.value = report(); document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast('Kopiert!'); } catch (_) { toast('Kopieren ging nicht – bitte E-Mail nutzen.'); }
-      ta.remove();
-    }
-  });
   document.getElementById('reset').addEventListener('click', () => {
     if (!confirm('Wirklich alle Antworten löschen?')) return;
     try { localStorage.removeItem(KEY); } catch (e) {}
