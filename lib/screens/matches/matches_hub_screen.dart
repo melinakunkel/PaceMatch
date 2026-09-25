@@ -106,10 +106,13 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       circleId: CircleController.active.value?.id,
     );
     final activityIds = activities.map((a) => a.id).toSet();
+    // Candidates for all activities and the buddies load at the same time.
+    final candidatesFuture = _matchService.findMatchesForAll(activities);
     final buddies = await _likeService.getBuddies();
     final buddyProfiles = await _profileService.getProfilesByIds(
       buddies.map((b) => b.userId).toList(),
     );
+    final candidatesByActivity = await candidatesFuture;
     final profilesById = {for (final p in buddyProfiles) p.id: p};
     final buddiesByActivity = <String, List<Profile>>{};
     final unassignedBuddies = <Profile>[];
@@ -127,25 +130,27 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       }
     }
 
-    final results = <_ActivityGroup>[];
-    for (final a in activities) {
-      final candidates = await _matchService.findMatches(a);
-      final activityBuddies = buddiesByActivity[a.id] ?? [];
-      if (candidates.isEmpty && activityBuddies.isEmpty) continue;
-      // A group chat only makes sense with at least two buddies — with one,
-      // it's simply the private chat.
-      final groupId = activityBuddies.length < 2
-          ? null
-          : await _groupService.findGroupIdForActivity(a.id);
-      results.add(
-        _ActivityGroup(
+    final shown = activities.where(
+      (a) =>
+          (candidatesByActivity[a.id]?.isNotEmpty ?? false) ||
+          (buddiesByActivity[a.id]?.isNotEmpty ?? false),
+    );
+    final results = await Future.wait(
+      shown.map((a) async {
+        final activityBuddies = buddiesByActivity[a.id] ?? [];
+        // A group chat only makes sense with at least two buddies — with
+        // one, it's simply the private chat.
+        final groupId = activityBuddies.length < 2
+            ? null
+            : await _groupService.findGroupIdForActivity(a.id);
+        return _ActivityGroup(
           activity: a,
-          candidateCount: candidates.length,
+          candidateCount: candidatesByActivity[a.id]?.length ?? 0,
           buddies: activityBuddies,
           groupId: groupId,
-        ),
-      );
-    }
+        );
+      }),
+    );
     results.sort(
       (x, y) => x.activity.nextOccurrence.compareTo(y.activity.nextOccurrence),
     );
