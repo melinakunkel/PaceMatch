@@ -135,6 +135,16 @@ const _de = <String, String>{
       'Ein Like zurück, und ihr seid sofort Sportbuddys. Tippe auf eine '
       'Person, um das Profil zu sehen.',
   'likes.likeBack': 'Auch liken',
+  'likes.pendingCard': 'Du wartest auf {count} Antworten',
+  'likes.pendingCardSubtitle':
+      'Deine Likes ohne Antwort – hier kannst du sie zurücknehmen.',
+  'likes.pendingTitle': 'Du wartest auf Antwort',
+  'likes.pendingSubtitle':
+      'Diese Leute hast du geliked, sie dich (noch) nicht. Sie werden dir '
+      'nicht mehr vorgeschlagen. Nimmst du ein Like zurück, tauchen sie '
+      'wieder als Vorschlag auf.',
+  'likes.pendingEmpty': 'Keine offenen Likes mehr.',
+  'likes.undo': 'Zurücknehmen',
   'likes.matchTitle': "It's a Match! 🎉",
   'likes.matchBody': 'Du und {name} seid jetzt Sportbuddys.',
   'editProfile.strava': 'Strava-Profil (optional)',
@@ -1026,6 +1036,15 @@ const _en = <String, String>{
       'One like back and you\'re Sportbuddys right away. Tap someone to see '
       'their profile.',
   'likes.likeBack': 'Like back',
+  'likes.pendingCard': 'Waiting for {count} answers',
+  'likes.pendingCardSubtitle': 'Your likes without an answer – undo them here.',
+  'likes.pendingTitle': 'Waiting for an answer',
+  'likes.pendingSubtitle':
+      'You liked these people, they haven\'t liked you (yet). They\'re no '
+      'longer suggested to you. Undo a like and they show up as a '
+      'suggestion again.',
+  'likes.pendingEmpty': 'No open likes left.',
+  'likes.undo': 'Undo',
   'likes.matchTitle': "It's a Match! 🎉",
   'likes.matchBody': 'You and {name} are Sportbuddys now.',
   'editProfile.strava': 'Strava profile (optional)',

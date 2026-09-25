@@ -56,12 +56,16 @@ class _HubData {
     required this.myActivities,
     this.week = const [],
     this.likesReceived = const [],
+    this.pendingSent = const [],
   });
   final List<_ActivityGroup> groups;
   final List<Activity> myActivities;
 
   /// "Wer hat dich geliked" — waiting for my like back.
   final List<PendingLike> likesReceived;
+
+  /// My likes still waiting for an answer (with my sport time).
+  final List<PendingLike> pendingSent;
 
   /// The next 7 days: sport times with buddies, and meetups set in chats.
   final List<_WeekItem> week;
@@ -136,6 +140,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     );
     final activityIds = activities.map((a) => a.id).toSet();
     final likesFuture = _loadLikesReceived();
+    final pendingFuture = _loadPendingSent(activities);
     final chatsFuture = _groupService
         .getMyGroups(userId)
         .catchError((Object _) => <SportGroup>[]);
@@ -259,7 +264,39 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       myActivities: activities,
       week: week,
       likesReceived: await likesFuture,
+      pendingSent: await pendingFuture,
     );
+  }
+
+  Future<List<PendingLike>> _loadPendingSent(List<Activity> mine) async {
+    try {
+      final likes = await _likeService.getPendingSent();
+      if (likes.isEmpty) return [];
+      final profiles = await _profileService.getProfilesByIds(
+        likes.map((l) => l.userId).toList(),
+      );
+      final profileById = {for (final p in profiles) p.id: p};
+      final mineById = {for (final a in mine) a.id: a};
+      return [
+        for (final l in likes)
+          if (profileById[l.userId] != null)
+            PendingLike(
+              profile: profileById[l.userId]!,
+              theirActivity: mineById[l.activityId],
+            ),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _openPendingSent(_HubData data) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => PendingSentSheet(likes: data.pendingSent),
+    );
+    if (changed == true && mounted) _refresh();
   }
 
   Future<List<PendingLike>> _loadLikesReceived() async {
@@ -495,9 +532,11 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
           final groups = snapshot.data?.groups ?? [];
           final unassignedBuddies = snapshot.data?.unassignedBuddies ?? [];
           final likesReceived = snapshot.data?.likesReceived ?? [];
+          final pendingSent = snapshot.data?.pendingSent ?? [];
           if (groups.isEmpty &&
               unassignedBuddies.isEmpty &&
-              likesReceived.isEmpty) {
+              likesReceived.isEmpty &&
+              pendingSent.isEmpty) {
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
@@ -532,6 +571,28 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 if (likesReceived.isNotEmpty) _buildLikesCard(snapshot.data!),
+                if (pendingSent.isNotEmpty)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.secondaryLight,
+                        child: Icon(
+                          Icons.hourglass_top,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      title: Text(
+                        t('likes.pendingCard', {
+                          'count': '${pendingSent.length}',
+                        }),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(t('likes.pendingCardSubtitle')),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _openPendingSent(snapshot.data!),
+                    ),
+                  ),
                 if (snapshot.data!.week.isNotEmpty)
                   _buildWeekCard(snapshot.data!.week),
                 if (unassignedBuddies.isNotEmpty)

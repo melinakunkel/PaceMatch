@@ -147,3 +147,109 @@ class _LikesReceivedSheetState extends State<LikesReceivedSheet> {
     );
   }
 }
+
+/// "Du wartest auf Antwort": my likes that aren't mutual yet — hidden from
+/// suggestions, so they can be taken back here (the person then shows up
+/// as a suggestion again).
+class PendingSentSheet extends StatefulWidget {
+  const PendingSentSheet({super.key, required this.likes});
+
+  /// [PendingLike.theirActivity] here is *my* sport time the like was for.
+  final List<PendingLike> likes;
+
+  @override
+  State<PendingSentSheet> createState() => _PendingSentSheetState();
+}
+
+class _PendingSentSheetState extends State<PendingSentSheet> {
+  late final List<PendingLike> _likes = [...widget.likes];
+  String? _busyId;
+  bool _changed = false;
+
+  Future<void> _undo(PendingLike like) async {
+    setState(() => _busyId = like.profile.id);
+    try {
+      await LikeService().unlike(like.profile.id);
+      if (!mounted) return;
+      setState(() {
+        _likes.remove(like);
+        _busyId = null;
+        _changed = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busyId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.of(context).pop(_changed);
+      },
+      child: SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            children: [
+              Text(
+                t('likes.pendingTitle'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t('likes.pendingSubtitle'),
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              if (_likes.isEmpty)
+                Text(
+                  t('likes.pendingEmpty'),
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              for (final like in _likes)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    onTap: () => context.push('/profile/${like.profile.id}'),
+                    title: Text(like.profile.firstName),
+                    subtitle: like.theirActivity == null
+                        ? null
+                        : Text(
+                            '${like.theirActivity!.sport.label} · '
+                            '${like.theirActivity!.isRecurring ? like.theirActivity!.dayShortLabel : like.theirActivity!.specificDateLabel} · '
+                            '${like.theirActivity!.timeRangeLabel}',
+                          ),
+                    trailing: _busyId == like.profile.id
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : TextButton(
+                            onPressed: _busyId == null
+                                ? () => _undo(like)
+                                : null,
+                            child: Text(t('likes.undo')),
+                          ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -56,6 +56,29 @@ class LikeService {
     }
   }
 
+  /// People I've liked who haven't liked me back (yet), newest first —
+  /// they're hidden from suggestions, so this is where to see (and undo)
+  /// them.
+  Future<List<ReceivedLike>> getPendingSent() async {
+    final myId = SupabaseService.currentUserId;
+    if (myId == null) return [];
+    final rows = await _client
+        .from('likes')
+        .select('to_user, activity_id, created_at')
+        .eq('from_user', myId)
+        .order('created_at', ascending: false);
+    final buddyIds = (await getBuddies()).map((b) => b.userId).toSet();
+    return [
+      for (final row in rows as List)
+        if (!buddyIds.contains(row['to_user']))
+          ReceivedLike(
+            userId: row['to_user'] as String,
+            likedAt: DateTime.parse(row['created_at'] as String),
+            activityId: row['activity_id'] as String?,
+          ),
+    ];
+  }
+
   /// Everyone the current user has mutually liked — a "Sportbuddy"
   /// connection — newest first. A mutual pair "connects" at whichever of the
   /// two likes came second.
