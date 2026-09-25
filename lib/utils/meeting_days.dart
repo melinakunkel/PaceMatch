@@ -46,3 +46,60 @@ bool canMeetOnSameDay(Activity mine, Activity other, {DateTime? now}) {
 
 DateTime? _dateOnly(DateTime? d) =>
     d == null ? null : DateTime(d.year, d.month, d.day);
+
+/// Other people's sport times that *almost* fit [mine] — for when there's
+/// no real match yet, so the list isn't simply empty.
+class NearMissSplit {
+  const NearMissSplit({required this.otherDays, required this.otherTimes});
+
+  /// Same sport on another weekday (weekday → their activities). Only for
+  /// a weekly [mine] — "add this day too" is what's offered for these.
+  final Map<int, List<Activity>> otherDays;
+
+  /// Same day, but the times don't overlap.
+  final List<Activity> otherTimes;
+
+  bool get isEmpty => otherDays.isEmpty && otherTimes.isEmpty;
+}
+
+NearMissSplit splitNearMisses(
+  Activity mine,
+  List<Activity> others, {
+  DateTime? now,
+}) {
+  final current = now ?? DateTime.now();
+  final today = DateTime(current.year, current.month, current.day);
+  final otherDays = <int, List<Activity>>{};
+  final otherTimes = <Activity>[];
+  for (final other in others) {
+    if (other.userId == mine.userId) continue;
+    if (other.dayOfWeek == mine.dayOfWeek) {
+      if (canMeetOnSameDay(mine, other, now: current) &&
+          !_timesOverlap(mine, other)) {
+        otherTimes.add(other);
+      }
+      continue;
+    }
+    if (!mine.isRecurring) continue;
+    final date = _dateOnly(other.specificDate);
+    if (date != null && date.isBefore(today)) continue;
+    otherDays.putIfAbsent(other.dayOfWeek, () => []).add(other);
+  }
+  otherTimes.sort(
+    (a, b) => _gapMinutes(mine, a).compareTo(_gapMinutes(mine, b)),
+  );
+  return NearMissSplit(otherDays: otherDays, otherTimes: otherTimes);
+}
+
+int _minutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+bool _timesOverlap(Activity a, Activity b) =>
+    _minutes(a.startTime) < _minutes(b.endTime) &&
+    _minutes(b.startTime) < _minutes(a.endTime);
+
+/// How far apart two non-overlapping time windows are.
+int _gapMinutes(Activity mine, Activity other) {
+  final gapAfter = _minutes(other.startTime) - _minutes(mine.endTime);
+  final gapBefore = _minutes(mine.startTime) - _minutes(other.endTime);
+  return gapAfter > 0 ? gapAfter : gapBefore;
+}

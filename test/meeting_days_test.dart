@@ -6,12 +6,13 @@ import 'package:samepace/utils/meeting_days.dart';
 
 Activity _activity({
   required int day,
+  String userId = 'u',
   DateTime? date,
   TimeOfDay start = const TimeOfDay(hour: 18, minute: 0),
   TimeOfDay end = const TimeOfDay(hour: 19, minute: 0),
 }) => Activity(
   id: 'a',
-  userId: 'u',
+  userId: userId,
   sport: SportType.laufen,
   dayOfWeek: day,
   startTime: start,
@@ -65,5 +66,39 @@ void main() {
   test('a past one-off is no longer a match', () {
     final past = _activity(day: 3, date: DateTime(2026, 9, 16));
     expect(canMeetOnSameDay(_activity(day: 3), past, now: now), isFalse);
+  });
+
+  test('near misses: other weekdays and non-overlapping times', () {
+    final mine = _activity(day: 3, userId: 'me');
+    final split = splitNearMisses(mine, [
+      _activity(day: 6, userId: 'sat1'),
+      _activity(day: 6, userId: 'sat2'),
+      _activity(day: 3, userId: 'overlap'),
+      _activity(
+        day: 3,
+        userId: 'late',
+        start: const TimeOfDay(hour: 20, minute: 0),
+        end: const TimeOfDay(hour: 21, minute: 0),
+      ),
+      _activity(
+        day: 3,
+        userId: 'early',
+        start: const TimeOfDay(hour: 16, minute: 30),
+        end: const TimeOfDay(hour: 17, minute: 30),
+      ),
+      _activity(day: 5, userId: 'past', date: DateTime(2026, 9, 18)),
+    ], now: now);
+    expect(split.otherDays.keys, [6]);
+    expect(split.otherDays[6]!.map((a) => a.userId), ['sat1', 'sat2']);
+    // Real matches aren't near misses; closest time first.
+    expect(split.otherTimes.map((a) => a.userId), ['early', 'late']);
+  });
+
+  test('a one-off only gets other-time suggestions, not other days', () {
+    final mine = _activity(day: 3, userId: 'me', date: DateTime(2026, 9, 23));
+    final split = splitNearMisses(mine, [
+      _activity(day: 6, userId: 'sat'),
+    ], now: now);
+    expect(split.isEmpty, isTrue);
   });
 }

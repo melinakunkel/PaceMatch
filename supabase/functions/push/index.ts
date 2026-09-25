@@ -274,6 +274,26 @@ async function ensureKeys(cfg: PushConfig): Promise<VapidKeys> {
   };
 }
 
+// [German, English] — same names as in the app.
+const SPORTS: Record<string, [string, string]> = {
+  laufen: ["Laufen", "running"],
+  radfahren: ["Radfahren", "cycling"],
+  schwimmen: ["Schwimmen", "swimming"],
+  wandern: ["Wandern", "hiking"],
+  tennis: ["Tennis", "tennis"],
+  padel: ["Padeltennis", "padel"],
+  schwangerschaftssport: ["Schwangerschaftssport", "pregnancy fitness"],
+  hundeGassi: ["Hunde spazieren", "dog walking"],
+  kinderSpielen: ["Kinder spielen", "kids playdate"],
+  bouldern: ["Bouldern", "bouldering"],
+  badminton: ["Badminton", "badminton"],
+  tischtennis: ["Tischtennis", "table tennis"],
+  beachvolleyball: ["Beachvolleyball", "beach volleyball"],
+  sonstige: ["deine Sportzeit", "your sport time"],
+};
+const DAYS_DE = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const DAYS_EN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 const firstName = (full: string | null | undefined) =>
   (full ?? "").trim().split(/\s+/)[0] || "SAMEPACE";
 
@@ -324,6 +344,36 @@ async function noticeFor(event: any): Promise<Notice | null> {
           : { title: "Neuer Sportbuddy! 🎉", body: `${name} und du wollt zusammen trainieren.` },
       url: "#/matches",
       tag: `match-${event.other_user_id}`,
+    };
+  }
+  if (event.type === "new_match") {
+    const [mine] = await db(
+      `activities?id=eq.${event.activity_id}&select=sport,day_of_week,specific_date`,
+    );
+    const [theirs] = await db(
+      `activities?id=eq.${event.other_activity_id}&select=user_id,start_time,end_time`,
+    );
+    if (!mine || !theirs) return null;
+    const [other] = await db(`profiles?id=eq.${theirs.user_id}&select=full_name`);
+    const name = firstName(other?.full_name);
+    const time = `${theirs.start_time.slice(0, 5)}–${theirs.end_time.slice(0, 5)}`;
+    return {
+      userIds: [event.user_id],
+      build: (lang) => {
+        const sport = (SPORTS[mine.sport] ?? SPORTS.sonstige)[lang === "en" ? 1 : 0];
+        const day = (lang === "en" ? DAYS_EN : DAYS_DE)[mine.day_of_week - 1];
+        return lang === "en"
+          ? {
+            title: `🎉 New match for ${sport} on ${day}`,
+            body: `${name} is in too, ${time}. Take a look!`,
+          }
+          : {
+            title: `🎉 Neuer Match für ${sport} am ${day}`,
+            body: `${name} ist auch dabei, ${time}. Schau vorbei!`,
+          };
+      },
+      url: `#/matches/${event.activity_id}`,
+      tag: `new-match-${event.activity_id}`,
     };
   }
   if (event.type === "chat_request") {

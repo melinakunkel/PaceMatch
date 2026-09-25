@@ -93,6 +93,33 @@ class ActivityService {
   static String _formatDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  /// A weekly copy of [a] on [dayOfWeek] — "add Saturday too" from the
+  /// near-miss suggestions.
+  Future<Activity> copyToDay(Activity a, int dayOfWeek) => createActivity(
+    userId: a.userId,
+    sport: a.sport,
+    dayOfWeek: dayOfWeek,
+    startTime: a.startTime,
+    endTime: a.endTime,
+    locationName: a.locationName,
+    latitude: a.latitude,
+    longitude: a.longitude,
+    radiusKm: a.radiusKm,
+    distanceMinKm: a.distanceMinKm,
+    distanceMaxKm: a.distanceMaxKm,
+    paceMin: a.paceMin,
+    paceMax: a.paceMax,
+    venueStatus: a.venueStatus,
+    level: a.level,
+    bikeType: a.bikeType,
+    runType: a.runType,
+    hasDog: a.hasDog,
+    childAge: a.childAge,
+    childGender: a.childGender,
+    circleId: a.circleId,
+    discoverVisibility: a.discoverVisibility,
+  );
+
   Future<Activity> createActivity({
     required String userId,
     required SportType sport,

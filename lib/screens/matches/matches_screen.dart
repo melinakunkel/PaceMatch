@@ -21,6 +21,7 @@ import '../../utils/match_scoring.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
+import 'no_matches_yet.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key, required this.activityId});
@@ -328,6 +329,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Widget _buildListBody() {
     final activity = _activity!;
+    if (_candidates.isEmpty) return _buildNoMatchesYet(activity);
     final pending = _pending;
     final filteredOutEverything =
         pending.isEmpty && _pendingUnfiltered.isNotEmpty;
@@ -444,6 +446,22 @@ class _MatchesScreenState extends State<MatchesScreen> {
     );
   }
 
+  Widget _buildNoMatchesYet(Activity activity) {
+    return Column(
+      children: [
+        _buildHeader(activity),
+        const SizedBox(height: 8),
+        Expanded(
+          child: NoMatchesYet(
+            activity: activity,
+            onDayAdded: (created) =>
+                context.pushReplacement('/matches/${created.id}'),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeader(Activity activity) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
@@ -467,6 +485,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
 
   Widget _buildSwipeBody() {
     final activity = _activity!;
+    if (_candidates.isEmpty) return _buildNoMatchesYet(activity);
     final swipeable = _swipeable;
     final filteredOutEverything =
         _pending.isEmpty && _pendingUnfiltered.isNotEmpty;

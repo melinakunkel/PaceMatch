@@ -435,6 +435,28 @@ const _de = <String, String>{
   'matches.swipePrompt': 'Wisch durch, wer zu dir passt.',
   'matches.listPrompt': 'Alle, die noch zu dir passen.',
   'matches.allDoneForToday': 'Das waren alle für heute.',
+  'noMatches.title': 'Noch niemand zur gleichen Zeit',
+  'noMatches.pushOn':
+      'Sobald jemand dazukommt, der passt, bekommst du eine Push-Nachricht.',
+  'noMatches.pushOff':
+      'Schalte Push ein, dann sagen wir dir Bescheid, sobald jemand passt.',
+  'noMatches.noPush':
+      'Neue Leute kommen laufend dazu – schau bald wieder vorbei.',
+  'noMatches.enablePush': 'Push einschalten',
+  'noMatches.otherDaysTitle': 'Fast passend: an anderen Tagen',
+  'noMatches.peopleOnDay': '{day}: {count} in deiner Nähe',
+  'noMatches.addDay': '+ {day}',
+  'noMatches.dayAdded': '{day} hinzugefügt – hier sind deine Leute.',
+  'noMatches.otherTimesTitle': 'Fast passend: {day} zu anderer Zeit',
+  'noMatches.eventsTitle': 'Events & Treffs in deiner Stadt',
+  'noMatches.allEvents': 'Alle in Entdecken',
+  'noMatches.inviteTitle': 'Kennst du jemanden, der mitmachen würde?',
+  'noMatches.inviteBody':
+      'Je mehr Leute dabei sind, desto schneller findest du Sportbuddys.',
+  'noMatches.inviteButton': 'Per WhatsApp einladen',
+  'noMatches.inviteMessage':
+      'Hey! Ich suche über SAMEPACE Leute für {sport} am {day}. Magst du '
+      'mitmachen? {url}',
   'matches.emptyHint': 'Sobald jemand eine ähnliche Sportzeit einträgt, erscheint er oder sie hier.',
   'matches.noMoreSuggestions':
       'Keine weiteren Vorschläge — schau später nochmal vorbei.',
@@ -1225,6 +1247,27 @@ const _en = <String, String>{
   'matches.swipePrompt': 'Swipe through who matches you.',
   'matches.listPrompt': 'Everyone who still matches you.',
   'matches.allDoneForToday': 'That was everyone for today.',
+  'noMatches.title': 'Nobody at the same time yet',
+  'noMatches.pushOn':
+      'As soon as someone who fits joins, you\'ll get a push notification.',
+  'noMatches.pushOff':
+      'Turn on push and we\'ll let you know as soon as someone fits.',
+  'noMatches.noPush': 'New people join all the time – check back soon.',
+  'noMatches.enablePush': 'Turn on push',
+  'noMatches.otherDaysTitle': 'Almost: on other days',
+  'noMatches.peopleOnDay': '{day}: {count} near you',
+  'noMatches.addDay': '+ {day}',
+  'noMatches.dayAdded': '{day} added – here are your people.',
+  'noMatches.otherTimesTitle': 'Almost: {day} at another time',
+  'noMatches.eventsTitle': 'Events & meetups in your city',
+  'noMatches.allEvents': 'All in Discover',
+  'noMatches.inviteTitle': 'Know someone who\'d join?',
+  'noMatches.inviteBody':
+      'The more people join, the faster you find Sportbuddys.',
+  'noMatches.inviteButton': 'Invite via WhatsApp',
+  'noMatches.inviteMessage':
+      'Hey! I\'m looking for people for {sport} on {day} on SAMEPACE. Want '
+      'to join? {url}',
   'matches.emptyHint':
       'As soon as someone adds a similar sport time, they\'ll show up here.',
   'matches.noMoreSuggestions': 'No more suggestions — check back later.',
