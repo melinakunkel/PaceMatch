@@ -16,7 +16,9 @@ import '../legal/faq_screen.dart';
 import '../legal/imprint_screen.dart';
 import '../legal/privacy_policy_screen.dart';
 import '../tutorial/tutorial_screen.dart';
+import 'admin_screen.dart';
 import 'blocked_users_screen.dart';
+import 'feedback_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,12 +31,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _profileService = ProfileService();
   bool? _autoArchive;
   bool? _browserNotifications;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     _profileService.getProfile(SupabaseService.currentUserId!).then((p) {
-      if (mounted) setState(() => _autoArchive = p.autoArchiveInactiveChats);
+      if (mounted) {
+        setState(() {
+          _autoArchive = p.autoArchiveInactiveChats;
+          _isAdmin = p.isAdmin;
+        });
+      }
     });
     BrowserNotificationService.isEnabled().then((v) {
       if (mounted) setState(() => _browserNotifications = v);
@@ -66,6 +74,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _profileService.updateProfile(
       profile.copyWith(autoArchiveInactiveChats: value),
     );
+  }
+
+  Future<void> _openFeedback() async {
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const FeedbackSheet(),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('feedback.thanks'))));
+    }
   }
 
   Future<void> _openMail(String subject) async {
@@ -437,7 +457,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: Text(t('settings.feedback')),
                         subtitle: Text(t('settings.feedbackSubtitle')),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => _openMail('Feedback'),
+                        onTap: _openFeedback,
                       ),
                       const Divider(height: 1),
                       ListTile(
@@ -450,6 +470,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => _openMail('Kontakt'),
                       ),
+                      if (_isAdmin) ...[
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: Icon(
+                            Icons.admin_panel_settings_outlined,
+                            color: AppColors.primary,
+                          ),
+                          title: Text(t('admin.title')),
+                          subtitle: Text(t('admin.subtitle')),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AdminScreen(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

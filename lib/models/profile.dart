@@ -30,6 +30,9 @@ class Profile {
   /// against this account — see handle_new_report() in the DB.
   final bool isSuspended;
 
+  /// The app's operator — sees the admin view (feedback, reports).
+  final bool isAdmin;
+
   /// Set when the owner paused their own account (hidden from
   /// matching/discovery, same as [isSuspended], but voluntary and
   /// reversible) — cleared automatically the next time they log in.
@@ -68,6 +71,7 @@ class Profile {
     this.ageRangeMax,
     this.isVerified = false,
     this.isSuspended = false,
+    this.isAdmin = false,
     this.pausedAt,
     this.interests = const [],
     this.languages = const [],
@@ -91,6 +95,7 @@ class Profile {
     ageRangeMax: map['age_range_max'] as int?,
     isVerified: map['is_verified'] as bool? ?? false,
     isSuspended: map['is_suspended'] as bool? ?? false,
+    isAdmin: map['is_admin'] as bool? ?? false,
     pausedAt: map['paused_at'] == null
         ? null
         : DateTime.parse(map['paused_at'] as String),
@@ -138,6 +143,7 @@ class Profile {
     ageRangeMax: ageRangeMax ?? this.ageRangeMax,
     isVerified: isVerified,
     isSuspended: isSuspended,
+    isAdmin: isAdmin,
     pausedAt: pausedAt,
     interests: interests ?? this.interests,
     languages: languages ?? this.languages,
