@@ -16,6 +16,7 @@ import '../../utils/pace_format.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/pace_picker_field.dart';
 import '../../widgets/safety_notice.dart';
+import '../../widgets/sport_picker_field.dart';
 import 'location_picker_screen.dart';
 
 class NewActivityScreen extends StatefulWidget {
@@ -323,33 +324,18 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 ),
               ),
             _SectionLabel(t('newActivity.sport')),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            SportPickerField(
+              value: _sport,
               // "Weitere" is only kept when editing an old sport time
               // that already uses it.
-              children:
-                  [
-                    ...SportType.selectable,
-                    if (_sport == SportType.sonstige) SportType.sonstige,
-                  ].map((sport) {
-                    final selected = sport == _sport;
-                    return ChoiceChip(
-                      label: Text(sport.label),
-                      selected: selected,
-                      onSelected: (_) => setState(() {
-                        _sport = sport;
-                        if (!widget.isEditing) _applyProfileDefaults(sport);
-                      }),
-                      avatar: Icon(
-                        sport.icon,
-                        size: 18,
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                      ),
-                    );
-                  }).toList(),
+              sports: [
+                ...SportType.selectable,
+                if (_sport == SportType.sonstige) SportType.sonstige,
+              ],
+              onChanged: (sport) => setState(() {
+                _sport = sport;
+                if (!widget.isEditing) _applyProfileDefaults(sport);
+              }),
             ),
             if (_sport.usesVenueQuestion) ...[
               const SizedBox(height: 20),

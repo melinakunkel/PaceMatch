@@ -117,6 +117,7 @@ const _de = <String, String>{
   'appbar.settings': 'Einstellungen',
 
   // Sports (SportType.label).
+  'sportPicker.title': 'Sportart wählen',
   'sport.laufen': 'Laufen',
   'sport.radfahren': 'Radfahren',
   'sport.schwimmen': 'Schwimmen',
@@ -840,6 +841,7 @@ const _en = <String, String>{
   'appbar.home': 'Home',
   'appbar.settings': 'Settings',
 
+  'sportPicker.title': 'Choose a sport',
   'sport.laufen': 'Running',
   'sport.radfahren': 'Cycling',
   'sport.schwimmen': 'Swimming',

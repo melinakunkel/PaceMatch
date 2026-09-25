@@ -7,6 +7,7 @@ import '../../services/profile_service.dart';
 import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
+import '../../widgets/sport_picker_field.dart';
 
 class EditSportSheet extends StatefulWidget {
   const EditSportSheet({super.key, required this.userId, this.existing});
@@ -64,16 +65,9 @@ class _EditSportSheetState extends State<EditSportSheet> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: SportType.selectable.map((s) {
-              return ChoiceChip(
-                label: Text(s.label),
-                selected: s == _sport,
-                onSelected: (_) => setState(() => _sport = s),
-              );
-            }).toList(),
+          SportPickerField(
+            value: _sport,
+            onChanged: (sport) => setState(() => _sport = sport),
           ),
           if (_sport.usesLevel) ...[
             const SizedBox(height: 16),

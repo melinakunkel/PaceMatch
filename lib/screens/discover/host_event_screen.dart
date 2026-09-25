@@ -11,6 +11,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/safe_pop.dart';
+import '../../widgets/sport_picker_field.dart';
 import '../plan/location_picker_screen.dart';
 
 /// Lets a user host a publicly joinable open event — distinct from a 1:1
@@ -131,24 +132,9 @@ class _HostEventScreenState extends State<HostEventScreen> {
             ),
             const SizedBox(height: 20),
             _SectionLabel(t('newActivity.sport')),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: SportType.selectable.map((sport) {
-                final selected = sport == _sport;
-                return ChoiceChip(
-                  label: Text(sport.label),
-                  selected: selected,
-                  onSelected: (_) => setState(() => _sport = sport),
-                  avatar: Icon(
-                    sport.icon,
-                    size: 18,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                );
-              }).toList(),
+            SportPickerField(
+              value: _sport,
+              onChanged: (sport) => setState(() => _sport = sport),
             ),
             const SizedBox(height: 20),
             _SectionLabel(t('newActivity.when')),
