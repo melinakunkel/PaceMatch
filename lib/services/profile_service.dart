@@ -112,12 +112,21 @@ class ProfileService {
   }) async {
     await SupabaseService.ensureFreshSession();
     final path = '$userId/avatar.$fileExtension';
+    // Said explicitly: the bucket only accepts images (migration 0056), and
+    // guessing from an unusual extension could end up as "binary".
+    final contentType = switch (fileExtension.toLowerCase()) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'gif' => 'image/gif',
+      'heic' || 'heif' => 'image/heic',
+      _ => 'image/jpeg',
+    };
     await _client.storage
         .from('avatars')
         .uploadBinary(
           path,
           bytes,
-          fileOptions: const FileOptions(upsert: true),
+          fileOptions: FileOptions(upsert: true, contentType: contentType),
         );
     final url = _client.storage.from('avatars').getPublicUrl(path);
     // Cache-bust so the new photo shows up immediately everywhere.
