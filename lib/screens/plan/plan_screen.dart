@@ -6,6 +6,7 @@ import '../../l10n/strings.dart';
 import '../../models/activity.dart';
 import '../../services/activity_service.dart';
 import '../../services/circle_controller.dart';
+import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/activity_stats.dart';
@@ -27,6 +28,7 @@ class _PlanScreenState extends State<PlanScreen> {
   static const _hourEndKey = 'plan_hour_end';
 
   final _activityService = ActivityService();
+  final _profileService = ProfileService();
   late Future<List<Activity>> _future;
   int _selectedDay = DateTime.now().weekday; // 1 = Monday
   _PlanViewMode _viewMode = _PlanViewMode.list;
@@ -36,8 +38,7 @@ class _PlanScreenState extends State<PlanScreen> {
   void initState() {
     super.initState();
     _load();
-    _loadViewMode();
-    _loadHourRange();
+    _loadViewPrefs();
     CircleController.active.addListener(_onCircleChanged);
   }
 
@@ -49,34 +50,78 @@ class _PlanScreenState extends State<PlanScreen> {
 
   void _onCircleChanged() => _refresh();
 
-  Future<void> _loadViewMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString(_viewModeKey);
-    if (saved == _PlanViewMode.week.name && mounted) {
-      setState(() => _viewMode = _PlanViewMode.week);
+  /// View mode and visible hours: this browser's copy first (instant), then
+  /// the account's (see [ProfileService.getPlanPrefs]) — in-app browsers
+  /// wipe local storage, which used to reset the range on every login.
+  Future<void> _loadViewPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _applyViewPrefs(
+        viewMode: prefs.getString(_viewModeKey),
+        start: prefs.getDouble(_hourStartKey)?.round(),
+        end: prefs.getDouble(_hourEndKey)?.round(),
+      );
+    } catch (_) {}
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    try {
+      final saved = await _profileService.getPlanPrefs(userId);
+      _applyViewPrefs(
+        viewMode: saved.viewMode,
+        start: saved.start,
+        end: saved.end,
+      );
+    } catch (_) {
+      // Columns not there yet (migration not run) — the local copy stays.
     }
+  }
+
+  void _applyViewPrefs({String? viewMode, int? start, int? end}) {
+    if (!mounted) return;
+    setState(() {
+      if (viewMode != null) {
+        _viewMode = viewMode == _PlanViewMode.week.name
+            ? _PlanViewMode.week
+            : _PlanViewMode.list;
+      }
+      if (start != null && end != null && start < end) {
+        _hourRange = RangeValues(start.toDouble(), end.toDouble());
+      }
+    });
   }
 
   Future<void> _setViewMode(_PlanViewMode mode) async {
     setState(() => _viewMode = mode);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_viewModeKey, mode.name);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_viewModeKey, mode.name);
+    } catch (_) {}
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    try {
+      await _profileService.updatePlanPrefs(userId, viewMode: mode.name);
+    } catch (_) {}
   }
 
-  Future<void> _loadHourRange() async {
-    final prefs = await SharedPreferences.getInstance();
-    final start = prefs.getDouble(_hourStartKey);
-    final end = prefs.getDouble(_hourEndKey);
-    if (start != null && end != null && mounted) {
-      setState(() => _hourRange = RangeValues(start, end));
-    }
-  }
-
-  Future<void> _setHourRange(RangeValues range) async {
+  /// Updates the calendar live while dragging; [persist] (on release) also
+  /// saves it, locally and on the account.
+  Future<void> _setHourRange(RangeValues range, {bool persist = false}) async {
     setState(() => _hourRange = range);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_hourStartKey, range.start);
-    await prefs.setDouble(_hourEndKey, range.end);
+    if (!persist) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_hourStartKey, range.start);
+      await prefs.setDouble(_hourEndKey, range.end);
+    } catch (_) {}
+    final userId = SupabaseService.currentUserId;
+    if (userId == null) return;
+    try {
+      await _profileService.updatePlanPrefs(
+        userId,
+        start: range.start.round(),
+        end: range.end.round(),
+      );
+    } catch (_) {}
   }
 
   Future<void> _openHourRangeSheet() async {
@@ -121,15 +166,18 @@ class _PlanScreenState extends State<PlanScreen> {
                   values: range,
                   min: 0,
                   max: 24,
-                  divisions: 48,
+                  // Whole hours — the calendar's rows are hours.
+                  divisions: 24,
                   labels: RangeLabels(
                     _formatHour(range.start),
                     _formatHour(range.end),
                   ),
                   onChanged: (v) {
+                    if (v.end - v.start < 1) return; // at least one hour
                     setSheetState(() => range = v);
                     _setHourRange(v);
                   },
+                  onChangeEnd: (v) => _setHourRange(range, persist: true),
                 ),
               ],
             ),
@@ -499,7 +547,7 @@ class _WeekCalendarView extends StatefulWidget {
 
 class _WeekCalendarViewState extends State<_WeekCalendarView> {
   static const _hourHeight = 52.0;
-  static const _hourLabelWidth = 34.0;
+  static const _hourLabelWidth = 36.0;
 
   late DateTime _weekStart = _mondayOf(DateTime.now());
 
@@ -596,8 +644,22 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
           ),
           const SizedBox(height: 4),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const SizedBox(width: _hourLabelWidth),
+              // Says what the numbers down the left side are.
+              SizedBox(
+                width: _hourLabelWidth,
+                child: Text(
+                  t('plan.timeColumn'),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
               ...List.generate(7, (i) {
                 final isToday = _isSameDate(dates[i], today);
                 return Expanded(
@@ -626,22 +688,25 @@ class _WeekCalendarViewState extends State<_WeekCalendarView> {
               }),
             ],
           ),
-          const SizedBox(height: 6),
+          // Room for the first hour label, which sits centered on the top
+          // line and was cut off.
+          const SizedBox(height: 12),
           SizedBox(
             height: gridHeight,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: _hourLabelWidth,
+                  width: _hourLabelWidth + 4,
                   height: gridHeight,
                   child: Stack(
+                    clipBehavior: Clip.none,
                     children: List.generate(hourCount + 1, (i) {
                       return Positioned(
                         top: i * _hourHeight - 7,
                         right: 4,
                         child: Text(
-                          '${minHour + i}',
+                          '${(minHour + i).toString().padLeft(2, '0')}:00',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,

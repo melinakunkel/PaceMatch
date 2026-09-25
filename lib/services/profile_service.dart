@@ -226,6 +226,40 @@ class ProfileService {
     await _client.from('profiles').update({'paused_at': null}).eq('id', userId);
   }
 
+  /// The Sportplan's visible hours and list/week view, saved on the
+  /// account (see 0044_plan_view_prefs.sql). Null values = never set.
+  Future<({int? start, int? end, String? viewMode})> getPlanPrefs(
+    String userId,
+  ) async {
+    final row = await _client
+        .from('profiles')
+        .select('plan_hour_start, plan_hour_end, plan_view_mode')
+        .eq('id', userId)
+        .maybeSingle();
+    return (
+      start: row?['plan_hour_start'] as int?,
+      end: row?['plan_hour_end'] as int?,
+      viewMode: row?['plan_view_mode'] as String?,
+    );
+  }
+
+  Future<void> updatePlanPrefs(
+    String userId, {
+    int? start,
+    int? end,
+    String? viewMode,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({
+          'plan_hour_start': ?start,
+          'plan_hour_end': ?end,
+          'plan_view_mode': ?viewMode,
+        })
+        .eq('id', userId);
+  }
+
   /// Syncs the Home screen's sport-grid order/visibility across
   /// devices/logins, same as [updateThemeVariant] does for the design.
   Future<HomeLayout> getHomeLayout(String userId) async {

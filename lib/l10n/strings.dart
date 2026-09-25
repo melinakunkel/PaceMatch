@@ -240,6 +240,7 @@ const _de = <String, String>{
 
   // Plan screen (Sportplan).
   'plan.title': 'Mein Sportplan',
+  'plan.timeColumn': 'Uhr',
   'plan.hourRange.title': 'Sichtbarer Zeitraum',
   'plan.hourRange.subtitle':
       'Welchen Teil des Tages soll der Kalender anzeigen?',
@@ -961,6 +962,7 @@ const _en = <String, String>{
   'common.edit': 'Edit',
 
   'plan.title': 'My Sportplan',
+  'plan.timeColumn': 'Time',
   'plan.hourRange.title': 'Visible time range',
   'plan.hourRange.subtitle': 'Which part of the day should the calendar show?',
   'plan.hourRange.value': '{start} - {end}',
