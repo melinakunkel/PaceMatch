@@ -317,8 +317,33 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final slots = _isRecurring
           ? [for (final day in _selectedDays.toList()..sort()) (day, null)]
           : [for (final date in _specificDates) (date.weekday, date)];
+      // Never save the same sport time twice — a duplicate would show every
+      // buddy twice in the Buddys tab.
+      final circleId = CircleController.active.value?.id;
+      final existing = {
+        for (final a in await _activityService.getMyActivities(
+          userId,
+          circleId: circleId,
+        ))
+          a.slotKey: a,
+      };
       final created = <Activity>[];
+      Activity? alreadyThere;
       for (final (day, specificDate) in slots) {
+        final key = Activity(
+          id: '',
+          userId: userId,
+          sport: _sport,
+          dayOfWeek: day,
+          startTime: _start,
+          endTime: _end,
+          specificDate: specificDate,
+          circleId: circleId,
+        ).slotKey;
+        if (existing[key] != null) {
+          alreadyThere ??= existing[key];
+          continue;
+        }
         created.add(
           await _activityService.createActivity(
             userId: userId,
@@ -342,14 +367,19 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             childAge: childAge,
             childGender: childGender,
             specificDate: specificDate,
-            circleId: CircleController.active.value?.id,
+            circleId: circleId,
             discoverVisibility: _discoverVisibility,
             playersWanted: playersWanted,
           ),
         );
       }
       if (!mounted) return;
-      if (created.length == 1) {
+      if (created.isEmpty && alreadyThere != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t('newActivity.alreadyThere'))));
+        context.pushReplacement('/matches/${alreadyThere.id}');
+      } else if (created.length == 1) {
         context.pushReplacement('/matches/${created.first.id}');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

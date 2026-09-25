@@ -136,10 +136,16 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
 
   Future<_HubData> _load() async {
     final userId = SupabaseService.currentUserId!;
-    final activities = await _activityService.getMyActivities(
-      userId,
-      circleId: CircleController.active.value?.id,
-    );
+    // Identical sport times (saved twice by accident) count once — else
+    // every buddy shows up once per copy.
+    final seenSlots = <String>{};
+    final activities = [
+      for (final a in await _activityService.getMyActivities(
+        userId,
+        circleId: CircleController.active.value?.id,
+      ))
+        if (seenSlots.add(a.slotKey)) a,
+    ];
     final activityIds = activities.map((a) => a.id).toSet();
     final likesFuture = _loadLikesReceived();
     final chatsFuture = _groupService

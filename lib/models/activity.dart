@@ -191,6 +191,20 @@ class Activity {
 
   String get dayLabel => weekdayFullLabels[dayOfWeek - 1];
 
+  /// Same sport, day (or date), times and Kreis — i.e. a duplicate for
+  /// the same person.
+  String get slotKey {
+    final d = specificDate;
+    return [
+      sport.name,
+      dayOfWeek,
+      formatTime(startTime),
+      formatTime(endTime),
+      d == null ? '' : '${d.year}-${d.month}-${d.day}',
+      circleId ?? '',
+    ].join('|');
+  }
+
   /// "Laufen · Sa · 18:00 - 19:00" (or the date for a one-off).
   String get summaryLabel =>
       '${sport.label} · ${isRecurring ? dayShortLabel : specificDateLabel} · '

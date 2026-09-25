@@ -159,4 +159,13 @@ void main() {
     expect(SportType.laufen.usesPlayerCount, isFalse);
     expect(_activity(day: 3).playersWanted, 1);
   });
+
+  test('identical sport times share a slot key', () {
+    expect(_activity(day: 7).slotKey, _activity(day: 7).slotKey);
+    expect(_activity(day: 7).slotKey, isNot(_activity(day: 6).slotKey));
+    expect(
+      _activity(day: 7).slotKey,
+      isNot(_activity(day: 7, date: DateTime(2026, 9, 27)).slotKey),
+    );
+  });
 }

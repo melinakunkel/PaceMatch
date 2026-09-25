@@ -365,6 +365,8 @@ const _de = <String, String>{
   'newActivity.everyDay': 'Jeden Tag',
   'newActivity.today': 'Heute',
   'newActivity.tomorrow': 'Morgen',
+  'newActivity.alreadyThere':
+      'Diese Sportzeit hast du schon – hier sind deine Leute.',
   'newActivity.playersWanted': 'Wie viele Leute fehlen dir noch?',
   'newActivity.playersHint':
       'Du hast schon jemanden? Dann zähl nur die, die noch fehlen – z. B. 2 '
@@ -1252,6 +1254,8 @@ const _en = <String, String>{
   'newActivity.everyDay': 'Every day',
   'newActivity.today': 'Today',
   'newActivity.tomorrow': 'Tomorrow',
+  'newActivity.alreadyThere':
+      'You already have this sport time – here are your people.',
   'newActivity.playersWanted': 'How many people are you still missing?',
   'newActivity.playersHint':
       'Already have someone? Only count who\'s still missing – e.g. 2 for '
