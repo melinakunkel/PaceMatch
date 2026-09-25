@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAMEPACE Testprotokoll</title>
+  <meta name="description" content="Testprotokoll für SAMEPACE-Tester: Aufgaben durchklicken, abhaken, Ergebnis senden.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root {
+      --primary: #1B4332;
+      --accent: #40916C;
+      --accent-light: #D8F3DC;
+      --bg: #F8F6F1;
+      --surface: #FFFFFF;
+      --text: #1B2E28;
+      --muted: #6B7A75;
+      --border: #E5E1D8;
+      --bad: #D64545;
+      --bad-light: #FBE3E3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --primary: #9AD5B0;
+        --accent: #52B788;
+        --accent-light: #1E3A2C;
+        --bg: #111814;
+        --surface: #19221D;
+        --text: #E6EFE9;
+        --muted: #9AAAA2;
+        --border: #2B3832;
+        --bad: #F08080;
+        --bad-light: #3A2323;
+      }
+    }
+    :root[data-theme="dark"] {
+      --primary: #9AD5B0;
+      --accent: #52B788;
+      --accent-light: #1E3A2C;
+      --bg: #111814;
+      --surface: #19221D;
+      --text: #E6EFE9;
+      --muted: #9AAAA2;
+      --border: #2B3832;
+      --bad: #F08080;
+      --bad-light: #3A2323;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 640px; margin: 0 auto; padding: 20px 16px 120px; }
+    header { padding: 8px 0 4px; }
+    .brand { font-weight: 800; letter-spacing: .04em; color: var(--primary); font-size: 14px; }
+    h1 { font-size: 26px; line-height: 1.2; margin: 6px 0 8px; }
+    h2 { font-size: 18px; margin: 28px 0 10px; }
+    p { margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    a { color: var(--accent); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .intro li { margin-bottom: 6px; }
+    .progress {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--bg);
+      padding: 10px 0;
+      margin: 0 -16px; padding-left: 16px; padding-right: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .bar { height: 8px; border-radius: 8px; background: var(--border); overflow: hidden; }
+    .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+    .progress small { display: block; margin-top: 4px; color: var(--muted); }
+    .task { position: relative; }
+    .task h3 { font-size: 16px; margin: 0 0 6px; display: flex; gap: 10px; align-items: baseline; }
+    .num {
+      flex: none; width: 26px; height: 26px; border-radius: 50%;
+      display: inline-grid; place-items: center;
+      background: var(--accent-light); color: var(--primary);
+      font-size: 13px; font-weight: 700;
+    }
+    .task ol { margin: 6px 0 12px; padding-left: 22px; }
+    .task ol li { margin-bottom: 4px; }
+    .task.ok { border-color: var(--accent); }
+    .task.bad { border-color: var(--bad); }
+    .task.ok .num { background: var(--accent); color: #fff; }
+    .task.bad .num { background: var(--bad); color: #fff; }
+    .verdict { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .verdict button, .scale button {
+      font: inherit; font-size: 15px;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      border-radius: 999px; padding: 8px 14px; cursor: pointer;
+      min-height: 40px;
+    }
+    .verdict button[aria-pressed="true"].yes { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .verdict button[aria-pressed="true"].no { background: var(--bad); border-color: var(--bad); color: #fff; }
+    .verdict button[aria-pressed="true"].skip { background: var(--muted); border-color: var(--muted); color: #fff; }
+    .scale { display: flex; gap: 8px; flex-wrap: wrap; }
+    .scale button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--bg); }
+    textarea, input[type="text"] {
+      width: 100%; font: inherit; font-size: 15px;
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 12px; background: var(--bg); color: var(--text);
+    }
+    textarea { min-height: 70px; resize: vertical; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; font-size: 15px; }
+    .tip {
+      background: var(--accent-light); border-radius: 12px; padding: 10px 12px;
+      font-size: 14px; margin: 8px 0 0;
+    }
+    .actions { display: grid; gap: 10px; margin-top: 12px; }
+    .btn {
+      display: block; text-align: center; text-decoration: none;
+      font: inherit; font-weight: 700; font-size: 16px;
+      border: none; border-radius: 14px; padding: 14px; cursor: pointer;
+      background: var(--primary); color: var(--bg);
+    }
+    .btn.secondary { background: var(--surface); color: var(--primary); border: 1px solid var(--border); }
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: var(--primary); color: var(--bg);
+      padding: 10px 16px; border-radius: 12px; font-size: 14px;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+      max-width: calc(100% - 32px);
+    }
+    .toast.show { opacity: 1; }
+    .reset { background: none; border: none; color: var(--muted); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 8px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">SAMEPACE · TESTPHASE</div>
+    <h1>Testprotokoll</h1>
+    <p class="muted">Danke, dass du SAMEPACE testest! 💚 Geh die Aufgaben der Reihe nach durch, markiere bei jeder, ob sie geklappt hat, und schreib kurz dazu, was dir auffällt. Am Ende schickst du alles mit einem Tipp ab.</p>
+  </header>
+
+  <section class="card intro">
+    <strong>Bevor du startest</strong>
+    <ul>
+      <li>Dauer: ca. <strong>20–30 Minuten</strong>.</li>
+      <li>Am besten am <strong>Handy</strong>. Am schönsten ist es <strong>zu zweit</strong>, dann könnt ihr euch gegenseitig schreiben.</li>
+      <li>Öffne die App: <a href="./" target="_blank" rel="noopener">melinakunkel.github.io/PaceMatch</a></li>
+      <li><strong>Tipp:</strong> Leg die App auf deinen Home-Bildschirm. Dann fühlt sie sich wie eine echte App an:<br>
+        <span class="muted">iPhone (Safari): Teilen-Symbol → „Zum Home-Bildschirm“<br>
+        Android (Chrome): ⋮ oben rechts → „Zum Startbildschirm hinzufügen“</span></li>
+      <li>Es gibt kein Richtig oder Falsch. Wenn etwas verwirrend ist, ist <strong>das</strong> genau das, was wir wissen wollen.</li>
+      <li>Deine Antworten werden nur auf deinem Handy gespeichert, bis du sie abschickst.</li>
+    </ul>
+  </section>
+
+  <div class="progress" aria-live="polite">
+    <div class="bar"><div id="bar"></div></div>
+    <small id="progressText">0 von 0 Aufgaben erledigt</small>
+  </div>
+
+  <label for="name">Dein Vorname</label>
+  <input type="text" id="name" autocomplete="given-name" placeholder="z. B. Lisa">
+  <label for="device">Dein Handy &amp; Browser</label>
+  <input type="text" id="device" placeholder="z. B. iPhone 13, Safari">
+
+  <h2>Aufgaben</h2>
+  <div id="tasks"></div>
+
+  <h2>Dein Gesamteindruck</h2>
+  <section class="card">
+    <label>Wie gefällt dir SAMEPACE insgesamt?</label>
+    <div class="scale" id="rating" role="group" aria-label="Bewertung 1 bis 5">
+      <button type="button" data-v="1">1 😕</button>
+      <button type="button" data-v="2">2</button>
+      <button type="button" data-v="3">3</button>
+      <button type="button" data-v="4">4</button>
+      <button type="button" data-v="5">5 🤩</button>
+    </div>
+    <label>Würdest du die App nutzen, um Sportpartner:innen zu finden?</label>
+    <div class="scale" id="wouldUse" role="group" aria-label="Würdest du die App nutzen">
+      <button type="button" data-v="Ja">Ja</button>
+      <button type="button" data-v="Vielleicht">Vielleicht</button>
+      <button type="button" data-v="Eher nicht">Eher nicht</button>
+    </div>
+    <label for="liked">Was hat dir am besten gefallen?</label>
+    <textarea id="liked"></textarea>
+    <label for="confusing">Was war verwirrend oder hat genervt?</label>
+    <textarea id="confusing"></textarea>
+    <label for="missing">Was fehlt dir noch?</label>
+    <textarea id="missing"></textarea>
+  </section>
+
+  <h2>Fertig? Ergebnis senden</h2>
+  <section class="card">
+    <p class="muted">Wähle einen Weg, wie du dein Ergebnis schicken willst. Screenshots von Fehlern kannst du per WhatsApp oder E-Mail gerne dazupacken.</p>
+    <div class="actions">
+      <a class="btn" id="sendMail" href="#">📧 Per E-Mail senden</a>
+      <a class="btn secondary" id="sendWhatsApp" href="#" target="_blank" rel="noopener">💬 Per WhatsApp teilen</a>
+      <button class="btn secondary" id="copy" type="button">📋 Text kopieren</button>
+    </div>
+    <p class="tip">Du kannst den kopierten Text auch in der App einfügen: <strong>Profil → ⚙️ → „Feedback geben“</strong>.</p>
+    <button class="reset" id="reset" type="button">Alles zurücksetzen</button>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  const TASKS = [
+    { title: 'Registrieren & Einrichtung', steps: [
+      'Öffne die App und tippe auf „Jetzt registrieren“.',
+      'Registriere dich mit Name, E-Mail und Passwort.',
+      'Geh die Einrichtung durch: Sportarten wählen, Level/Tempo angeben, Basisdaten ausfüllen.'
+    ], ask: 'War klar, was du bei jedem Schritt tun sollst?' },
+    { title: 'Tutorial', steps: [
+      'Schau dir das kurze Tutorial an (erscheint beim ersten Start; später über das ?-Symbol).'
+    ], ask: 'Hast du danach verstanden, wofür SAMEPACE da ist?' },
+    { title: 'Profil ausfüllen', steps: [
+      'Tippe unten auf „Profil“.',
+      'Lade ein Profilfoto hoch und schreib ein paar Worte über dich.',
+      'Wähle Interessen und beantworte einen Profil-Prompt.'
+    ] },
+    { title: 'Sportzeit eintragen', steps: [
+      'Tippe unten auf „Plan“ und dann auf „Sportzeit hinzufügen“.',
+      'Wähle eine Sportart aus der Liste, einen Tag und eine Uhrzeit.',
+      'Lege einen Treffpunkt auf der Karte fest und speichere.'
+    ], ask: 'Hat das Speichern geklappt? Passten die Fragen (Tempo, Level, Platz …) zu deiner Sportart?' },
+    { title: 'Sportplan ansehen', steps: [
+      'Schau dir deinen Plan als Liste und als Wochenansicht an.',
+      'Stell über das Uhr-Symbol ein, welche Uhrzeiten angezeigt werden.'
+    ] },
+    { title: 'Leute & Events entdecken', steps: [
+      'Tippe unten auf „Entdecken“ und scrolle durch die Tage.',
+      'Probier die Filter aus (Sportart, Uhrzeit, Events).',
+      'Öffne das Profil einer Person.'
+    ] },
+    { title: 'Matches & Sportbuddys', steps: [
+      'Öffne bei einer deiner Sportzeiten die passenden Vorschläge.',
+      'Like jemanden (z. B. deine Test-Partnerin/deinen Test-Partner).',
+      'Wenn ihr euch gegenseitig liked, schau unter „Buddys“ nach.'
+    ], ask: 'Tipp: Das klappt nur, wenn ihr beide eine Sportzeit zur ähnlichen Zeit habt.' },
+    { title: 'Chatten', steps: [
+      'Schreib jemandem eine Nachricht (über „Buddys“, „Entdecken“ oder das Profil).',
+      'Antworte auf eine Nachricht und schau, ob der rote Punkt bei „Chat“ auftaucht.',
+      'Lege im Chat einen Treffpunkt fest.'
+    ], ask: 'Kamen die Nachrichten an? Hat die Tastatur etwas verdeckt?' },
+    { title: 'Event erstellen oder beitreten', steps: [
+      'Tippe bei „Entdecken“ auf „Event hosten“ und erstelle ein Test-Event, oder tritt einem Event bei.'
+    ] },
+    { title: 'Design & Sprache', steps: [
+      'Geh zu Profil → ⚙️ Einstellungen.',
+      'Wechsle das Design (z. B. „Girly“ oder „Sporty“) und die Sprache auf Englisch und wieder zurück.'
+    ] },
+    { title: 'Feedback in der App', steps: [
+      'Profil → ⚙️ → „Feedback geben“: Schick eine kurze Idee oder einen Fehler.'
+    ] },
+  ];
+
+  const KEY = 'samepace-testprotokoll-v1';
+  let state = { tasks: {}, name: '', device: '', rating: '', wouldUse: '', liked: '', confusing: '', missing: '' };
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) state = Object.assign(state, saved);
+  } catch (e) { /* storage unavailable — works without saving */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+  const tasksEl = document.getElementById('tasks');
+  TASKS.forEach((task, i) => {
+    const s = state.tasks[i] || (state.tasks[i] = { verdict: '', note: '' });
+    const el = document.createElement('section');
+    el.className = 'card task';
+    el.innerHTML = `
+      <h3><span class="num">${i + 1}</span><span>${task.title}</span></h3>
+      <ol>${task.steps.map(x => `<li>${x}</li>`).join('')}</ol>
+      ${task.ask ? `<p class="muted" style="font-size:14px">${task.ask}</p>` : ''}
+      <div class="verdict" role="group" aria-label="Ergebnis Aufgabe ${i + 1}">
+        <button type="button" class="yes" data-v="ok">👍 Hat geklappt</button>
+        <button type="button" class="no" data-v="bad">👎 Problem</button>
+        <button type="button" class="skip" data-v="skip">Übersprungen</button>
+      </div>
+      <textarea placeholder="Was ist dir aufgefallen? (optional)" aria-label="Notiz zu Aufgabe ${i + 1}"></textarea>`;
+    const buttons = el.querySelectorAll('.verdict button');
+    const ta = el.querySelector('textarea');
+    const paint = () => {
+      buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === s.verdict)));
+      el.classList.toggle('ok', s.verdict === 'ok');
+      el.classList.toggle('bad', s.verdict === 'bad');
+      if (s.verdict === 'bad') ta.placeholder = 'Was genau ist passiert? Wo? (hilft sehr!)';
+    };
+    buttons.forEach(b => b.addEventListener('click', () => {
+      s.verdict = s.verdict === b.dataset.v ? '' : b.dataset.v;
+      paint(); save(); updateProgress();
+    }));
+    ta.value = s.note;
+    ta.addEventListener('input', () => { s.note = ta.value; save(); });
+    paint();
+    tasksEl.appendChild(el);
+  });
+
+  ['name', 'device', 'liked', 'confusing', 'missing'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = state[id] || '';
+    el.addEventListener('input', () => { state[id] = el.value; save(); });
+  });
+  ['rating', 'wouldUse'].forEach(id => {
+    const group = document.getElementById(id);
+    const paint = () => group.querySelectorAll('button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.v === String(state[id]))));
+    group.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      state[id] = String(state[id]) === b.dataset.v ? '' : b.dataset.v;
+      paint(); save();
+    }));
+    paint();
+  });
+
+  function updateProgress() {
+    const done = TASKS.filter((_, i) => state.tasks[i] && state.tasks[i].verdict).length;
+    document.getElementById('bar').style.width = `${(done / TASKS.length) * 100}%`;
+    document.getElementById('progressText').textContent =
+      `${done} von ${TASKS.length} Aufgaben erledigt`;
+  }
+  updateProgress();
+
+  function report() {
+    const label = { ok: '👍 geklappt', bad: '👎 Problem', skip: '– übersprungen', '': '? offen' };
+    const lines = [
+      'SAMEPACE Testprotokoll',
+      `Von: ${state.name || '(kein Name)'}`,
+      `Gerät: ${state.device || '(nicht angegeben)'}`,
+      '',
+    ];
+    TASKS.forEach((task, i) => {
+      const s = state.tasks[i] || {};
+      lines.push(`${i + 1}. ${task.title}: ${label[s.verdict || '']}`);
+      if (s.note && s.note.trim()) lines.push(`   → ${s.note.trim()}`);
+    });
+    lines.push('', `Gesamteindruck: ${state.rating ? state.rating + '/5' : '–'}`);
+    lines.push(`Würde die App nutzen: ${state.wouldUse || '–'}`);
+    if (state.liked.trim()) lines.push(`Am besten: ${state.liked.trim()}`);
+    if (state.confusing.trim()) lines.push(`Verwirrend: ${state.confusing.trim()}`);
+    if (state.missing.trim()) lines.push(`Fehlt noch: ${state.missing.trim()}`);
+    return lines.join('\n');
+  }
+
+  const toast = (msg) => {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  };
+
+  document.getElementById('sendMail').addEventListener('click', (e) => {
+    e.preventDefault();
+    const subject = `SAMEPACE Testprotokoll – ${state.name || 'Tester'}`;
+    location.href = `mailto:samepace@outlook.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(report())}`;
+  });
+  document.getElementById('sendWhatsApp').addEventListener('click', (e) => {
+    e.currentTarget.href = `https://wa.me/?text=${encodeURIComponent(report())}`;
+  });
+  document.getElementById('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(report());
+      toast('Kopiert! Jetzt einfach einfügen.');
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = report(); document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Kopiert!'); } catch (_) { toast('Kopieren ging nicht – bitte E-Mail nutzen.'); }
+      ta.remove();
+    }
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    if (!confirm('Wirklich alle Antworten löschen?')) return;
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+</script>
+</body>
+</html>
