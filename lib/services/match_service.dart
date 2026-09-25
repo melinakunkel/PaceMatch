@@ -2,6 +2,7 @@ import '../models/activity.dart';
 import '../models/match_candidate.dart';
 import '../models/profile.dart';
 import '../utils/match_scoring.dart';
+import '../utils/meeting_days.dart';
 import '../utils/matching_preferences.dart';
 import 'activity_service.dart';
 import 'block_service.dart';
@@ -15,7 +16,7 @@ class MatchService {
   final _likeService = LikeService();
 
   /// Finds other users whose activities overlap with [myActivity] on the
-  /// same weekday, ranked by a 0-100 match score (time + pace overlap).
+  /// same day (see [canMeetOnSameDay]), ranked by a 0-100 match score (time + pace overlap).
   Future<List<MatchCandidate>> findMatches(Activity myActivity) async {
     final candidates = await _activityService.getActivitiesForSport(
       sport: myActivity.sport,
@@ -24,7 +25,7 @@ class MatchService {
     );
 
     final sameDay = candidates
-        .where((a) => a.dayOfWeek == myActivity.dayOfWeek)
+        .where((a) => canMeetOnSameDay(myActivity, a))
         .toList();
     if (sameDay.isEmpty) return [];
 

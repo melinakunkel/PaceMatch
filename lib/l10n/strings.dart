@@ -87,6 +87,36 @@ const _de = <String, String>{
   'settings.notificationsDescUnsupported':
       'Dein Browser unterstützt keine Benachrichtigungen.',
   'settings.browserNotifications': 'Browser-Benachrichtigungen',
+  'push.title': 'Push-Benachrichtigungen',
+  'push.desc':
+      'Bekomme eine Nachricht aufs Handy bei neuen Chat-Nachrichten, '
+      'Sportbuddys und Chat-Anfragen – auch wenn SAMEPACE geschlossen ist.',
+  'push.enabled': 'Push ist an 🔔',
+  'push.denied':
+      'Benachrichtigungen sind blockiert. Du kannst sie in den Einstellungen '
+      'deines Browsers bzw. Handys erlauben.',
+  'push.failed':
+      'Push konnte gerade nicht eingeschaltet werden. Bitte versuch es '
+      'später noch einmal.',
+  'push.unsupported':
+      'Dein Browser unterstützt keine Push-Nachrichten. Am iPhone braucht '
+      'es iOS 16.4 oder neuer.',
+  'push.iosDesc':
+      'Am iPhone gehen Push-Nachrichten, sobald SAMEPACE auf deinem '
+      'Home-Bildschirm ist.',
+  'push.iosTitle': 'Push am iPhone',
+  'push.iosSteps':
+      '1. Tippe in Safari unten auf „Teilen“ (Quadrat mit Pfeil).\n'
+      '2. Wähle „Zum Home-Bildschirm“.\n'
+      '3. Öffne SAMEPACE über das neue Icon.\n'
+      '4. Schalte unter Einstellungen die Push-Benachrichtigungen ein.\n\n'
+      'Das geht ab iOS 16.4.',
+  'push.iosButton': 'So geht\'s am iPhone',
+  'push.promptTitle': 'Keine Nachricht mehr verpassen',
+  'push.promptBody':
+      'Schalte Push ein, dann meldet sich SAMEPACE auf deinem Handy, wenn '
+      'dir jemand schreibt.',
+  'push.promptAction': 'Einschalten',
   'settings.permissionDenied':
       'Berechtigung nicht erteilt. Du kannst sie in den '
       'Browser-Einstellungen ändern.',
@@ -97,6 +127,9 @@ const _de = <String, String>{
 
   // Home screen.
   'home.question': 'Was möchtest du diese Woche machen?',
+  'home.questionToday': 'Worauf hast du heute spontan Lust?',
+  'home.modePlan': 'Planen',
+  'home.modeToday': 'Heute spontan',
   'home.tutorialTooltip': 'Tutorial',
   'home.configureTooltip': 'Startbildschirm anpassen',
 
@@ -278,6 +311,11 @@ const _de = <String, String>{
   'newActivity.everyWeek': 'Jede Woche',
   'newActivity.oneOffOn': 'Einmalig am...',
   'newActivity.pickDate': 'Datum auswählen',
+  'newActivity.weekdays': 'Werktags',
+  'newActivity.weekend': 'Wochenende',
+  'newActivity.everyDay': 'Jeden Tag',
+  'newActivity.today': 'Heute',
+  'newActivity.tomorrow': 'Morgen',
   'newActivity.where': 'Wo?',
   'newActivity.pickLocation': 'Ort auf der Karte auswählen',
   'newActivity.radius': 'Umkreis (km)',
@@ -867,6 +905,32 @@ const _en = <String, String>{
       'SAMEPACE is open in a tab.',
   'settings.notificationsDescUnsupported':
       'Your browser doesn\'t support notifications.',
+  'push.title': 'Push notifications',
+  'push.desc':
+      'Get a notification on your phone for new chat messages, Sportbuddys '
+      'and chat requests – even when SAMEPACE is closed.',
+  'push.enabled': 'Push is on 🔔',
+  'push.denied':
+      'Notifications are blocked. You can allow them in your browser or '
+      'phone settings.',
+  'push.failed': 'Couldn\'t turn on push right now. Please try again later.',
+  'push.unsupported':
+      'Your browser doesn\'t support push notifications. On iPhone it needs '
+      'iOS 16.4 or newer.',
+  'push.iosDesc': 'On iPhone, push works once SAMEPACE is on your home screen.',
+  'push.iosTitle': 'Push on iPhone',
+  'push.iosSteps':
+      '1. In Safari, tap "Share" at the bottom (square with an arrow).\n'
+      '2. Choose "Add to Home Screen".\n'
+      '3. Open SAMEPACE from the new icon.\n'
+      '4. Turn on push notifications under Settings.\n\n'
+      'Works from iOS 16.4.',
+  'push.iosButton': 'How it works on iPhone',
+  'push.promptTitle': 'Never miss a message',
+  'push.promptBody':
+      'Turn on push and SAMEPACE lets you know on your phone when someone '
+      'writes to you.',
+  'push.promptAction': 'Turn on',
   'settings.browserNotifications': 'Browser notifications',
   'settings.permissionDenied':
       'Permission not granted. You can change it in your browser settings.',
@@ -876,6 +940,9 @@ const _en = <String, String>{
   'settings.languageDesc': 'Which language should SAMEPACE be shown in?',
 
   'home.question': 'What do you want to do this week?',
+  'home.questionToday': 'What do you feel like doing today?',
+  'home.modePlan': 'Plan',
+  'home.modeToday': 'Spontaneous today',
   'home.tutorialTooltip': 'Tutorial',
   'home.configureTooltip': 'Customize home screen',
 
@@ -1043,6 +1110,11 @@ const _en = <String, String>{
   'newActivity.everyWeek': 'Every week',
   'newActivity.oneOffOn': 'One-off on...',
   'newActivity.pickDate': 'Pick a date',
+  'newActivity.weekdays': 'Weekdays',
+  'newActivity.weekend': 'Weekend',
+  'newActivity.everyDay': 'Every day',
+  'newActivity.today': 'Today',
+  'newActivity.tomorrow': 'Tomorrow',
   'newActivity.where': 'Where?',
   'newActivity.pickLocation': 'Pick a location on the map',
   'newActivity.radius': 'Radius (km)',

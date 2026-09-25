@@ -12,6 +12,7 @@ import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/meeting_days.dart';
 import '../../utils/pace_format.dart';
 import '../../utils/safe_pop.dart';
 import '../../widgets/pace_picker_field.dart';
@@ -24,6 +25,7 @@ class NewActivityScreen extends StatefulWidget {
     super.key,
     this.initialSport = SportType.laufen,
     this.existing,
+    this.today = false,
   });
 
   /// Preselected sport when creating a new activity from the Home screen.
@@ -32,6 +34,10 @@ class NewActivityScreen extends StatefulWidget {
   /// When set, the screen edits this activity in place instead of creating
   /// new ones, and day selection is single-choice.
   final Activity? existing;
+
+  /// Spontaneous mode from Home: preset to a one-off today, starting at
+  /// the next half hour.
+  final bool today;
 
   bool get isEditing => existing != null;
 
@@ -59,9 +65,15 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     widget.existing?.dayOfWeek ?? DateTime.now().weekday,
   };
   late TimeOfDay _start =
-      widget.existing?.startTime ?? const TimeOfDay(hour: 18, minute: 0);
+      widget.existing?.startTime ??
+      (widget.today
+          ? spontaneousStart(DateTime.now())
+          : const TimeOfDay(hour: 18, minute: 0));
   late TimeOfDay _end =
-      widget.existing?.endTime ?? const TimeOfDay(hour: 19, minute: 0);
+      widget.existing?.endTime ??
+      (widget.today
+          ? oneHourAfter(_start)
+          : const TimeOfDay(hour: 19, minute: 0));
   late PickedLocation? _location = widget.existing == null
       ? null
       : (widget.existing!.locationName == null
@@ -82,8 +94,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     text: widget.existing?.childAge?.toString() ?? '',
   );
   late String? _childGender = widget.existing?.childGender;
-  late bool _isRecurring = widget.existing?.isRecurring ?? true;
-  late DateTime? _specificDate = widget.existing?.specificDate;
+  late bool _isRecurring = widget.existing?.isRecurring ?? !widget.today;
+  late DateTime? _specificDate =
+      widget.existing?.specificDate ?? (widget.today ? _dateOnly(0) : null);
   late String _discoverVisibility =
       widget.existing?.discoverVisibility ?? 'open';
   bool _saving = false;
@@ -137,6 +150,58 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     setState(() => isStart ? _start = picked : _end = picked);
   }
 
+  static DateTime _dateOnly(int daysFromToday) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day + daysFromToday);
+  }
+
+  void _setSpecificDate(DateTime date) {
+    setState(() {
+      _specificDate = date;
+      _selectedDays
+        ..clear()
+        ..add(date.weekday);
+    });
+  }
+
+  bool _isSpecificDate(int daysFromToday) {
+    final d = _specificDate;
+    if (d == null) return false;
+    final target = _dateOnly(daysFromToday);
+    return d.year == target.year &&
+        d.month == target.month &&
+        d.day == target.day;
+  }
+
+  /// "Werktags" / "Wochenende" / "Jeden Tag" in one tap — matching needs the
+  /// same weekday, so offering several days finds far more people.
+  Widget _dayPresets() {
+    Widget preset(String label, Set<int> days) {
+      final selected =
+          _selectedDays.length == days.length &&
+          _selectedDays.containsAll(days);
+      return ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => setState(() {
+          _selectedDays
+            ..clear()
+            ..addAll(days);
+        }),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        preset(t('newActivity.weekdays'), {1, 2, 3, 4, 5}),
+        preset(t('newActivity.weekend'), {6, 7}),
+        preset(t('newActivity.everyDay'), {1, 2, 3, 4, 5, 6, 7}),
+      ],
+    );
+  }
+
   Future<void> _pickSpecificDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -145,12 +210,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked == null) return;
-    setState(() {
-      _specificDate = picked;
-      _selectedDays
-        ..clear()
-        ..add(picked.weekday);
-    });
+    _setSpecificDate(picked);
   }
 
   Future<void> _pickLocation() async {
@@ -468,6 +528,28 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            if (_isRecurring && !widget.isEditing) ...[
+              _dayPresets(),
+              const SizedBox(height: 8),
+            ],
+            if (!_isRecurring) ...[
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: Text(t('newActivity.today')),
+                    selected: _isSpecificDate(0),
+                    onSelected: (_) => _setSpecificDate(_dateOnly(0)),
+                  ),
+                  ChoiceChip(
+                    label: Text(t('newActivity.tomorrow')),
+                    selected: _isSpecificDate(1),
+                    onSelected: (_) => _setSpecificDate(_dateOnly(1)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             if (_isRecurring)
               Wrap(
                 spacing: 8,

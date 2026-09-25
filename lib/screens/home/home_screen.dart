@@ -22,6 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final _profileService = ProfileService();
   List<SportType> _sports = SportType.selectable;
 
+  /// "⚡ Heute spontan": a sport tap then creates a one-off for today
+  /// instead of a weekly plan.
+  bool _today = false;
+
   @override
   void initState() {
     super.initState();
@@ -115,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                t('home.question'),
+                _today ? t('home.questionToday') : t('home.question'),
                 maxLines: 1,
                 style: const TextStyle(
                   fontSize: 20,
@@ -123,7 +127,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  avatar: const Icon(Icons.event_repeat, size: 18),
+                  label: Text(t('home.modePlan')),
+                  selected: !_today,
+                  onSelected: (_) => setState(() => _today = false),
+                ),
+                ChoiceChip(
+                  avatar: const Icon(Icons.bolt, size: 18),
+                  label: Text(t('home.modeToday')),
+                  selected: _today,
+                  onSelected: (_) => setState(() => _today = true),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -131,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisSpacing: 16,
                 childAspectRatio: 1.3,
                 children: _sports
-                    .map((sport) => _SportCard(sport: sport))
+                    .map((sport) => _SportCard(sport: sport, today: _today))
                     .toList(),
               ),
             ),
@@ -143,15 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _SportCard extends StatelessWidget {
-  const _SportCard({required this.sport});
+  const _SportCard({required this.sport, required this.today});
 
   final SportType sport;
+  final bool today;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => context.push('/new-activity?sport=${sport.name}'),
+      onTap: () => context.push(
+        '/new-activity?sport=${sport.name}${today ? '&when=today' : ''}',
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,

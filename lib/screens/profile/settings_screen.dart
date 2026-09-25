@@ -11,9 +11,11 @@ import '../../services/auth_service.dart';
 import '../../services/browser_notification_service.dart';
 import '../../services/locale_controller.dart';
 import '../../services/profile_service.dart';
+import '../../services/push_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/notification_dot.dart';
+import '../../widgets/push_prompt.dart';
 import '../legal/faq_screen.dart';
 import '../legal/imprint_screen.dart';
 import '../legal/privacy_policy_screen.dart';
@@ -33,6 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _profileService = ProfileService();
   bool? _autoArchive;
   bool? _browserNotifications;
+  bool _pushBusy = false;
   bool _isAdmin = false;
 
   @override
@@ -67,6 +70,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ).showSnackBar(SnackBar(content: Text(t('settings.permissionDenied'))));
     }
   }
+
+  List<Widget> _pushSettings() => [
+    Text(t('push.desc'), style: TextStyle(color: AppColors.textSecondary)),
+    const SizedBox(height: 8),
+    ValueListenableBuilder<bool>(
+      valueListenable: PushService.active,
+      builder: (context, active, _) => SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(t('push.title')),
+        value: active,
+        onChanged: _pushBusy
+            ? null
+            : (on) async {
+                setState(() => _pushBusy = true);
+                if (on) {
+                  await enablePush(context);
+                } else {
+                  await PushService.disable();
+                }
+                if (mounted) setState(() => _pushBusy = false);
+              },
+      ),
+    ),
+  ];
 
   Future<void> _setAutoArchive(bool value) async {
     setState(() => _autoArchive = value);
@@ -264,23 +291,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  BrowserNotificationService.isSupported
-                      ? t('settings.notificationsDescSupported')
-                      : t('settings.notificationsDescUnsupported'),
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(t('settings.browserNotifications')),
-                  value: _browserNotifications ?? false,
-                  onChanged:
-                      (_browserNotifications == null ||
-                          !BrowserNotificationService.isSupported)
-                      ? null
-                      : (v) => _setBrowserNotifications(v),
-                ),
+                if (PushService.isSupported)
+                  ..._pushSettings()
+                else if (PushService.needsHomeScreen) ...[
+                  Text(
+                    t('push.iosDesc'),
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.ios_share),
+                    label: Text(t('push.iosButton')),
+                    onPressed: () => showIphonePushHelp(context),
+                  ),
+                ] else ...[
+                  Text(
+                    BrowserNotificationService.isSupported
+                        ? t('settings.notificationsDescSupported')
+                        : t('settings.notificationsDescUnsupported'),
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t('settings.browserNotifications')),
+                    value: _browserNotifications ?? false,
+                    onChanged:
+                        (_browserNotifications == null ||
+                            !BrowserNotificationService.isSupported)
+                        ? null
+                        : (v) => _setBrowserNotifications(v),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   t('settings.language'),

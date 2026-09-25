@@ -56,6 +56,7 @@ GoRouter buildRouter() {
             (s) => s.name == state.uri.queryParameters['sport'],
             orElse: () => SportType.laufen,
           ),
+          today: state.uri.queryParameters['when'] == 'today',
         ),
       ),
       GoRoute(path: '/matches', builder: (_, _) => const MatchesHubScreen()),

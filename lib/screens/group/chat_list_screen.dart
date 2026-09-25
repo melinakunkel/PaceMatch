@@ -11,6 +11,7 @@ import '../../services/unread_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/push_prompt.dart';
 import 'chat_requests_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -217,6 +218,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (!_showArchived) const PushPromptCard(),
               if (direct.isNotEmpty) ...[
                 _SectionHeader(
                   icon: Icons.person_outline,

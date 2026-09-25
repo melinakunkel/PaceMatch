@@ -96,6 +96,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     'an OpenStreetMap übermittelt.',
                 'Einige Bilder werden von Unsplash geladen; dabei wird '
                     'deine IP-Adresse an Unsplash übermittelt.',
+                'Push-Benachrichtigungen (nur wenn du sie einschaltest): '
+                    'Wir speichern dafür die Push-Adresse deines Geräts. Die '
+                    'Benachrichtigung wird verschlüsselt über den Push-Dienst '
+                    'deines Browsers bzw. Handys zugestellt (z. B. Google, '
+                    'Apple oder Mozilla); diese Dienste können den Inhalt '
+                    'nicht lesen. Beim Ausschalten oder Abmelden wird die '
+                    'Adresse gelöscht.',
               ],
             ),
             const LegalSection(

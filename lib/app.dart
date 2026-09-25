@@ -12,6 +12,7 @@ import 'services/circle_controller.dart';
 import 'services/locale_controller.dart';
 import 'services/match_notifier.dart';
 import 'services/profile_service.dart';
+import 'services/push_service.dart';
 import 'services/supabase_service.dart';
 import 'services/unread_controller.dart';
 import 'theme/app_theme.dart';
@@ -43,6 +44,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
         MatchNotifier.startListening();
         MatchNotifier.refresh();
         AdminNotifier.startListening();
+        PushService.syncAfterLogin();
         _syncThemeFromProfile();
         _syncLanguageFromProfile();
         CircleController.loadSaved();
@@ -59,6 +61,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
       MatchNotifier.startListening();
       MatchNotifier.refresh();
       AdminNotifier.startListening();
+      PushService.syncAfterLogin();
       _syncThemeFromProfile();
       _syncLanguageFromProfile();
       CircleController.loadSaved();

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'browser_notifications/browser_notification_stub.dart'
     if (dart.library.html) 'browser_notifications/browser_notification_web.dart'
     as impl;
+import 'push_service.dart';
 
 const _prefKey = 'browser_notifications_enabled';
 
@@ -38,6 +39,8 @@ class BrowserNotificationService {
     required String title,
     String? body,
   }) async {
+    // Push already shows it (also when the app is closed) — no doubles.
+    if (PushService.active.value) return;
     if (!await isEnabled()) return;
     impl.showBrowserNotification(title: title, body: body);
   }

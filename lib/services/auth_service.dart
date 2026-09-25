@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'push_service.dart';
 import 'supabase_service.dart';
 
 /// Where Supabase redirects back to after an email link (confirmation,
@@ -30,7 +31,10 @@ class AuthService {
     return _client.auth.signInWithPassword(email: email, password: password);
   }
 
-  Future<void> signOut() => _client.auth.signOut();
+  Future<void> signOut() async {
+    await PushService.beforeLogout();
+    await _client.auth.signOut();
+  }
 
   Future<void> sendPasswordResetEmail(String email) {
     return _client.auth.resetPasswordForEmail(email, redirectTo: appBaseUrl);
