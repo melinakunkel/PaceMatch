@@ -85,4 +85,17 @@ void main() {
     expect(SportType.hundeGassi.usesLevel, isFalse);
     expect(SportType.kinderSpielen.usesDistance, isFalse);
   });
+
+  test('pick lists are alphabetical', () {
+    final labels = SportType.alphabetical.map((s) => s.label).toList();
+    expect(labels.first, 'Badminton');
+    expect(labels.take(4), [
+      'Badminton',
+      'Beachvolleyball',
+      'Bouldern',
+      'Hunde spazieren',
+    ]);
+    expect(labels.last, 'Wandern');
+    expect(SportType.alphabetical, isNot(contains(SportType.sonstige)));
+  });
 }

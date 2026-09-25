@@ -329,7 +329,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               // "Weitere" is only kept when editing an old sport time
               // that already uses it.
               sports: [
-                ...SportType.selectable,
+                ...SportType.alphabetical,
                 if (_sport == SportType.sonstige) SportType.sonstige,
               ],
               onChanged: (sport) => setState(() {

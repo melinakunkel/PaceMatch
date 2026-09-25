@@ -26,6 +26,20 @@ enum SportType {
   static List<SportType> get selectable =>
       values.where((s) => s != sonstige).toList();
 
+  /// [selectable] in alphabetical order of the displayed name (so it's
+  /// right in each language) — for pick lists and filters. The home grid
+  /// keeps the user's own order instead.
+  static List<SportType> get alphabetical =>
+      selectable
+        ..sort((a, b) => _sortKey(a.label).compareTo(_sortKey(b.label)));
+
+  static String _sortKey(String label) => label
+      .toLowerCase()
+      .replaceAll('ä', 'a')
+      .replaceAll('ö', 'o')
+      .replaceAll('ü', 'u')
+      .replaceAll('ß', 'ss');
+
   static SportType fromDb(String value) => SportType.values.firstWhere(
     (s) => s.name == value,
     orElse: () => SportType.sonstige,

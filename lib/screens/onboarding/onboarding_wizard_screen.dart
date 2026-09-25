@@ -235,7 +235,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: SportType.selectable.map((sport) {
+            children: SportType.alphabetical.map((sport) {
               final selected = _selectedSports.contains(sport);
               return ChoiceChip(
                 label: Text(sport.label),

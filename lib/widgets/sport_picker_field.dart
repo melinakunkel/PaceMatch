@@ -18,11 +18,11 @@ class SportPickerField extends StatelessWidget {
   final SportType value;
   final ValueChanged<SportType> onChanged;
 
-  /// Defaults to every selectable sport.
+  /// Defaults to every selectable sport, alphabetically.
   final List<SportType>? sports;
 
   Future<void> _open(BuildContext context) async {
-    final options = sports ?? SportType.selectable;
+    final options = sports ?? SportType.alphabetical;
     final picked = await showModalBottomSheet<SportType>(
       context: context,
       isScrollControlled: true,
