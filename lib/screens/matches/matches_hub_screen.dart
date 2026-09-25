@@ -209,25 +209,49 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     final now = DateTime.now();
     final weekEnd = now.add(const Duration(days: 7));
     bool thisWeek(DateTime d) => d.isAfter(now) && d.isBefore(weekEnd);
+    final chats = await chatsFuture;
+    // Only people I'm actually in touch with: deleting the chat takes them
+    // out of "Deine Woche" (they stay a Sportbuddy).
+    final chatPartners = {
+      for (final c in chats)
+        if (c.isDirect && c.partner != null) c.partner!.id,
+    };
+    final meetups = [
+      for (final c in chats)
+        if (c.meetingTime != null && thisWeek(c.meetingTime!.toLocal())) c,
+    ];
+    // A buddy whose chat already has a meetup this week shows once — as
+    // that meetup.
+    final withMeetup = {
+      for (final c in meetups)
+        if (c.isDirect && c.partner != null) c.partner!.id,
+    };
     final week = <_WeekItem>[
       for (final g in results)
-        if (g.buddies.isNotEmpty && thisWeek(g.activity.nextOccurrence))
-          _WeekItem(
-            date: g.activity.nextOccurrence,
-            title: g.activity.sport.label,
-            subtitle: t('week.with', {
-              'names': g.buddies.map((b) => b.firstName).join(', '),
-            }),
-            route: '/matches/${g.activity.id}',
-          ),
-      for (final chat in await chatsFuture)
-        if (chat.meetingTime != null && thisWeek(chat.meetingTime!.toLocal()))
-          _WeekItem(
-            date: chat.meetingTime!.toLocal(),
-            title: chat.displayName,
-            subtitle: t('week.meetup'),
-            route: '/group/${chat.id}',
-          ),
+        if (thisWeek(g.activity.nextOccurrence))
+          if (g.buddies
+                  .where(
+                    (b) =>
+                        chatPartners.contains(b.id) &&
+                        !withMeetup.contains(b.id),
+                  )
+                  .toList()
+              case final inTouch when inTouch.isNotEmpty)
+            _WeekItem(
+              date: g.activity.nextOccurrence,
+              title: g.activity.sport.label,
+              subtitle: t('week.with', {
+                'names': inTouch.map((b) => b.firstName).join(', '),
+              }),
+              route: '/matches/${g.activity.id}',
+            ),
+      for (final chat in meetups)
+        _WeekItem(
+          date: chat.meetingTime!.toLocal(),
+          title: chat.displayName,
+          subtitle: t('week.meetup'),
+          route: '/group/${chat.id}',
+        ),
     ]..sort((a, b) => a.date.compareTo(b.date));
     return _HubData(
       groups: results,
