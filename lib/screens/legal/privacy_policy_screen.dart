@@ -79,7 +79,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 'Alle Daten werden bei unserem Hosting-Partner Supabase '
                     'gespeichert und verarbeitet. Mit Supabase besteht bzw. '
                     'wird ein Auftragsverarbeitungsvertrag abgeschlossen.',
-                placeholder('Serverstandort/Region von Supabase ergänzen'),
+                'Serverstandort: EU (Irland), Region „West EU“ von '
+                    'Supabase. Deine Daten werden also innerhalb der EU '
+                    'gespeichert.',
               ],
             ),
             const LegalSection(
