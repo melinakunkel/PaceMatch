@@ -106,6 +106,9 @@ class Profile {
     prompts:
         (map['prompts'] as List?)
             ?.map((p) => ProfilePrompt.fromMap(p as Map<String, dynamic>))
+            // Questions no longer offered disappear from profiles too (and
+            // from the database on the next save).
+            .where((p) => !kRetiredPromptQuestions.contains(p.question))
             .toList() ??
         const [],
   );

@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../utils/pace_format.dart';
 import '../../widgets/pace_picker_field.dart';
+import '../../widgets/city_picker_field.dart';
 
 const _minAge = 16.0;
 const _maxAge = 90.0;
@@ -27,7 +28,10 @@ class OnboardingWizardScreen extends StatefulWidget {
 class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   final _profileService = ProfileService();
   late final _ageCtrl = TextEditingController();
-  late final _cityCtrl = TextEditingController();
+  String? _city;
+
+  /// City text typed but not yet picked from the list.
+  bool _cityPending = false;
 
   int _step = 0;
   final Set<SportType> _selectedSports = {};
@@ -44,7 +48,6 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   @override
   void dispose() {
     _ageCtrl.dispose();
-    _cityCtrl.dispose();
     super.dispose();
   }
 
@@ -60,6 +63,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
   }
 
   void _next() {
+    if (_step == 2 && _cityPending) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('city.pickFromList'))));
+      return;
+    }
     if (_step >= _stepCount - 1) {
       _finish();
       return;
@@ -94,7 +102,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         profile.copyWith(
           age: int.tryParse(_ageCtrl.text),
           gender: _gender,
-          city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+          city: _city,
         ),
       );
       // copyWith can't clear these, so set them directly when needed.
@@ -397,27 +405,18 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ageCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: t('onboarding.step3.age'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _cityCtrl,
-                  decoration: InputDecoration(
-                    labelText: t('onboarding.step3.city'),
-                  ),
-                ),
-              ),
-            ],
+          TextField(
+            controller: _ageCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: t('onboarding.step3.age')),
+          ),
+          const SizedBox(height: 12),
+          CityPickerField(
+            initialCity: _city,
+            onChanged: (city, pending) {
+              _city = city;
+              _cityPending = pending;
+            },
           ),
           const SizedBox(height: 20),
           Text(

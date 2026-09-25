@@ -38,6 +38,38 @@ class GeocodingService {
     }
   }
 
+  /// Cities/towns matching [query], for picking where you live. Returns
+  /// the place's own name (e.g. "Wien") plus region/country to tell apart
+  /// places with the same name.
+  Future<List<CityResult>> searchCities(String query) async {
+    if (query.trim().length < 2) return [];
+    try {
+      final uri = Uri.parse('$_baseUrl/search').replace(
+        queryParameters: {
+          'format': 'json',
+          'q': query,
+          'featureType': 'settlement',
+          'addressdetails': '1',
+          'accept-language': 'de',
+          'limit': '8',
+        },
+      );
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return [];
+      final results = (jsonDecode(response.body) as List)
+          .map((r) => CityResult.fromNominatim(r as Map<String, dynamic>))
+          .whereType<CityResult>();
+      // Same city can come back several times (city + district etc.).
+      final seen = <String>{};
+      return [
+        for (final c in results)
+          if (seen.add('${c.name}|${c.region}')) c,
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// A short, readable name for a tapped map point ("Hohe Wand, Maiersdorf")
   /// — null when Nominatim can't be reached even after one retry (rate
   /// limiting, connectivity), so the caller can let the user type a name.
@@ -115,4 +147,38 @@ String shortPlaceName(Map<String, dynamic> result) {
 
   final display = (result['display_name'] as String?) ?? '';
   return display.split(',').map((s) => s.trim()).take(2).join(', ');
+}
+
+/// A city/town from [GeocodingService.searchCities].
+class CityResult {
+  const CityResult({required this.name, this.region});
+
+  final String name;
+
+  /// State and country, e.g. "Wien, Österreich" — only for telling apart
+  /// places with the same name.
+  final String? region;
+
+  static CityResult? fromNominatim(Map<String, dynamic> r) {
+    final address = (r['address'] as Map?)?.cast<String, dynamic>() ?? {};
+    String? pick(List<String> keys) {
+      for (final k in keys) {
+        final v = (address[k] as String?)?.trim();
+        if (v != null && v.isNotEmpty) return v;
+      }
+      return null;
+    }
+
+    final name =
+        pick(['city', 'town', 'village', 'municipality', 'hamlet']) ??
+        (r['name'] as String?)?.trim();
+    if (name == null || name.isEmpty) return null;
+    final state = pick(['state']);
+    final country = pick(['country']);
+    final region = [
+      if (state != null && state != name) state,
+      ?country,
+    ].join(', ');
+    return CityResult(name: name, region: region.isEmpty ? null : region);
+  }
 }

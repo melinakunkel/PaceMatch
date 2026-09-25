@@ -7,6 +7,7 @@ import '../../models/prompt.dart';
 import '../../services/profile_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
+import '../../widgets/city_picker_field.dart';
 
 const _minAge = 16.0;
 const _maxAge = 90.0;
@@ -34,7 +35,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   late final _ageCtrl = TextEditingController(
     text: widget.profile.age?.toString() ?? '',
   );
-  late final _cityCtrl = TextEditingController(text: widget.profile.city ?? '');
+  late String? _city = widget.profile.city;
+
+  /// City text typed but not yet picked from the list.
+  bool _cityPending = false;
   late String? _gender = widget.profile.gender;
   late bool _sameGenderOnly = widget.profile.genderPreference == 'same_only';
   late RangeValues _ageRange = RangeValues(
@@ -72,7 +76,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   void dispose() {
     _nameCtrl.dispose();
     _ageCtrl.dispose();
-    _cityCtrl.dispose();
     _bioCtrl.dispose();
     for (final p in _prompts) {
       p.controller.dispose();
@@ -92,6 +95,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   }
 
   Future<void> _save() async {
+    if (_cityPending) {
+      setState(() => _error = t('city.pickFromList'));
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -106,7 +113,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               : _nameCtrl.text.trim(),
           age: int.tryParse(_ageCtrl.text),
           gender: _gender,
-          city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+          city: _city,
           avatarUrl: widget.profile.avatarUrl,
           bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
           reliabilityScore: widget.profile.reliabilityScore,
@@ -189,27 +196,18 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               ),
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ageCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: t('onboarding.step3.age'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _cityCtrl,
-                    decoration: InputDecoration(
-                      labelText: t('onboarding.step3.city'),
-                    ),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: _ageCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: t('onboarding.step3.age')),
+            ),
+            const SizedBox(height: 12),
+            CityPickerField(
+              initialCity: widget.profile.city,
+              onChanged: (city, pending) {
+                _city = city;
+                _cityPending = pending;
+              },
             ),
             const SizedBox(height: 16),
             Text(

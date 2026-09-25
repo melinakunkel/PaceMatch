@@ -223,6 +223,8 @@ const _de = <String, String>{
   'onboarding.step3.subtitle':
       'Alles optional — hilft anderen aber, dich besser einzuschätzen.',
   'onboarding.step3.age': 'Alter',
+  'city.hint': 'Stadt suchen, z. B. Wien',
+  'city.pickFromList': 'Bitte wähle deine Stadt aus der Liste.',
   'onboarding.step3.city': 'Stadt',
   'onboarding.step3.gender': 'Geschlecht',
   'onboarding.step4.title': 'Wer soll dir vorgeschlagen werden?',
@@ -991,6 +993,8 @@ const _en = <String, String>{
   'onboarding.step3.subtitle':
       'All optional — but helps others get a better sense of you.',
   'onboarding.step3.age': 'Age',
+  'city.hint': 'Search a city, e.g. Vienna',
+  'city.pickFromList': 'Please pick your city from the list.',
   'onboarding.step3.city': 'City',
   'onboarding.step3.gender': 'Gender',
   'onboarding.step4.title': 'Who should be suggested to you?',

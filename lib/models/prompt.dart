@@ -23,5 +23,8 @@ const kPromptQuestions = [
   'Worauf ich beim Training am meisten achte...',
   'Das würde ich gerne mal ausprobieren...',
   'Mein Trick, wenn ich keine Lust habe...',
-  'Perfektes Sport-Date für mich...',
 ];
+
+/// Questions that were offered once but not anymore ("Sport-Date" read like
+/// a dating app).
+const kRetiredPromptQuestions = {'Perfektes Sport-Date für mich...'};
