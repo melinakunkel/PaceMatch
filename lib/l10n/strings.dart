@@ -117,6 +117,14 @@ const _de = <String, String>{
       'Schalte Push ein, dann meldet sich SAMEPACE auf deinem Handy, wenn '
       'dir jemand schreibt.',
   'push.promptAction': 'Einschalten',
+  'push.quietTitle': 'Ruhezeit',
+  'push.quietDesc':
+      'In dieser Zeit kommen keine Push-Nachrichten – z. B. nachts oder im '
+      'Nachtdienst.',
+  'group.mute': 'Benachrichtigungen für diesen Chat aus',
+  'group.unmute': 'Benachrichtigungen für diesen Chat an',
+  'group.mutedOn': 'Chat stummgeschaltet – keine Push-Nachrichten mehr.',
+  'group.mutedOff': 'Push-Nachrichten für diesen Chat sind wieder an.',
   'settings.permissionDenied':
       'Berechtigung nicht erteilt. Du kannst sie in den '
       'Browser-Einstellungen ändern.',
@@ -316,6 +324,24 @@ const _de = <String, String>{
   'newActivity.everyDay': 'Jeden Tag',
   'newActivity.today': 'Heute',
   'newActivity.tomorrow': 'Morgen',
+  'newActivity.playersWanted': 'Wie viele Mitspieler:innen suchst du?',
+  'team.open': 'Gruppenchat mit deinen Sportbuddys',
+  'team.title': 'Gruppenchat starten',
+  'team.subtitle':
+      'Du suchst {count} Leute. Wähle deine Sportbuddys für diese Sportzeit '
+      'aus – alle landen in einem gemeinsamen Chat.',
+  'team.notEnough':
+      'Sobald du mindestens 2 Sportbuddys für diese Sportzeit hast (beide '
+      'haben sich gegenseitig geliked), kannst du hier einen Gruppenchat '
+      'mit allen starten.',
+  'team.create': 'Gruppenchat starten ({count} Leute)',
+  'newActivity.playersOne': '1 Person',
+  'newActivity.playersMany': '{count} Leute',
+  'matches.lookingFor': 'sucht {count} Leute',
+  'newActivity.addDate': '+ Weiteres Datum',
+  'newActivity.multiDateHint':
+      'Du kannst mehrere Tage wählen – z. B. deine freien Tage laut '
+      'Dienstplan.',
   'newActivity.where': 'Wo?',
   'newActivity.pickLocation': 'Ort auf der Karte auswählen',
   'newActivity.radius': 'Umkreis (km)',
@@ -444,7 +470,8 @@ const _de = <String, String>{
       'Neue Leute kommen laufend dazu – schau bald wieder vorbei.',
   'noMatches.enablePush': 'Push einschalten',
   'noMatches.otherDaysTitle': 'Fast passend: an anderen Tagen',
-  'noMatches.peopleOnDay': '{day}: {count} in deiner Nähe',
+  'noMatches.peopleOnDay': '{day}: {count} Leute',
+  'noMatches.peopleOnDayNear': '{day}: {count} in deiner Nähe',
   'noMatches.addDay': '+ {day}',
   'noMatches.dayAdded': '{day} hinzugefügt – hier sind deine Leute.',
   'noMatches.otherTimesTitle': 'Fast passend: {day} zu anderer Zeit',
@@ -955,6 +982,14 @@ const _en = <String, String>{
       'Turn on push and SAMEPACE lets you know on your phone when someone '
       'writes to you.',
   'push.promptAction': 'Turn on',
+  'push.quietTitle': 'Quiet hours',
+  'push.quietDesc':
+      'No push notifications during this time – e.g. at night or on a '
+      'night shift.',
+  'group.mute': 'Turn off notifications for this chat',
+  'group.unmute': 'Turn on notifications for this chat',
+  'group.mutedOn': 'Chat muted – no more push notifications.',
+  'group.mutedOff': 'Push notifications for this chat are back on.',
   'settings.browserNotifications': 'Browser notifications',
   'settings.permissionDenied':
       'Permission not granted. You can change it in your browser settings.',
@@ -1139,6 +1174,22 @@ const _en = <String, String>{
   'newActivity.everyDay': 'Every day',
   'newActivity.today': 'Today',
   'newActivity.tomorrow': 'Tomorrow',
+  'newActivity.playersWanted': 'How many players are you looking for?',
+  'team.open': 'Group chat with your Sportbuddys',
+  'team.title': 'Start a group chat',
+  'team.subtitle':
+      'You\'re looking for {count} people. Pick your Sportbuddys for this '
+      'sport time – everyone ends up in one shared chat.',
+  'team.notEnough':
+      'Once you have at least 2 Sportbuddys for this sport time (you liked '
+      'each other), you can start a group chat with all of them here.',
+  'team.create': 'Start group chat ({count} people)',
+  'newActivity.playersOne': '1 person',
+  'newActivity.playersMany': '{count} people',
+  'matches.lookingFor': 'looking for {count}',
+  'newActivity.addDate': '+ Add another date',
+  'newActivity.multiDateHint':
+      'You can pick several days – e.g. your days off this week.',
   'newActivity.where': 'Where?',
   'newActivity.pickLocation': 'Pick a location on the map',
   'newActivity.radius': 'Radius (km)',
@@ -1257,7 +1308,8 @@ const _en = <String, String>{
   'noMatches.noPush': 'New people join all the time – check back soon.',
   'noMatches.enablePush': 'Turn on push',
   'noMatches.otherDaysTitle': 'Almost: on other days',
-  'noMatches.peopleOnDay': '{day}: {count} near you',
+  'noMatches.peopleOnDay': '{day}: {count} people',
+  'noMatches.peopleOnDayNear': '{day}: {count} near you',
   'noMatches.addDay': '+ {day}',
   'noMatches.dayAdded': '{day} added – here are your people.',
   'noMatches.otherTimesTitle': 'Almost: {day} at another time',

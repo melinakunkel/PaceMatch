@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:samepace/models/activity.dart';
+import 'package:samepace/models/match_candidate.dart';
+import 'package:samepace/models/profile.dart';
 import 'package:samepace/models/sport_type.dart';
 import 'package:samepace/utils/meeting_days.dart';
 
 Activity _activity({
   required int day,
   String userId = 'u',
+  double? lat,
+  double? lng,
+  double radius = 3,
   DateTime? date,
   TimeOfDay start = const TimeOfDay(hour: 18, minute: 0),
   TimeOfDay end = const TimeOfDay(hour: 19, minute: 0),
@@ -18,6 +23,9 @@ Activity _activity({
   startTime: start,
   endTime: end,
   specificDate: date,
+  latitude: lat,
+  longitude: lng,
+  radiusKm: radius,
 );
 
 void main() {
@@ -100,5 +108,45 @@ void main() {
       _activity(day: 6, userId: 'sat'),
     ], now: now);
     expect(split.isEmpty, isTrue);
+  });
+
+  test('too far apart is not a match; no place counts as flexible', () {
+    // Meidling vs. Floridsdorf: roughly 12 km apart.
+    final meidling = _activity(day: 3, lat: 48.1747, lng: 16.3290);
+    final floridsdorf = _activity(day: 3, lat: 48.2566, lng: 16.3997);
+    final prater = _activity(day: 3, lat: 48.2102, lng: 16.3964);
+    expect(closeEnoughToMeet(meidling, floridsdorf), isFalse);
+    expect(closeEnoughToMeet(meidling, prater), isTrue);
+    expect(closeEnoughToMeet(meidling, _activity(day: 3)), isTrue);
+    expect(
+      closeEnoughToMeet(meidling, _activity(day: 3, lat: 0, lng: 0)),
+      isTrue,
+    );
+    final wide = _activity(day: 3, lat: 48.2566, lng: 16.3997, radius: 10);
+    expect(closeEnoughToMeet(meidling, wide), isTrue);
+  });
+
+  test('near misses skip people who are too far away', () {
+    final mine = _activity(day: 3, userId: 'me', lat: 48.1747, lng: 16.3290);
+    final split = splitNearMisses(mine, [
+      _activity(day: 6, userId: 'far', lat: 48.2566, lng: 16.3997),
+      _activity(day: 6, userId: 'near', lat: 48.2102, lng: 16.3964),
+    ], now: now);
+    expect(split.otherDays[6]!.map((a) => a.userId), ['near']);
+  });
+
+  test('distance label and team sports', () {
+    MatchCandidate at(double? km) => MatchCandidate(
+      profile: Profile(id: 'p', fullName: 'Anna'),
+      theirActivity: _activity(day: 3),
+      matchPercent: 50,
+      distanceKm: km,
+    );
+    expect(at(2.44).distanceLabel, '2,4 km');
+    expect(at(0.43).distanceLabel, '400 m');
+    expect(at(null).distanceLabel, isNull);
+    expect(SportType.beachvolleyball.usesPlayerCount, isTrue);
+    expect(SportType.laufen.usesPlayerCount, isFalse);
+    expect(_activity(day: 3).playersWanted, 1);
   });
 }

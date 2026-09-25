@@ -159,6 +159,17 @@ enum SportType {
     _ => false,
   };
 
+  /// Whether it's often played with more than two people (doubles, 2-vs-2)
+  /// — then the creator can say how many players they're looking for.
+  bool get usesPlayerCount => switch (this) {
+    SportType.tennis ||
+    SportType.padel ||
+    SportType.badminton ||
+    SportType.tischtennis ||
+    SportType.beachvolleyball => true,
+    _ => false,
+  };
+
   /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
   bool get usesBikeType => this == SportType.radfahren;
 

@@ -16,7 +16,8 @@ class MatchService {
   final _likeService = LikeService();
 
   /// Finds other users whose activities overlap with [myActivity] on the
-  /// same day (see [canMeetOnSameDay]), ranked by a 0-100 match score (time + pace overlap).
+  /// same day (see [canMeetOnSameDay]) and close enough to meet (see
+  /// [closeEnoughToMeet]), ranked by a 0-100 match score (time + pace overlap).
   Future<List<MatchCandidate>> findMatches(Activity myActivity) async {
     final candidates = await _activityService.getActivitiesForSport(
       sport: myActivity.sport,
@@ -25,7 +26,11 @@ class MatchService {
     );
 
     final sameDay = candidates
-        .where((a) => canMeetOnSameDay(myActivity, a))
+        .where(
+          (a) =>
+              canMeetOnSameDay(myActivity, a) &&
+              closeEnoughToMeet(myActivity, a),
+        )
         .toList();
     if (sameDay.isEmpty) return [];
 
@@ -65,6 +70,7 @@ class MatchService {
           profile: profile,
           theirActivity: entry.key,
           matchPercent: entry.value,
+          distanceKm: meetingDistanceKm(myActivity, entry.key),
         ),
       );
     }
@@ -96,6 +102,7 @@ class MatchService {
               profile: eligible[a.userId]!,
               theirActivity: a,
               matchPercent: 0,
+              distanceKm: meetingDistanceKm(myActivity, a),
             ),
       ];
     }

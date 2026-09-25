@@ -80,6 +80,10 @@ class Activity {
   /// Only affects the "Entdecken" screen, never matching.
   final String discoverVisibility;
 
+  /// How many people the creator is looking for — 1 is a single partner;
+  /// more for doubles / 2-vs-2 (see [SportType.usesPlayerCount]).
+  final int playersWanted;
+
   Activity({
     required this.id,
     required this.userId,
@@ -105,6 +109,7 @@ class Activity {
     this.specificDate,
     this.circleId,
     this.discoverVisibility = 'open',
+    this.playersWanted = 1,
   });
 
   bool get isRecurring => specificDate == null;
@@ -165,6 +170,7 @@ class Activity {
         : DateTime.parse(map['specific_date'] as String),
     circleId: map['circle_id'] as String?,
     discoverVisibility: map['discover_visibility'] as String? ?? 'open',
+    playersWanted: map['players_wanted'] as int? ?? 1,
   );
 
   static TimeOfDay _parseTime(String raw) {

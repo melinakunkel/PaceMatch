@@ -95,8 +95,17 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   );
   late String? _childGender = widget.existing?.childGender;
   late bool _isRecurring = widget.existing?.isRecurring ?? !widget.today;
-  late DateTime? _specificDate =
-      widget.existing?.specificDate ?? (widget.today ? _dateOnly(0) : null);
+
+  /// One-off dates, sorted. Creating allows several at once (one activity
+  /// each — e.g. the free days of a shift plan); editing keeps exactly one.
+  late int _playersWanted = widget.existing?.playersWanted ?? 1;
+
+  late final List<DateTime> _specificDates = [
+    if (widget.existing?.specificDate != null)
+      _dateOnlyOf(widget.existing!.specificDate!)
+    else if (widget.today)
+      _dateOnly(0),
+  ];
   late String _discoverVisibility =
       widget.existing?.discoverVisibility ?? 'open';
   bool _saving = false;
@@ -155,23 +164,36 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     return DateTime(now.year, now.month, now.day + daysFromToday);
   }
 
-  void _setSpecificDate(DateTime date) {
+  static DateTime _dateOnlyOf(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  static String _fullDateLabel(DateTime d) =>
+      '${weekdayFullLabels[d.weekday - 1]}, '
+      '${d.day.toString().padLeft(2, '0')}.'
+      '${d.month.toString().padLeft(2, '0')}.'
+      '${d.year}';
+
+  bool _hasDate(DateTime date) => _specificDates.contains(_dateOnlyOf(date));
+
+  /// Adds [date] (or, when editing, makes it the only date).
+  void _addDate(DateTime date) {
+    final d = _dateOnlyOf(date);
     setState(() {
-      _specificDate = date;
-      _selectedDays
-        ..clear()
-        ..add(date.weekday);
+      if (widget.isEditing) _specificDates.clear();
+      if (!_specificDates.contains(d)) _specificDates.add(d);
+      _specificDates.sort();
     });
   }
 
-  bool _isSpecificDate(int daysFromToday) {
-    final d = _specificDate;
-    if (d == null) return false;
-    final target = _dateOnly(daysFromToday);
-    return d.year == target.year &&
-        d.month == target.month &&
-        d.day == target.day;
+  void _toggleDate(DateTime date) {
+    if (widget.isEditing || !_hasDate(date)) {
+      _addDate(date);
+    } else {
+      setState(() => _specificDates.remove(_dateOnlyOf(date)));
+    }
   }
+
+  int get _entryCount =>
+      _isRecurring ? _selectedDays.length : _specificDates.length;
 
   /// "Werktags" / "Wochenende" / "Jeden Tag" in one tap — matching needs the
   /// same weekday, so offering several days finds far more people.
@@ -205,12 +227,14 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   Future<void> _pickSpecificDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _specificDate ?? DateTime.now(),
+      initialDate: _specificDates.isEmpty
+          ? DateTime.now()
+          : _specificDates.last,
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked == null) return;
-    _setSpecificDate(picked);
+    _addDate(picked);
   }
 
   Future<void> _pickLocation() async {
@@ -223,8 +247,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
   }
 
   Future<void> _save() async {
-    if (_selectedDays.isEmpty) return;
-    if (!_isRecurring && _specificDate == null) return;
+    if (_entryCount == 0) return;
     setState(() => _saving = true);
     try {
       final radiusKm =
@@ -238,6 +261,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       final paceMin = _sport.usesPace ? _paceMin : null;
       final paceMax = _sport.usesPace ? _paceMax : null;
       final venueStatus = _sport.usesVenueQuestion ? _venueStatus : null;
+      final playersWanted = _sport.usesPlayerCount ? _playersWanted : 1;
       final level = (!_sport.usesPace && _sport.usesLevel) ? _level : null;
       final bikeType = _sport.usesBikeType ? _bikeType : null;
       final runType = _sport.usesRunType ? _runType : null;
@@ -246,13 +270,14 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           ? int.tryParse(_childAgeCtrl.text)
           : null;
       final childGender = _sport.usesChildInfo ? _childGender : null;
-      final specificDate = _isRecurring ? null : _specificDate;
 
       if (widget.isEditing) {
         final updated = await _activityService.updateActivity(
           id: widget.existing!.id,
           sport: _sport,
-          dayOfWeek: _selectedDays.first,
+          dayOfWeek: _isRecurring
+              ? _selectedDays.first
+              : _specificDates.first.weekday,
           startTime: _start,
           endTime: _end,
           locationName: _location?.name,
@@ -270,8 +295,12 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
           hasDog: hasDog,
           childAge: childAge,
           childGender: childGender,
-          specificDate: specificDate,
+          specificDate: _isRecurring ? null : _specificDates.first,
           discoverVisibility: _discoverVisibility,
+          // Left out unless it matters, like on create.
+          playersWanted: playersWanted > 1 || widget.existing!.playersWanted > 1
+              ? playersWanted
+              : null,
         );
         if (!mounted) return;
         context.pushReplacement('/matches/${updated.id}');
@@ -279,9 +308,11 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
       }
 
       final userId = SupabaseService.currentUserId!;
-      final days = _selectedDays.toList()..sort();
+      final slots = _isRecurring
+          ? [for (final day in _selectedDays.toList()..sort()) (day, null)]
+          : [for (final date in _specificDates) (date.weekday, date)];
       final created = <Activity>[];
-      for (final day in days) {
+      for (final (day, specificDate) in slots) {
         created.add(
           await _activityService.createActivity(
             userId: userId,
@@ -307,6 +338,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             specificDate: specificDate,
             circleId: CircleController.active.value?.id,
             discoverVisibility: _discoverVisibility,
+            playersWanted: playersWanted,
           ),
         );
       }
@@ -418,6 +450,25 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     onSelected: (_) =>
                         setState(() => _venueStatus = 'needs_venue'),
                   ),
+                ],
+              ),
+            ],
+            if (_sport.usesPlayerCount) ...[
+              const SizedBox(height: 20),
+              _SectionLabel(t('newActivity.playersWanted')),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final n in [1, 2, 3, 4, 5])
+                    ChoiceChip(
+                      label: Text(
+                        n == 1
+                            ? t('newActivity.playersOne')
+                            : t('newActivity.playersMany', {'count': '$n'}),
+                      ),
+                      selected: _playersWanted == n,
+                      onSelected: (_) => setState(() => _playersWanted = n),
+                    ),
                 ],
               ),
             ],
@@ -536,15 +587,15 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               Wrap(
                 spacing: 8,
                 children: [
-                  ChoiceChip(
+                  FilterChip(
                     label: Text(t('newActivity.today')),
-                    selected: _isSpecificDate(0),
-                    onSelected: (_) => _setSpecificDate(_dateOnly(0)),
+                    selected: _hasDate(_dateOnly(0)),
+                    onSelected: (_) => _toggleDate(_dateOnly(0)),
                   ),
-                  ChoiceChip(
+                  FilterChip(
                     label: Text(t('newActivity.tomorrow')),
-                    selected: _isSpecificDate(1),
-                    onSelected: (_) => _setSpecificDate(_dateOnly(1)),
+                    selected: _hasDate(_dateOnly(1)),
+                    onSelected: (_) => _toggleDate(_dateOnly(1)),
                   ),
                 ],
               ),
@@ -581,7 +632,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   );
                 }),
               )
-            else
+            else ...[
               InkWell(
                 onTap: _pickSpecificDate,
                 borderRadius: BorderRadius.circular(12),
@@ -591,18 +642,43 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                     prefixIcon: const Icon(Icons.event_outlined),
                   ),
                   child: Text(
-                    _specificDate == null
+                    widget.isEditing && _specificDates.isNotEmpty
+                        ? _fullDateLabel(_specificDates.first)
+                        : _specificDates.isEmpty
                         ? t('newActivity.pickDate')
-                        : '${weekdayFullLabels[_specificDate!.weekday - 1]}, '
-                              '${_specificDate!.day.toString().padLeft(2, '0')}.'
-                              '${_specificDate!.month.toString().padLeft(2, '0')}.'
-                              '${_specificDate!.year}',
-                    style: _specificDate == null
+                        : t('newActivity.addDate'),
+                    style: _specificDates.isEmpty
                         ? TextStyle(color: AppColors.textSecondary)
                         : null,
                   ),
                 ),
               ),
+              if (!widget.isEditing) ...[
+                if (_specificDates.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final d in _specificDates)
+                        InputChip(
+                          label: Text(_fullDateLabel(d)),
+                          onDeleted: () =>
+                              setState(() => _specificDates.remove(d)),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  t('newActivity.multiDateHint'),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -740,9 +816,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             ),
             const SizedBox(height: 28),
             ElevatedButton(
-              onPressed: _saving || (!_isRecurring && _specificDate == null)
-                  ? null
-                  : _save,
+              onPressed: _saving || _entryCount == 0 ? null : _save,
               child: _saving
                   ? const SizedBox(
                       height: 20,
@@ -755,9 +829,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                   : Text(
                       widget.isEditing
                           ? t('newActivity.save')
-                          : _selectedDays.length > 1
+                          : _entryCount > 1
                           ? t('newActivity.publishMultiple', {
-                              'count': '${_selectedDays.length}',
+                              'count': '$_entryCount',
                             })
                           : t('newActivity.publish'),
                     ),

@@ -36,6 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool? _autoArchive;
   bool? _browserNotifications;
   bool _pushBusy = false;
+  ({TimeOfDay? start, TimeOfDay? end}) _quiet = (start: null, end: null);
   bool _isAdmin = false;
 
   @override
@@ -49,6 +50,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     });
+    _profileService.getPushQuietHours(SupabaseService.currentUserId!).then((q) {
+      if (mounted) setState(() => _quiet = q);
+    }, onError: (_) {});
     BrowserNotificationService.isEnabled().then((v) {
       if (mounted) setState(() => _browserNotifications = v);
     });
@@ -93,7 +97,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
       ),
     ),
+    ValueListenableBuilder<bool>(
+      valueListenable: PushService.active,
+      builder: (context, active, _) =>
+          active ? _quietHours() : const SizedBox.shrink(),
+    ),
   ];
+
+  static String _hhmm(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _saveQuiet(TimeOfDay? start, TimeOfDay? end) async {
+    final previous = _quiet;
+    setState(() => _quiet = (start: start, end: end));
+    try {
+      await _profileService.setPushQuietHours(
+        SupabaseService.currentUserId!,
+        start: start,
+        end: end,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _quiet = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
+      );
+    }
+  }
+
+  Future<void> _pickQuiet(bool isStart) async {
+    final current = isStart ? _quiet.start : _quiet.end;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: current ?? TimeOfDay(hour: isStart ? 22 : 7, minute: 0),
+    );
+    if (picked == null) return;
+    await _saveQuiet(
+      isStart ? picked : _quiet.start,
+      isStart ? _quiet.end : picked,
+    );
+  }
+
+  /// "Ruhezeit": no push between these times (e.g. night shift, sleep).
+  Widget _quietHours() {
+    final on = _quiet.start != null && _quiet.end != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(t('push.quietTitle')),
+          subtitle: Text(t('push.quietDesc')),
+          value: on,
+          onChanged: (v) => v
+              ? _saveQuiet(
+                  const TimeOfDay(hour: 22, minute: 0),
+                  const TimeOfDay(hour: 7, minute: 0),
+                )
+              : _saveQuiet(null, null),
+        ),
+        if (on)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _pickQuiet(true),
+                  child: Text('${t('common.from')} ${_hhmm(_quiet.start!)}'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _pickQuiet(false),
+                  child: Text('${t('common.to')} ${_hhmm(_quiet.end!)}'),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
 
   Future<void> _setAutoArchive(bool value) async {
     setState(() => _autoArchive = value);

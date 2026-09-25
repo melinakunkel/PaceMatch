@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/activity.dart';
+import 'geo.dart';
 
 /// Start time for a spontaneous "today" activity: the next full half hour,
 /// at least 15 minutes from [now] so there's time to get there. Capped at
@@ -47,6 +48,26 @@ bool canMeetOnSameDay(Activity mine, Activity other, {DateTime? now}) {
 DateTime? _dateOnly(DateTime? d) =>
     d == null ? null : DateTime(d.year, d.month, d.day);
 
+/// Kilometers between the two meeting points, or null when either has no
+/// place on the map ("flexibel"). (0, 0) is how a name-only place is
+/// stored, so it counts as no place too.
+double? meetingDistanceKm(Activity a, Activity b) {
+  bool hasPoint(Activity x) =>
+      x.latitude != null &&
+      x.longitude != null &&
+      !(x.latitude == 0 && x.longitude == 0);
+  if (!hasPoint(a) || !hasPoint(b)) return null;
+  return distanceKm(a.latitude!, a.longitude!, b.latitude!, b.longitude!);
+}
+
+/// Whether the two people would travel far enough to meet: each is fine
+/// with their own radius around their place, so the areas must touch. No
+/// place on either side means "flexibel" — always close enough.
+bool closeEnoughToMeet(Activity a, Activity b) {
+  final km = meetingDistanceKm(a, b);
+  return km == null || km <= a.radiusKm + b.radiusKm;
+}
+
 /// Other people's sport times that *almost* fit [mine] — for when there's
 /// no real match yet, so the list isn't simply empty.
 class NearMissSplit {
@@ -73,6 +94,7 @@ NearMissSplit splitNearMisses(
   final otherTimes = <Activity>[];
   for (final other in others) {
     if (other.userId == mine.userId) continue;
+    if (!closeEnoughToMeet(mine, other)) continue;
     if (other.dayOfWeek == mine.dayOfWeek) {
       if (canMeetOnSameDay(mine, other, now: current) &&
           !_timesOverlap(mine, other)) {

@@ -118,6 +118,7 @@ class ActivityService {
     childGender: a.childGender,
     circleId: a.circleId,
     discoverVisibility: a.discoverVisibility,
+    playersWanted: a.playersWanted,
   );
 
   Future<Activity> createActivity({
@@ -144,6 +145,7 @@ class ActivityService {
     DateTime? specificDate,
     String? circleId,
     String discoverVisibility = 'open',
+    int playersWanted = 1,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -174,6 +176,8 @@ class ActivityService {
               : _formatDate(specificDate),
           'circle_id': circleId,
           'discover_visibility': discoverVisibility,
+          // Only sent when used, so saving never depends on the column.
+          if (playersWanted > 1) 'players_wanted': playersWanted,
         })
         .select()
         .single();
@@ -214,6 +218,7 @@ class ActivityService {
     String? childGender,
     DateTime? specificDate,
     String discoverVisibility = 'open',
+    int? playersWanted,
   }) async {
     await SupabaseService.ensureFreshSession();
     final map = await _client
@@ -242,6 +247,7 @@ class ActivityService {
               ? null
               : _formatDate(specificDate),
           'discover_visibility': discoverVisibility,
+          'players_wanted': ?playersWanted,
         })
         .eq('id', id)
         .select()

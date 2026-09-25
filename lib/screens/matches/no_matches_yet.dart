@@ -281,10 +281,15 @@ class _NoMatchesYetState extends State<NoMatchesYet> {
           child: ListTile(
             leading: _Avatars(_nearMisses.otherDays[day]!),
             title: Text(
-              t('noMatches.peopleOnDay', {
-                'day': weekdayFullLabels[day - 1],
-                'count': '${_nearMisses.otherDays[day]!.length}',
-              }),
+              t(
+                _nearMisses.otherDays[day]!.any((c) => c.distanceKm != null)
+                    ? 'noMatches.peopleOnDayNear'
+                    : 'noMatches.peopleOnDay',
+                {
+                  'day': weekdayFullLabels[day - 1],
+                  'count': '${_nearMisses.otherDays[day]!.length}',
+                },
+              ),
             ),
             subtitle: Text(
               _nearMisses.otherDays[day]!
@@ -326,7 +331,9 @@ class _NoMatchesYetState extends State<NoMatchesYet> {
           child: ListTile(
             leading: _Avatar(c),
             title: Text(c.profile.firstName),
-            subtitle: Text(c.theirActivity.timeRangeLabel),
+            subtitle: Text(
+              [c.theirActivity.timeRangeLabel, ?c.distanceLabel].join(' · '),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/profile/${c.profile.id}'),
           ),

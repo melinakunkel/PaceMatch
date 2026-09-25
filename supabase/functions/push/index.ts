@@ -315,7 +315,7 @@ async function noticeFor(event: any): Promise<Notice | null> {
     const [group] = await db(`groups?id=eq.${msg.group_id}&select=name,is_direct`);
     const [sender] = await db(`profiles?id=eq.${msg.sender_id}&select=full_name`);
     const members = await db(
-      `group_members?group_id=eq.${msg.group_id}&user_id=neq.${msg.sender_id}&select=user_id`,
+      `group_members?group_id=eq.${msg.group_id}&user_id=neq.${msg.sender_id}&muted=is.false&select=user_id`,
     );
     const name = firstName(sender?.full_name);
     const text = (msg.content ?? "").trim();
@@ -400,13 +400,20 @@ async function deliver(event: any, keys: VapidKeys): Promise<number> {
     `push_subscriptions?user_id=in.${ids}&select=endpoint,user_id,p256dh,auth`,
   );
   if (subs.length === 0) return 0;
-  const profiles = await db(`profiles?id=in.${ids}&select=id,ui_language`);
+  const profiles = await db(
+    `profiles?id=in.${ids}&select=id,ui_language,push_quiet_start,push_quiet_end`,
+  );
   const langOf = new Map<string, string>(
     profiles.map((p: any) => [p.id, p.ui_language ?? "de"]),
   );
+  const quiet = new Set<string>(
+    profiles
+      .filter((p: any) => inQuietHours(p.push_quiet_start, p.push_quiet_end))
+      .map((p: any) => p.id),
+  );
 
   let sent = 0;
-  await Promise.all(subs.map(async (sub) => {
+  await Promise.all(subs.filter((sub) => !quiet.has(sub.user_id)).map(async (sub) => {
     const { title, body } = notice.build(langOf.get(sub.user_id) ?? "de");
     try {
       const status = await sendPush(
@@ -429,6 +436,29 @@ async function deliver(event: any, keys: VapidKeys): Promise<number> {
     }
   }));
   return sent;
+}
+
+/// Whether it's currently within someone's "Ruhezeit" (Vienna time). A
+/// window like 22:00–07:00 wraps past midnight.
+export function inQuietHours(
+  start: string | null,
+  end: string | null,
+  now: Date = new Date(),
+): boolean {
+  if (!start || !end) return false;
+  const toMinutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Vienna",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const current = part("hour") * 60 + part("minute");
+  const s = toMinutes(start);
+  const e = toMinutes(end);
+  if (s === e) return false;
+  return s < e ? current >= s && current < e : current >= s || current < e;
 }
 
 // ---------------------------------------------------------------- handler

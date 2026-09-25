@@ -80,6 +80,34 @@ class _GroupScreenState extends State<GroupScreen> {
     super.dispose();
   }
 
+  bool _muted = false;
+
+  Future<void> _toggleMuted() async {
+    final myId = SupabaseService.currentUserId;
+    if (myId == null) return;
+    final muted = !_muted;
+    setState(() => _muted = muted);
+    try {
+      await _groupService.setMuted(
+        groupId: widget.groupId,
+        userId: myId,
+        muted: muted,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(muted ? t('group.mutedOn') : t('group.mutedOff')),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _muted = !muted);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
+      );
+    }
+  }
+
   Future<void> _load() async {
     final SportGroup group;
     final List<Profile> members;
@@ -96,7 +124,14 @@ class _GroupScreenState extends State<GroupScreen> {
     }
     final myId = SupabaseService.currentUserId;
     DateTime? checkedInFor;
+    var muted = false;
     if (myId != null) {
+      try {
+        muted = await _groupService.isMuted(
+          groupId: widget.groupId,
+          userId: myId,
+        );
+      } catch (_) {}
       await _groupService.markGroupRead(groupId: widget.groupId, userId: myId);
       UnreadController.refresh();
       try {
@@ -114,6 +149,7 @@ class _GroupScreenState extends State<GroupScreen> {
       _group = group;
       _members = members;
       _checkedInFor = checkedInFor;
+      _muted = muted;
       _otherTimes = otherTimes;
       _page = _page.clamp(0, otherTimes.length);
       _loading = false;
@@ -594,6 +630,15 @@ class _GroupScreenState extends State<GroupScreen> {
                 ),
               ),
         actions: [
+          IconButton(
+            icon: Icon(
+              _muted
+                  ? Icons.notifications_off_outlined
+                  : Icons.notifications_none,
+            ),
+            tooltip: _muted ? t('group.unmute') : t('group.mute'),
+            onPressed: _toggleMuted,
+          ),
           IconButton(
             icon: const Icon(Icons.flag_outlined),
             tooltip: t('group.reportUser'),

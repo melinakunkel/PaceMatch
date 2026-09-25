@@ -376,6 +376,33 @@ class GroupService {
         .eq('user_id', userId);
   }
 
+  /// Whether I've muted push notifications for this chat.
+  Future<bool> isMuted({
+    required String groupId,
+    required String userId,
+  }) async {
+    final row = await _client
+        .from('group_members')
+        .select('muted')
+        .eq('group_id', groupId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return row?['muted'] as bool? ?? false;
+  }
+
+  Future<void> setMuted({
+    required String groupId,
+    required String userId,
+    required bool muted,
+  }) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('group_members')
+        .update({'muted': muted})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
   /// Removes me from the group without affecting other members.
   Future<void> leaveGroup({
     required String groupId,

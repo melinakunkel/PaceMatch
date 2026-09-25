@@ -22,6 +22,7 @@ import '../../utils/safe_pop.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 import 'no_matches_yet.dart';
+import 'team_chat_sheet.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key, required this.activityId});
@@ -463,6 +464,31 @@ class _MatchesScreenState extends State<MatchesScreen> {
   }
 
   Widget _buildHeader(Activity activity) {
+    final header = _buildInfoRow(activity);
+    if (activity.playersWanted < 2) return header;
+    return Column(
+      children: [
+        header,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.groups_outlined),
+              label: Text(t('team.open')),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => TeamChatSheet(activity: activity),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(Activity activity) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       child: Row(
@@ -863,6 +889,11 @@ class _MatchCard extends StatelessWidget {
                       candidate.theirActivity.timeRangeLabel,
                       candidate.theirActivity.locationLabel ??
                           t('matches.flexibleLocation'),
+                      ?candidate.distanceLabel,
+                      if (candidate.theirActivity.playersWanted > 1)
+                        t('matches.lookingFor', {
+                          'count': '${candidate.theirActivity.playersWanted}',
+                        }),
                     ].join(' · '),
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
@@ -1010,6 +1041,11 @@ class _CandidateListTile extends StatelessWidget {
                         candidate.theirActivity.timeRangeLabel,
                         candidate.theirActivity.locationLabel ??
                             t('matches.flexibleLocation'),
+                        ?candidate.distanceLabel,
+                        if (candidate.theirActivity.playersWanted > 1)
+                          t('matches.lookingFor', {
+                            'count': '${candidate.theirActivity.playersWanted}',
+                          }),
                       ].join(' · '),
                       style: TextStyle(
                         color: AppColors.textSecondary,
