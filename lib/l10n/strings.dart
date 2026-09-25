@@ -215,7 +215,10 @@ const _de = <String, String>{
   'onboarding.step2.noSports':
       'Du hast noch keine Sportart ausgewählt — das holst du im Profil '
       'jederzeit nach.',
-  'onboarding.step2.paceRange': 'Pace-Bereich ({unit})',
+  'onboarding.step2.paceRange': 'Dein Tempo beim {sport} ({unit})',
+  'onboarding.step2.level': 'Level',
+  'onboarding.step2.noPace':
+      'Beim {sport} zählt nur das Level – ein Tempo brauchst du hier nicht.',
   'onboarding.step3.title': 'Ein paar Basisdaten',
   'onboarding.step3.subtitle':
       'Alles optional — hilft anderen aber, dich besser einzuschätzen.',
@@ -934,7 +937,10 @@ const _en = <String, String>{
   'onboarding.step2.noSports':
       'You haven\'t picked a sport yet — you can add one any time in your '
       'profile.',
-  'onboarding.step2.paceRange': 'Pace range ({unit})',
+  'onboarding.step2.paceRange': 'Your {sport} pace ({unit})',
+  'onboarding.step2.level': 'Level',
+  'onboarding.step2.noPace':
+      'For {sport} only the level matters – no pace needed.',
   'onboarding.step3.title': 'A few basics',
   'onboarding.step3.subtitle':
       'All optional — but helps others get a better sense of you.',

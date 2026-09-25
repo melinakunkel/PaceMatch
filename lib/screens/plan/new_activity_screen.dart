@@ -603,7 +603,10 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             if (_sport.usesPace) ...[
               const SizedBox(height: 20),
               _SectionLabel(
-                t('onboarding.step2.paceRange', {'unit': unitLabel}),
+                t('onboarding.step2.paceRange', {
+                  'sport': _sport.label,
+                  'unit': unitLabel,
+                }),
               ),
               Row(
                 children: [

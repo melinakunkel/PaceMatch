@@ -276,69 +276,103 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
               style: TextStyle(color: AppColors.textSecondary),
             )
           else
+            // One card per sport, so it's clear which level/pace belongs to
+            // which — and that e.g. Wandern simply has no pace.
             ..._selectedSports.map((sport) {
               final unitLabel = paceUnitLabel(sport.defaultUnit);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(sport.icon, size: 18, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          sport.label,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                    if (sport.usesLevel) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: _levels.map((l) {
-                          return ChoiceChip(
-                            label: Text(levelLabel(l)),
-                            selected: _sportLevels[sport] == l,
-                            onSelected: (_) =>
-                                setState(() => _sportLevels[sport] = l),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    if (sport.usesPace) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        t('onboarding.step2.paceRange', {'unit': unitLabel}),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: PacePickerField(
-                              label: t('common.from'),
-                              unit: sport.defaultUnit,
-                              value: _paceLow[sport],
-                              onChanged: (v) =>
-                                  setState(() => _paceLow[sport] = v),
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: AppColors.secondaryLight,
+                            child: Icon(
+                              sport.icon,
+                              size: 18,
+                              color: AppColors.primary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: PacePickerField(
-                              label: t('common.to'),
-                              unit: sport.defaultUnit,
-                              value: _paceHigh[sport],
-                              onChanged: (v) =>
-                                  setState(() => _paceHigh[sport] = v),
+                          const SizedBox(width: 10),
+                          Text(
+                            sport.label,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
                             ),
                           ),
                         ],
                       ),
+                      if (sport.usesLevel) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          t('onboarding.step2.level'),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _levels.map((l) {
+                            return ChoiceChip(
+                              label: Text(levelLabel(l)),
+                              selected: _sportLevels[sport] == l,
+                              onSelected: (_) =>
+                                  setState(() => _sportLevels[sport] = l),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                      if (sport.usesPace) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          t('onboarding.step2.paceRange', {
+                            'sport': sport.label,
+                            'unit': unitLabel,
+                          }),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: PacePickerField(
+                                label: t('common.from'),
+                                unit: sport.defaultUnit,
+                                value: _paceLow[sport],
+                                onChanged: (v) =>
+                                    setState(() => _paceLow[sport] = v),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: PacePickerField(
+                                label: t('common.to'),
+                                unit: sport.defaultUnit,
+                                value: _paceHigh[sport],
+                                onChanged: (v) =>
+                                    setState(() => _paceHigh[sport] = v),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else if (sport.usesLevel) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          t('onboarding.step2.noPace', {'sport': sport.label}),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               );
             }),

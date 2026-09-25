@@ -68,4 +68,29 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Wie fit bist du dabei?'), findsOneWidget);
   });
+
+  testWidgets('each chosen sport gets its own card: Wandern no pace', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(420, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.light, home: const OnboardingWizardScreen()),
+    );
+    await tester.tap(find.text('Radfahren'));
+    await tester.tap(find.text('Wandern'));
+    await tester.pump();
+    await tester.tap(find.text('Weiter'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Dein Tempo beim Radfahren'), findsOneWidget);
+    expect(find.textContaining('Tempo beim Wandern'), findsNothing);
+    expect(
+      find.text(
+        'Beim Wandern zählt nur das Level – ein Tempo brauchst du hier nicht.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Level'), findsNWidgets(2));
+  });
 }

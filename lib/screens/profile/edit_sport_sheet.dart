@@ -85,7 +85,10 @@ class _EditSportSheetState extends State<EditSportSheet> {
           if (_sport.usesPace) ...[
             const SizedBox(height: 16),
             Text(
-              t('onboarding.step2.paceRange', {'unit': unitLabel}),
+              t('onboarding.step2.paceRange', {
+                'sport': _sport.label,
+                'unit': unitLabel,
+              }),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
