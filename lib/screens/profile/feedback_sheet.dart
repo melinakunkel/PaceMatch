@@ -73,7 +73,7 @@ class _FeedbackSheetState extends State<FeedbackSheet> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final c in FeedbackCategory.values)
+              for (final c in FeedbackCategory.selectable)
                 ChoiceChip(
                   label: Text(c.label),
                   selected: _category == c,

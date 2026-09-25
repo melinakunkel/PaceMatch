@@ -67,9 +67,10 @@ declare
   kind text;
 begin
   select full_name into who from profiles where id = new.user_id;
+  who := coalesce(who, new.author_name);
   kind := case new.category
     when 'idea' then 'Idee' when 'bug' then 'Fehler'
-    when 'praise' then 'Lob' else 'Sonstiges' end;
+    when 'praise' then 'Lob' when 'test' then 'Testprotokoll' else 'Sonstiges' end;
   perform notify_admin_email(
     'SAMEPACE Feedback (' || kind || ') von ' || coalesce(who, 'unbekannt'),
     '<p><b>' || html_escape(coalesce(who, 'unbekannt')) || '</b> · ' || kind || ' · '

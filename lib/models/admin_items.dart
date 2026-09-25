@@ -4,7 +4,15 @@ enum FeedbackCategory {
   idea,
   bug,
   praise,
-  other;
+  other,
+
+  /// A tester protocol sent from test.html — not offered in the app's own
+  /// feedback form.
+  test;
+
+  /// What users can pick in the in-app feedback form.
+  static List<FeedbackCategory> get selectable =>
+      values.where((c) => c != test).toList();
 
   static FeedbackCategory fromDb(String? v) => FeedbackCategory.values
       .firstWhere((c) => c.name == v, orElse: () => FeedbackCategory.other);
@@ -30,7 +38,9 @@ class FeedbackItem {
     message: m['message'] as String? ?? '',
     createdAt: _date(m['created_at']),
     done: m['status'] == 'done',
-    userName: (m['profiles'] as Map?)?['full_name'] as String?,
+    userName:
+        (m['profiles'] as Map?)?['full_name'] as String? ??
+        m['author_name'] as String?,
   );
 
   final String id;
@@ -39,7 +49,8 @@ class FeedbackItem {
   final DateTime createdAt;
   final bool done;
 
-  /// Null when the account has since been deleted.
+  /// The account's name, or the name a tester typed on test.html. Null
+  /// when the account has since been deleted.
   final String? userName;
 }
 

@@ -188,4 +188,26 @@ void main() {
     expect(find.text('Kai'), findsOneWidget);
     expect(find.byIcon(Icons.remove_circle_outline), findsNWidgets(2));
   });
+
+  test(
+    'test protocols show the tester name and are not offered in the app',
+    () {
+      final item = FeedbackItem.fromMap({
+        'id': 'x',
+        'category': 'test',
+        'message': 'SAMEPACE Testprotokoll …',
+        'created_at': '2026-09-25T18:00:00Z',
+        'status': 'new',
+        'profiles': null,
+        'author_name': 'Lisa',
+      });
+      expect(item.category, FeedbackCategory.test);
+      expect(item.category.label, 'Testprotokoll');
+      expect(item.userName, 'Lisa');
+      expect(
+        FeedbackCategory.selectable,
+        isNot(contains(FeedbackCategory.test)),
+      );
+    },
+  );
 }
