@@ -193,11 +193,25 @@ export interface PushSubscriptionRow {
 
 /// Returns the push service's HTTP status (201 = delivered to the service,
 /// 404/410 = subscription is gone).
+/// Only the real browser push services (Google, Mozilla, Apple, Microsoft)
+/// — never an arbitrary URL someone saved as their "subscription".
+export function isPushServiceUrl(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint);
+    return url.protocol === "https:" &&
+      /(^|\.)(fcm\.googleapis\.com|push\.services\.mozilla\.com|push\.apple\.com|notify\.windows\.com)$/
+        .test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function sendPush(
   sub: PushSubscriptionRow,
   payload: unknown,
   keys: VapidKeys,
 ): Promise<number> {
+  if (!isPushServiceUrl(sub.endpoint)) return 410;
   const body = await encryptPayload(
     enc.encode(JSON.stringify(payload)),
     sub.p256dh,
@@ -500,8 +514,9 @@ export async function handler(req: Request): Promise<Response> {
     const sent = await deliver(event, keys);
     return json({ sent });
   } catch (e) {
+    // Details only in the function logs, not in the response.
     console.error(e);
-    return json({ error: String(e) }, 500);
+    return json({ error: "internal error" }, 500);
   }
 }
 

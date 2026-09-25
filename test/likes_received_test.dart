@@ -17,7 +17,7 @@ void main() {
             likes: [
               PendingLike(
                 profile: Profile(id: 'b', fullName: 'Ben Test'),
-                theirActivity: Activity(
+                activity: Activity(
                   id: 'x',
                   userId: 'b',
                   sport: SportType.laufen,

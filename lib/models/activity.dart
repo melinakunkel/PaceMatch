@@ -190,6 +190,11 @@ class Activity {
       locationName == null ? null : placeLabel(locationName!);
 
   String get dayLabel => weekdayFullLabels[dayOfWeek - 1];
+
+  /// "Laufen · Sa · 18:00 - 19:00" (or the date for a one-off).
+  String get summaryLabel =>
+      '${sport.label} · ${isRecurring ? dayShortLabel : specificDateLabel} · '
+      '$timeRangeLabel';
   String get dayShortLabel => weekdayLabels[dayOfWeek - 1];
 
   String? get venueStatusLabel => switch (venueStatus) {

@@ -135,7 +135,10 @@ const _de = <String, String>{
       'Ein Like zurück, und ihr seid sofort Sportbuddys. Tippe auf eine '
       'Person, um das Profil zu sehen.',
   'likes.likeBack': 'Auch liken',
+  'likes.pendingCardOne': 'Du wartest auf eine Antwort',
   'likes.pendingCard': 'Du wartest auf {count} Antworten',
+  'likes.undoTooLate':
+      '{name} hat dich inzwischen auch geliked – ihr seid jetzt Sportbuddys.',
   'likes.pendingCardSubtitle':
       'Deine Likes ohne Antwort – hier kannst du sie zurücknehmen.',
   'likes.pendingTitle': 'Du wartest auf Antwort',
@@ -1036,7 +1039,10 @@ const _en = <String, String>{
       'One like back and you\'re Sportbuddys right away. Tap someone to see '
       'their profile.',
   'likes.likeBack': 'Like back',
+  'likes.pendingCardOne': 'Waiting for one answer',
   'likes.pendingCard': 'Waiting for {count} answers',
+  'likes.undoTooLate':
+      '{name} liked you back in the meantime – you\'re Sportbuddys now.',
   'likes.pendingCardSubtitle': 'Your likes without an answer – undo them here.',
   'likes.pendingTitle': 'Waiting for an answer',
   'likes.pendingSubtitle':

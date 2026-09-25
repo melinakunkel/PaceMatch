@@ -1,13 +1,15 @@
 /// Someone you and the other person both liked — a mutual connection
 /// ("Sportbuddy"), not yet necessarily a chat. See LikeService.getBuddies.
-/// Someone who liked me and whom I haven't liked back yet.
-class ReceivedLike {
-  ReceivedLike({required this.userId, required this.likedAt, this.activityId});
+/// One like between me and [userId] — received or sent, depending on
+/// where it comes from.
+class LikeRecord {
+  LikeRecord({required this.userId, required this.likedAt, this.activityId});
 
+  /// The other person.
   final String userId;
   final DateTime likedAt;
 
-  /// Their sport time the like was made for, if any.
+  /// The liker's sport time the like was made for, if any.
   final String? activityId;
 }
 

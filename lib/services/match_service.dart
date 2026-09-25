@@ -84,9 +84,7 @@ class MatchService {
       LikeService().getLikesReceived(),
     ]);
     final eligible = results[0] as Map<String, Profile>;
-    final likedMe = {
-      for (final l in results[2] as List<ReceivedLike>) l.userId,
-    };
+    final likedMe = {for (final l in results[2] as List<LikeRecord>) l.userId};
     // Someone already liked shouldn't be offered again as a suggestion —
     // whether or not it's mutual yet, that decision is already made.
     final liked = results[1] as Set<String>;

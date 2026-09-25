@@ -39,12 +39,12 @@ class LikeService {
 
   /// Who liked me and is still waiting for my answer (see migration 0054).
   /// Empty if that function isn't there yet.
-  Future<List<ReceivedLike>> getLikesReceived() async {
+  Future<List<LikeRecord>> getLikesReceived() async {
     try {
       final rows = await _client.rpc('get_likes_received');
       return (rows as List)
           .map(
-            (row) => ReceivedLike(
+            (row) => LikeRecord(
               userId: row['liker_id'] as String,
               likedAt: DateTime.parse(row['liked_at'] as String),
               activityId: row['activity_id'] as String?,
@@ -56,10 +56,8 @@ class LikeService {
     }
   }
 
-  /// People I've liked who haven't liked me back (yet), newest first —
-  /// they're hidden from suggestions, so this is where to see (and undo)
-  /// them.
-  Future<List<ReceivedLike>> getPendingSent() async {
+  /// Every like I've sent, newest first (mutual ones included).
+  Future<List<LikeRecord>> getSentLikes() async {
     final myId = SupabaseService.currentUserId;
     if (myId == null) return [];
     final rows = await _client
@@ -67,15 +65,13 @@ class LikeService {
         .select('to_user, activity_id, created_at')
         .eq('from_user', myId)
         .order('created_at', ascending: false);
-    final buddyIds = (await getBuddies()).map((b) => b.userId).toSet();
     return [
       for (final row in rows as List)
-        if (!buddyIds.contains(row['to_user']))
-          ReceivedLike(
-            userId: row['to_user'] as String,
-            likedAt: DateTime.parse(row['created_at'] as String),
-            activityId: row['activity_id'] as String?,
-          ),
+        LikeRecord(
+          userId: row['to_user'] as String,
+          likedAt: DateTime.parse(row['created_at'] as String),
+          activityId: row['activity_id'] as String?,
+        ),
     ];
   }
 

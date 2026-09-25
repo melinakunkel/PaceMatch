@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/activity.dart';
+import '../../models/buddy.dart';
 import '../../models/group.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../services/activity_service.dart';
+import '../../services/block_service.dart';
 import '../../services/circle_controller.dart';
 import '../../services/group_service.dart';
 import '../../services/like_service.dart';
@@ -140,7 +142,6 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     );
     final activityIds = activities.map((a) => a.id).toSet();
     final likesFuture = _loadLikesReceived();
-    final pendingFuture = _loadPendingSent(activities);
     final chatsFuture = _groupService
         .getMyGroups(userId)
         .catchError((Object _) => <SportGroup>[]);
@@ -150,13 +151,16 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       activities,
       includeLiked: true,
     );
-    final likedFuture = _matchService.likedUserIds(userId);
+    // One read of my sent likes: "already liked" for the suggestions and
+    // "Du wartest auf Antwort" below.
+    final sentFuture = _likeService.getSentLikes();
     final buddies = await _likeService.getBuddies();
     final buddyProfiles = await _profileService.getProfilesByIds(
       buddies.map((b) => b.userId).toList(),
     );
     final fitsByActivity = await fitsFuture;
-    final liked = await likedFuture;
+    final sent = await sentFuture;
+    final liked = {for (final l in sent) l.userId};
     // New suggestions: fits, but not liked yet.
     final candidatesByActivity = {
       for (final e in fitsByActivity.entries)
@@ -264,25 +268,46 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       myActivities: activities,
       week: week,
       likesReceived: await likesFuture,
-      pendingSent: await pendingFuture,
+      pendingSent: await _pendingSent(
+        sent,
+        buddyIds: {for (final b in buddies) b.userId},
+        mine: activities,
+      ),
     );
   }
 
-  Future<List<PendingLike>> _loadPendingSent(List<Activity> mine) async {
+  /// My likes still waiting for an answer, for the active Kreis — without
+  /// blocked, suspended or paused people (same rules as everywhere else).
+  Future<List<PendingLike>> _pendingSent(
+    List<LikeRecord> sent, {
+    required Set<String> buddyIds,
+    required List<Activity> mine,
+  }) async {
+    final mineById = {for (final a in mine) a.id: a};
+    final open = [
+      for (final l in sent)
+        if (!buddyIds.contains(l.userId) &&
+            // A like made for a sport time of another Kreis belongs there.
+            (l.activityId == null || mineById.containsKey(l.activityId)))
+          l,
+    ];
+    if (open.isEmpty) return [];
     try {
-      final likes = await _likeService.getPendingSent();
-      if (likes.isEmpty) return [];
-      final profiles = await _profileService.getProfilesByIds(
-        likes.map((l) => l.userId).toList(),
-      );
-      final profileById = {for (final p in profiles) p.id: p};
-      final mineById = {for (final a in mine) a.id: a};
+      final results = await Future.wait([
+        _profileService.getProfilesByIds(open.map((l) => l.userId).toList()),
+        BlockService().blockedUserIds(),
+      ]);
+      final blocked = results[1] as Set<String>;
+      final profileById = {
+        for (final p in results[0] as List<Profile>)
+          if (!p.isSuspended && !p.isPaused && !blocked.contains(p.id)) p.id: p,
+      };
       return [
-        for (final l in likes)
+        for (final l in open)
           if (profileById[l.userId] != null)
             PendingLike(
               profile: profileById[l.userId]!,
-              theirActivity: mineById[l.activityId],
+              activity: mineById[l.activityId],
             ),
       ];
     } catch (_) {
@@ -291,12 +316,13 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
   }
 
   Future<void> _openPendingSent(_HubData data) async {
-    final changed = await showModalBottomSheet<bool>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => PendingSentSheet(likes: data.pendingSent),
     );
-    if (changed == true && mounted) _refresh();
+    // However it was closed (button, swipe down): show what's changed.
+    if (mounted) _refresh();
   }
 
   Future<List<PendingLike>> _loadLikesReceived() async {
@@ -315,7 +341,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
         if (profileById[l.userId] != null)
           PendingLike(
             profile: profileById[l.userId]!,
-            theirActivity: activityById[l.activityId],
+            activity: activityById[l.activityId],
           ),
     ];
   }
@@ -583,9 +609,11 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                         ),
                       ),
                       title: Text(
-                        t('likes.pendingCard', {
-                          'count': '${pendingSent.length}',
-                        }),
+                        pendingSent.length == 1
+                            ? t('likes.pendingCardOne')
+                            : t('likes.pendingCard', {
+                                'count': '${pendingSent.length}',
+                              }),
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       subtitle: Text(t('likes.pendingCardSubtitle')),

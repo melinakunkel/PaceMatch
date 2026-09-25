@@ -7,12 +7,13 @@ import '../../models/profile.dart';
 import '../../services/like_service.dart';
 import '../../theme/app_theme.dart';
 
-/// Someone waiting for my like back, with the sport time they liked me for.
+/// A like waiting for an answer, with the sport time it was made for —
+/// theirs for a like I received, mine for one I sent.
 class PendingLike {
-  const PendingLike({required this.profile, this.theirActivity});
+  const PendingLike({required this.profile, this.activity});
 
   final Profile profile;
-  final Activity? theirActivity;
+  final Activity? activity;
 }
 
 /// What happened in the sheet: a new match (and with which of my sport
@@ -57,7 +58,7 @@ class _LikesReceivedSheetState extends State<LikesReceivedSheet> {
 
   Future<void> _likeBack(PendingLike like) async {
     setState(() => _busyId = like.profile.id);
-    final mine = _myFittingActivity(like.theirActivity);
+    final mine = _myFittingActivity(like.activity);
     try {
       final mutual = await LikeService().like(
         toUser: like.profile.id,
@@ -101,28 +102,11 @@ class _LikesReceivedSheetState extends State<LikesReceivedSheet> {
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   onTap: () => context.push('/profile/${like.profile.id}'),
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.secondaryLight,
-                    backgroundImage: like.profile.avatarUrl == null
-                        ? null
-                        : NetworkImage(like.profile.avatarUrl!),
-                    child: like.profile.avatarUrl == null
-                        ? Text(
-                            like.profile.firstName.isEmpty
-                                ? '?'
-                                : like.profile.firstName[0].toUpperCase(),
-                            style: TextStyle(color: AppColors.primary),
-                          )
-                        : null,
-                  ),
+                  leading: _Avatar(like.profile),
                   title: Text(like.profile.firstName),
-                  subtitle: like.theirActivity == null
+                  subtitle: like.activity == null
                       ? null
-                      : Text(
-                          '${like.theirActivity!.sport.label} · '
-                          '${like.theirActivity!.isRecurring ? like.theirActivity!.dayShortLabel : like.theirActivity!.specificDateLabel} · '
-                          '${like.theirActivity!.timeRangeLabel}',
-                        ),
+                      : Text(like.activity!.summaryLabel),
                   trailing: _busyId == like.profile.id
                       ? const SizedBox(
                           width: 20,
@@ -154,7 +138,7 @@ class _LikesReceivedSheetState extends State<LikesReceivedSheet> {
 class PendingSentSheet extends StatefulWidget {
   const PendingSentSheet({super.key, required this.likes});
 
-  /// [PendingLike.theirActivity] here is *my* sport time the like was for.
+  /// Here [PendingLike.activity] is my own sport time.
   final List<PendingLike> likes;
 
   @override
@@ -164,18 +148,31 @@ class PendingSentSheet extends StatefulWidget {
 class _PendingSentSheetState extends State<PendingSentSheet> {
   late final List<PendingLike> _likes = [...widget.likes];
   String? _busyId;
-  bool _changed = false;
 
   Future<void> _undo(PendingLike like) async {
     setState(() => _busyId = like.profile.id);
     try {
-      await LikeService().unlike(like.profile.id);
+      final likes = LikeService();
+      await likes.unlike(like.profile.id);
+      // unlike_user keeps a like that has become mutual in the meantime —
+      // say so instead of pretending it was taken back.
+      final nowBuddy = (await likes.getBuddies()).any(
+        (b) => b.userId == like.profile.id,
+      );
       if (!mounted) return;
       setState(() {
         _likes.remove(like);
         _busyId = null;
-        _changed = true;
       });
+      if (nowBuddy) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              t('likes.undoTooLate', {'name': like.profile.firstName}),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _busyId = null);
@@ -187,69 +184,78 @@ class _PendingSentSheetState extends State<PendingSentSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) Navigator.of(context).pop(_changed);
-      },
-      child: SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            children: [
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          children: [
+            Text(
+              t('likes.pendingTitle'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t('likes.pendingSubtitle'),
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            if (_likes.isEmpty)
               Text(
-                t('likes.pendingTitle'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                t('likes.pendingSubtitle'),
+                t('likes.pendingEmpty'),
                 style: TextStyle(color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 12),
-              if (_likes.isEmpty)
-                Text(
-                  t('likes.pendingEmpty'),
-                  style: TextStyle(color: AppColors.textSecondary),
+            for (final like in _likes)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  onTap: () => context.push('/profile/${like.profile.id}'),
+                  leading: _Avatar(like.profile),
+                  title: Text(like.profile.firstName),
+                  subtitle: like.activity == null
+                      ? null
+                      : Text(like.activity!.summaryLabel),
+                  trailing: _busyId == like.profile.id
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : TextButton(
+                          onPressed: _busyId == null ? () => _undo(like) : null,
+                          child: Text(t('likes.undo')),
+                        ),
                 ),
-              for (final like in _likes)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    onTap: () => context.push('/profile/${like.profile.id}'),
-                    title: Text(like.profile.firstName),
-                    subtitle: like.theirActivity == null
-                        ? null
-                        : Text(
-                            '${like.theirActivity!.sport.label} · '
-                            '${like.theirActivity!.isRecurring ? like.theirActivity!.dayShortLabel : like.theirActivity!.specificDateLabel} · '
-                            '${like.theirActivity!.timeRangeLabel}',
-                          ),
-                    trailing: _busyId == like.profile.id
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : TextButton(
-                            onPressed: _busyId == null
-                                ? () => _undo(like)
-                                : null,
-                            child: Text(t('likes.undo')),
-                          ),
-                  ),
-                ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar(this.profile);
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = profile.avatarUrl;
+    return CircleAvatar(
+      backgroundColor: AppColors.secondaryLight,
+      backgroundImage: url == null ? null : NetworkImage(url),
+      child: url == null
+          ? Text(
+              profile.firstName.isEmpty
+                  ? '?'
+                  : profile.firstName[0].toUpperCase(),
+              style: TextStyle(color: AppColors.primary),
+            )
+          : null,
     );
   }
 }
