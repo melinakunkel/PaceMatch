@@ -109,9 +109,19 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 20),
-            Text(
-              t('home.question'),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            // Always one line: shrinks to fit narrow phones instead of
+            // wrapping.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                t('home.question'),
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Expanded(
