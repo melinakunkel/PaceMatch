@@ -39,10 +39,16 @@ void main() {
       _a('t3', 'max', SportType.laufen, 1, 7, 8), // Mon, no time overlap
     ];
     final shared = sharedSportTimes(mine, theirs, now: now);
-    expect(shared.map((s) => s.mine.id), ['m2', 'm1']);
-    expect(shared.first.locationName, 'Kahlenberg'); // mine has no place
-    expect(shared.last.locationName, 'Prater'); // mine wins
-    expect(shared.last.involves('t1'), isTrue);
+    expect(shared.map((s) => s.mine.id), unorderedEquals(['m1', 'm2']));
+    final byId = {for (final s in shared) s.mine.id: s};
+    expect(byId['m2']!.locationName, 'Kahlenberg'); // mine has no place
+    expect(byId['m1']!.locationName, 'Prater'); // mine wins
+    expect(byId['m1']!.involves('t1'), isTrue);
+    // Soonest first (whatever weekday the test runs on).
+    expect(
+      shared.first.nextOccurrence.isAfter(shared.last.nextOccurrence),
+      isFalse,
+    );
   });
 
   test('ignores other sports, other days, and one-offs already over', () {

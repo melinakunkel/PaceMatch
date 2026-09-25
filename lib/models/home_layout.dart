@@ -15,10 +15,10 @@ class HomeLayout {
   /// Sport names the user turned off.
   final List<String> hidden;
 
-  /// Every [SportType], in the user's order, with any sport missing from
-  /// [order] appended at the end.
+  /// Every selectable [SportType], in the user's order, with any sport
+  /// missing from [order] (e.g. newly added ones) appended at the end.
   List<SportType> fullOrder() {
-    final remaining = {for (final s in SportType.values) s.name: s};
+    final remaining = {for (final s in SportType.selectable) s.name: s};
     final ordered = <SportType>[];
     for (final name in order) {
       final sport = remaining.remove(name);

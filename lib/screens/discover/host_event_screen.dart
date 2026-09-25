@@ -134,7 +134,7 @@ class _HostEventScreenState extends State<HostEventScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: SportType.values.map((sport) {
+              children: SportType.selectable.map((sport) {
                 final selected = sport == _sport;
                 return ChoiceChip(
                   label: Text(sport.label),

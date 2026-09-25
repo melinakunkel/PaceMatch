@@ -326,24 +326,30 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: SportType.values.map((sport) {
-                final selected = sport == _sport;
-                return ChoiceChip(
-                  label: Text(sport.label),
-                  selected: selected,
-                  onSelected: (_) => setState(() {
-                    _sport = sport;
-                    if (!widget.isEditing) _applyProfileDefaults(sport);
-                  }),
-                  avatar: Icon(
-                    sport.icon,
-                    size: 18,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                );
-              }).toList(),
+              // "Weitere" is only kept when editing an old sport time
+              // that already uses it.
+              children:
+                  [
+                    ...SportType.selectable,
+                    if (_sport == SportType.sonstige) SportType.sonstige,
+                  ].map((sport) {
+                    final selected = sport == _sport;
+                    return ChoiceChip(
+                      label: Text(sport.label),
+                      selected: selected,
+                      onSelected: (_) => setState(() {
+                        _sport = sport;
+                        if (!widget.isEditing) _applyProfileDefaults(sport);
+                      }),
+                      avatar: Icon(
+                        sport.icon,
+                        size: 18,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    );
+                  }).toList(),
             ),
             if (_sport.usesVenueQuestion) ...[
               const SizedBox(height: 20),

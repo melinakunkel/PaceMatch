@@ -74,6 +74,13 @@ flutter:
   assets:
     - .env
 
+  # Sport icons Material Icons lacks (Badminton, Tischtennis, Bouldern) —
+  # see assets/fonts/NOTICE.md.
+  fonts:
+    - family: SportSymbols
+      fonts:
+        - asset: assets/fonts/SportSymbols.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

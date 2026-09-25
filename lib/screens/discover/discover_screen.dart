@@ -617,7 +617,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: SportType.values.map((sport) {
+                  children: SportType.selectable.map((sport) {
                     final selected = _sportFilter.contains(sport);
                     return FilterChip(
                       label: Text(sport.label),
@@ -797,7 +797,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: SportType.values.map((sport) {
+                  children: SportType.selectable.map((sport) {
                     final selected = _timelineSportFilter.contains(sport);
                     return FilterChip(
                       label: Text(sport.label),

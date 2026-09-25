@@ -12,7 +12,19 @@ enum SportType {
   schwangerschaftssport,
   hundeGassi,
   kinderSpielen,
+  bouldern,
+  badminton,
+  tischtennis,
+  beachvolleyball,
+
+  /// Fallback only — no longer offered anywhere to pick, but still what an
+  /// unknown database value or a private chat without a sport time maps to.
   sonstige;
+
+  /// Every sport a person can pick (home grid, new sport time, filters, …)
+  /// — everything except the [sonstige] fallback.
+  static List<SportType> get selectable =>
+      values.where((s) => s != sonstige).toList();
 
   static SportType fromDb(String value) => SportType.values.firstWhere(
     (s) => s.name == value,
@@ -39,6 +51,14 @@ enum SportType {
         return t('sport.hundeGassi');
       case SportType.kinderSpielen:
         return t('sport.kinderSpielen');
+      case SportType.bouldern:
+        return t('sport.bouldern');
+      case SportType.badminton:
+        return t('sport.badminton');
+      case SportType.tischtennis:
+        return t('sport.tischtennis');
+      case SportType.beachvolleyball:
+        return t('sport.beachvolleyball');
       case SportType.sonstige:
         return t('sport.sonstige');
     }
@@ -64,6 +84,14 @@ enum SportType {
         return Icons.pets;
       case SportType.kinderSpielen:
         return Icons.child_care;
+      case SportType.bouldern:
+        return _SportSymbols.bouldern;
+      case SportType.badminton:
+        return _SportSymbols.badminton;
+      case SportType.tischtennis:
+        return _SportSymbols.tischtennis;
+      case SportType.beachvolleyball:
+        return Icons.sports_volleyball;
       case SportType.sonstige:
         return Icons.more_horiz;
     }
@@ -82,30 +110,40 @@ enum SportType {
     }
   }
 
-  /// Whether a pace/speed makes sense for this sport. False for sports where
-  /// a skill level fits better than a numeric pace.
-  bool get usesPace =>
-      this != SportType.tennis &&
-      this != SportType.padel &&
-      this != SportType.wandern &&
-      this != SportType.schwangerschaftssport &&
-      this != SportType.hundeGassi &&
-      this != SportType.kinderSpielen;
+  /// Whether a pace/speed makes sense for this sport — only the endurance
+  /// sports. Everything else (tennis, bouldern, …) uses a skill level
+  /// instead. An explicit list, so a newly added sport never asks for a
+  /// pace by accident.
+  bool get usesPace => switch (this) {
+    SportType.laufen ||
+    SportType.radfahren ||
+    SportType.schwimmen ||
+    SportType.sonstige => true,
+    _ => false,
+  };
 
-  /// Whether a distance range makes sense for this sport. False for tennis,
-  /// which isn't measured in km.
-  bool get usesDistance =>
-      this != SportType.tennis &&
-      this != SportType.padel &&
-      this != SportType.schwangerschaftssport &&
-      this != SportType.hundeGassi &&
-      this != SportType.kinderSpielen;
+  /// Whether a distance range (km) makes sense for this sport.
+  bool get usesDistance => switch (this) {
+    SportType.laufen ||
+    SportType.radfahren ||
+    SportType.schwimmen ||
+    SportType.wandern ||
+    SportType.sonstige => true,
+    _ => false,
+  };
 
   /// Whether this sport typically needs a reserved venue (a court, a
-  /// booked slot), so activities should ask whether the creator already
-  /// has one or is still looking for one.
-  bool get usesVenueQuestion =>
-      this == SportType.tennis || this == SportType.padel;
+  /// table, a booked slot), so activities should ask whether the creator
+  /// already has one or is still looking for one. Not bouldern: a
+  /// bouldering gym is walk-in.
+  bool get usesVenueQuestion => switch (this) {
+    SportType.tennis ||
+    SportType.padel ||
+    SportType.badminton ||
+    SportType.tischtennis ||
+    SportType.beachvolleyball => true,
+    _ => false,
+  };
 
   /// Whether a bike type (Rennrad, Mountainbike, ...) makes sense to ask.
   bool get usesBikeType => this == SportType.radfahren;
@@ -182,4 +220,13 @@ enum RunType {
         return t('runType.speedRun');
     }
   }
+}
+
+/// Icons Material Icons doesn't have, from assets/fonts/SportSymbols.ttf
+/// (see tool/build_sport_symbols.py).
+abstract final class _SportSymbols {
+  static const _family = 'SportSymbols';
+  static const badminton = IconData(0xf2a8, fontFamily: _family);
+  static const tischtennis = IconData(0xf2a6, fontFamily: _family);
+  static const bouldern = IconData(0xe900, fontFamily: _family);
 }

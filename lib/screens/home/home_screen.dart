@@ -20,7 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _profileService = ProfileService();
-  List<SportType> _sports = SportType.values.toList();
+  List<SportType> _sports = SportType.selectable;
 
   @override
   void initState() {

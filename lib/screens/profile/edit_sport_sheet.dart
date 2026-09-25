@@ -67,7 +67,7 @@ class _EditSportSheetState extends State<EditSportSheet> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: SportType.values.map((s) {
+            children: SportType.selectable.map((s) {
               return ChoiceChip(
                 label: Text(s.label),
                 selected: s == _sport,

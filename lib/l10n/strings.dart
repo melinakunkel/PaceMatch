@@ -126,6 +126,10 @@ const _de = <String, String>{
   'sport.schwangerschaftssport': 'Schwangerschafts-/Rückbildungssport',
   'sport.hundeGassi': 'Hunde spazieren',
   'sport.kinderSpielen': 'Kinder spielen',
+  'sport.bouldern': 'Bouldern',
+  'sport.badminton': 'Badminton',
+  'sport.tischtennis': 'Tischtennis',
+  'sport.beachvolleyball': 'Beachvolleyball',
   'sport.sonstige': 'Weitere',
 
   // Bike types (BikeType.label).
@@ -845,6 +849,10 @@ const _en = <String, String>{
   'sport.schwangerschaftssport': 'Pregnancy / postnatal fitness',
   'sport.hundeGassi': 'Dog walking',
   'sport.kinderSpielen': 'Kids playdate',
+  'sport.bouldern': 'Bouldering',
+  'sport.badminton': 'Badminton',
+  'sport.tischtennis': 'Table tennis',
+  'sport.beachvolleyball': 'Beach volleyball',
   'sport.sonstige': 'Other',
 
   'bikeType.rennrad': 'Road bike',
