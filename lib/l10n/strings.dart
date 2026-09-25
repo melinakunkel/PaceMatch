@@ -124,6 +124,19 @@ const _de = <String, String>{
       'In diesen Zeiten kommen keine Push-Nachrichten – z. B. nachts, beim '
       'Mittagsschlaf oder im Nachtdienst.',
   'group.menu': 'Mehr',
+  'likes.likedYou': '💚 mag dich',
+  'likes.likedYouLong':
+      'Hat dich schon geliked – ein Like zurück ist ein Match.',
+  'likes.cardOne': '{name} hat dich geliked',
+  'likes.cardMany': '{count} Leute haben dich geliked',
+  'likes.cardSubtitle': 'Like zurück – dann seid ihr Sportbuddys.',
+  'likes.sheetTitle': 'Wer hat dich geliked',
+  'likes.sheetSubtitle':
+      'Ein Like zurück, und ihr seid sofort Sportbuddys. Tippe auf eine '
+      'Person, um das Profil zu sehen.',
+  'likes.likeBack': 'Auch liken',
+  'likes.matchTitle': "It's a Match! 🎉",
+  'likes.matchBody': 'Du und {name} seid jetzt Sportbuddys.',
   'editProfile.strava': 'Strava-Profil (optional)',
   'editProfile.stravaHelp':
       'Andere sehen einen Knopf zu deinem Strava – so ist deine Pace '
@@ -1003,6 +1016,18 @@ const _en = <String, String>{
       'No push notifications during this time – e.g. at night or on a '
       'night shift.',
   'group.menu': 'More',
+  'likes.likedYou': '💚 likes you',
+  'likes.likedYouLong': 'Already liked you – a like back is a match.',
+  'likes.cardOne': '{name} liked you',
+  'likes.cardMany': '{count} people liked you',
+  'likes.cardSubtitle': 'Like back – and you\'re Sportbuddys.',
+  'likes.sheetTitle': 'Who liked you',
+  'likes.sheetSubtitle':
+      'One like back and you\'re Sportbuddys right away. Tap someone to see '
+      'their profile.',
+  'likes.likeBack': 'Like back',
+  'likes.matchTitle': "It's a Match! 🎉",
+  'likes.matchBody': 'You and {name} are Sportbuddys now.',
   'editProfile.strava': 'Strava profile (optional)',
   'editProfile.stravaHelp':
       'Others see a button to your Strava – so your pace is easy to check.',

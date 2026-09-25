@@ -37,6 +37,25 @@ class LikeService {
     return (rows as List).map((r) => r['to_user'] as String).toSet();
   }
 
+  /// Who liked me and is still waiting for my answer (see migration 0054).
+  /// Empty if that function isn't there yet.
+  Future<List<ReceivedLike>> getLikesReceived() async {
+    try {
+      final rows = await _client.rpc('get_likes_received');
+      return (rows as List)
+          .map(
+            (row) => ReceivedLike(
+              userId: row['liker_id'] as String,
+              likedAt: DateTime.parse(row['liked_at'] as String),
+              activityId: row['activity_id'] as String?,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Everyone the current user has mutually liked — a "Sportbuddy"
   /// connection — newest first. A mutual pair "connects" at whichever of the
   /// two likes came second.

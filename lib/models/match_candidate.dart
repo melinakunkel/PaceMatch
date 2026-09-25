@@ -11,11 +11,15 @@ class MatchCandidate {
   /// Between the two meeting points, when both have one.
   final double? distanceKm;
 
+  /// They already liked me — liking back makes it a match right away.
+  final bool likedMe;
+
   MatchCandidate({
     required this.profile,
     required this.theirActivity,
     required this.matchPercent,
     this.distanceKm,
+    this.likedMe = false,
   });
 
   /// "2,4 km" / "800 m", for the match cards.

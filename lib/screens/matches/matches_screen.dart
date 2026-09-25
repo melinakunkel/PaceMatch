@@ -886,6 +886,10 @@ class _MatchCard extends StatelessWidget {
                         const VerifiedBadge(size: 16),
                       ],
                       const Spacer(),
+                      if (candidate.likedMe) ...[
+                        const _LikedMeBadge(),
+                        const SizedBox(width: 6),
+                      ],
                       _MatchBadge(percent: candidate.matchPercent),
                     ],
                   ),
@@ -942,6 +946,33 @@ class _MatchCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "💚 mag dich" — they already liked me.
+class _LikedMeBadge extends StatelessWidget {
+  const _LikedMeBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: t('likes.likedYouLong'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryLight,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          t('likes.likedYou'),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary,
+          ),
         ),
       ),
     );
@@ -1039,6 +1070,10 @@ class _CandidateListTile extends StatelessWidget {
                           const VerifiedBadge(size: 14),
                         ],
                         const Spacer(),
+                        if (candidate.likedMe) ...[
+                          const _LikedMeBadge(),
+                          const SizedBox(width: 6),
+                        ],
                         _MatchBadge(percent: candidate.matchPercent),
                       ],
                     ),

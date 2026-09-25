@@ -17,6 +17,7 @@ import '../../router/route_observer.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_scaffold.dart';
+import 'likes_received_sheet.dart';
 
 /// One of the user's own activities, with who they've mutually connected
 /// with for it (real Sportbuddys) and how many more candidates are still
@@ -52,9 +53,15 @@ class _HubData {
   _HubData({
     required this.groups,
     required this.unassignedBuddies,
+    required this.myActivities,
     this.week = const [],
+    this.likesReceived = const [],
   });
   final List<_ActivityGroup> groups;
+  final List<Activity> myActivities;
+
+  /// "Wer hat dich geliked" — waiting for my like back.
+  final List<PendingLike> likesReceived;
 
   /// The next 7 days: sport times with buddies, and meetups set in chats.
   final List<_WeekItem> week;
@@ -128,6 +135,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       circleId: CircleController.active.value?.id,
     );
     final activityIds = activities.map((a) => a.id).toSet();
+    final likesFuture = _loadLikesReceived();
     final chatsFuture = _groupService
         .getMyGroups(userId)
         .catchError((Object _) => <SportGroup>[]);
@@ -224,8 +232,65 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     return _HubData(
       groups: results,
       unassignedBuddies: unassignedBuddies,
+      myActivities: activities,
       week: week,
+      likesReceived: await likesFuture,
     );
+  }
+
+  Future<List<PendingLike>> _loadLikesReceived() async {
+    final likes = await _likeService.getLikesReceived();
+    if (likes.isEmpty) return [];
+    final profiles = await _profileService.getProfilesByIds(
+      likes.map((l) => l.userId).toList(),
+    );
+    final activities = await _activityService.getActivitiesByIds(
+      likes.map((l) => l.activityId).whereType<String>().toList(),
+    );
+    final profileById = {for (final p in profiles) p.id: p};
+    final activityById = {for (final a in activities) a.id: a};
+    return [
+      for (final l in likes)
+        if (profileById[l.userId] != null)
+          PendingLike(
+            profile: profileById[l.userId]!,
+            theirActivity: activityById[l.activityId],
+          ),
+    ];
+  }
+
+  Future<void> _openLikesReceived(_HubData data) async {
+    final result = await showModalBottomSheet<LikeBackResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => LikesReceivedSheet(
+        likes: data.likesReceived,
+        myActivities: data.myActivities,
+      ),
+    );
+    if (!mounted) return;
+    _refresh();
+    if (result == null) return;
+    final chat = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('likes.matchTitle')),
+        content: Text(t('likes.matchBody', {'name': result.profile.firstName})),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.close')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(t('matchesHub.message')),
+          ),
+        ],
+      ),
+    );
+    if (chat == true && mounted) {
+      await _openDirectChat(result.profile, activity: result.myActivity);
+    }
   }
 
   Future<void> _refresh() async {
@@ -405,7 +470,10 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
           }
           final groups = snapshot.data?.groups ?? [];
           final unassignedBuddies = snapshot.data?.unassignedBuddies ?? [];
-          if (groups.isEmpty && unassignedBuddies.isEmpty) {
+          final likesReceived = snapshot.data?.likesReceived ?? [];
+          if (groups.isEmpty &&
+              unassignedBuddies.isEmpty &&
+              likesReceived.isEmpty) {
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
@@ -439,6 +507,7 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                if (likesReceived.isNotEmpty) _buildLikesCard(snapshot.data!),
                 if (snapshot.data!.week.isNotEmpty)
                   _buildWeekCard(snapshot.data!.week),
                 if (unassignedBuddies.isNotEmpty)
@@ -448,6 +517,29 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLikesCard(_HubData data) {
+    final likes = data.likesReceived;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
+        leading: CircleAvatar(
+          backgroundColor: AppColors.secondaryLight,
+          child: Icon(Icons.favorite, color: AppColors.primary),
+        ),
+        title: Text(
+          likes.length == 1
+              ? t('likes.cardOne', {'name': likes.first.profile.firstName})
+              : t('likes.cardMany', {'count': '${likes.length}'}),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(t('likes.cardSubtitle')),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _openLikesReceived(data),
       ),
     );
   }

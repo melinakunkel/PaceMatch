@@ -1,4 +1,5 @@
 import '../models/activity.dart';
+import '../models/buddy.dart';
 import '../models/match_candidate.dart';
 import '../models/profile.dart';
 import '../utils/match_scoring.dart';
@@ -6,6 +7,7 @@ import '../utils/meeting_days.dart';
 import '../utils/matching_preferences.dart';
 import 'activity_service.dart';
 import 'block_service.dart';
+import 'like_service.dart';
 import 'supabase_service.dart';
 
 class MatchService {
@@ -79,8 +81,12 @@ class MatchService {
     final results = await Future.wait([
       _eligibleProfiles(myUserId, allUserIds),
       includeLiked ? Future.value(<String>{}) : likedUserIds(myUserId),
+      LikeService().getLikesReceived(),
     ]);
     final eligible = results[0] as Map<String, Profile>;
+    final likedMe = {
+      for (final l in results[2] as List<ReceivedLike>) l.userId,
+    };
     // Someone already liked shouldn't be offered again as a suggestion —
     // whether or not it's mutual yet, that decision is already made.
     final liked = results[1] as Set<String>;
@@ -96,6 +102,7 @@ class MatchService {
                 theirActivity: entry.key,
                 matchPercent: entry.value,
                 distanceKm: meetingDistanceKm(myActivity, entry.key),
+                likedMe: likedMe.contains(entry.key.userId),
               ),
         ]..sort((a, b) => b.matchPercent.compareTo(a.matchPercent)),
     };
