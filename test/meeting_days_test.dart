@@ -97,6 +97,16 @@ void main() {
       _activity(day: 5, userId: 'past', date: DateTime(2026, 9, 18)),
     ], now: now);
     expect(split.otherDays.keys, [6]);
+    // Saturday at another time wouldn't match after adding Saturday.
+    final lateSat = splitNearMisses(mine, [
+      _activity(
+        day: 6,
+        userId: 'sat-late',
+        start: const TimeOfDay(hour: 7, minute: 0),
+        end: const TimeOfDay(hour: 8, minute: 0),
+      ),
+    ], now: now);
+    expect(lateSat.isEmpty, isTrue);
     expect(split.otherDays[6]!.map((a) => a.userId), ['sat1', 'sat2']);
     // Real matches aren't near misses; closest time first.
     expect(split.otherTimes.map((a) => a.userId), ['early', 'late']);

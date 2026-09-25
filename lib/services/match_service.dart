@@ -125,12 +125,31 @@ class MatchService {
       excludeUserId: myActivity.userId,
       circleId: myActivity.circleId,
     );
-    final split = splitNearMisses(myActivity, others);
+    // Days I already do this sport on (weekly) — "+ Sa" there would only
+    // create a duplicate.
+    final mine = await _activityService.getMyActivities(
+      myActivity.userId,
+      circleId: myActivity.circleId,
+    );
+    final myDays = {
+      for (final a in mine)
+        if (a.sport == myActivity.sport && a.isRecurring) a.dayOfWeek,
+    };
+    final split = splitNearMisses(myActivity, others, skipDays: myDays);
     if (split.isEmpty) return const NearMisses();
-    final eligible = await _eligibleProfiles(myActivity.userId, [
-      for (final list in split.otherDays.values) ...list.map((a) => a.userId),
-      ...split.otherTimes.map((a) => a.userId),
+    final results = await Future.wait([
+      _eligibleProfiles(myActivity.userId, [
+        for (final list in split.otherDays.values) ...list.map((a) => a.userId),
+        ...split.otherTimes.map((a) => a.userId),
+      ]),
+      likedUserIds(myActivity.userId),
     ]);
+    // Already liked (buddy or pending) is decided — not a suggestion.
+    final liked = results[1] as Set<String>;
+    final eligible = {
+      for (final e in (results[0] as Map<String, Profile>).entries)
+        if (!liked.contains(e.key)) e.key: e.value,
+    };
 
     List<MatchCandidate> toCandidates(List<Activity> activities) {
       final seen = <String>{};

@@ -73,8 +73,9 @@ bool closeEnoughToMeet(Activity a, Activity b) {
 class NearMissSplit {
   const NearMissSplit({required this.otherDays, required this.otherTimes});
 
-  /// Same sport on another weekday (weekday → their activities). Only for
-  /// a weekly [mine] — "add this day too" is what's offered for these.
+  /// Same sport on another weekday at an overlapping time (weekday → their
+  /// activities), so "add this day too" really finds them. Only for a
+  /// weekly [mine].
   final Map<int, List<Activity>> otherDays;
 
   /// Same day, but the times don't overlap.
@@ -87,6 +88,7 @@ NearMissSplit splitNearMisses(
   Activity mine,
   List<Activity> others, {
   DateTime? now,
+  Set<int> skipDays = const {},
 }) {
   final current = now ?? DateTime.now();
   final today = DateTime(current.year, current.month, current.day);
@@ -102,7 +104,9 @@ NearMissSplit splitNearMisses(
       }
       continue;
     }
-    if (!mine.isRecurring) continue;
+    if (!mine.isRecurring || skipDays.contains(other.dayOfWeek)) continue;
+    // Adding the day copies my times — only offer it when theirs overlap.
+    if (!_timesOverlap(mine, other)) continue;
     final date = _dateOnly(other.specificDate);
     if (date != null && date.isBefore(today)) continue;
     otherDays.putIfAbsent(other.dayOfWeek, () => []).add(other);
