@@ -466,6 +466,8 @@ class GroupService {
                 ),
               )
               .toList(),
+          // One review per person per meetup; re-submitting updates it.
+          onConflict: 'group_id,reviewer_id,reviewee_id,meeting_time',
         );
   }
 
