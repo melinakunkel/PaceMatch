@@ -326,6 +326,9 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             _SectionLabel(t('newActivity.sport')),
             SportPickerField(
               value: _sport,
+              favorites: SportType.selectable
+                  .where(_mySports.containsKey)
+                  .toList(),
               // "Weitere" is only kept when editing an old sport time
               // that already uses it.
               sports: [

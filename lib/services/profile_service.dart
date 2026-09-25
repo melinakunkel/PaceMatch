@@ -234,9 +234,12 @@ class ProfileService {
         .select('home_sport_order, home_hidden_sports')
         .eq('id', userId)
         .maybeSingle();
+    final mySports = (await getUserSports(userId)).map((s) => s.sport).toSet();
     return HomeLayout(
       order: (row?['home_sport_order'] as List?)?.cast<String>() ?? const [],
       hidden: (row?['home_hidden_sports'] as List?)?.cast<String>() ?? const [],
+      // In the app's usual sport order, not alphabetical by db name.
+      preferred: SportType.selectable.where(mySports.contains).toList(),
     );
   }
 

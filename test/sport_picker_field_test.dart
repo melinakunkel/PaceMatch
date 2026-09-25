@@ -41,4 +41,28 @@ void main() {
     expect(find.text('Sportart wählen'), findsNothing);
     expect(find.text('Badminton'), findsOneWidget);
   });
+
+  testWidgets('my own sports are listed first', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SportPickerField(
+            value: SportType.wandern,
+            favorites: const [SportType.wandern, SportType.hundeGassi],
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(SportPickerField));
+    await tester.pumpAndSettle();
+    expect(find.text('Deine Sportarten'), findsOneWidget);
+    expect(find.text('Alle Sportarten'), findsOneWidget);
+    final mineTop = tester.getTopLeft(find.text('Hunde spazieren')).dy;
+    final allTop = tester.getTopLeft(find.text('Alle Sportarten')).dy;
+    expect(mineTop, lessThan(allTop));
+    // Not listed twice.
+    expect(find.text('Hunde spazieren'), findsOneWidget);
+  });
 }

@@ -98,4 +98,18 @@ void main() {
     expect(labels.last, 'Wandern');
     expect(SportType.alphabetical, isNot(contains(SportType.sonstige)));
   });
+
+  test('home shows my own sports first until I arrange it myself', () {
+    const mine = [SportType.radfahren, SportType.wandern, SportType.hundeGassi];
+    final fresh = const HomeLayout(preferred: mine).resolve();
+    expect(fresh.take(3), mine);
+    expect(fresh, hasLength(SportType.selectable.length));
+
+    // Once arranged by hand, that order wins.
+    final arranged = const HomeLayout(
+      order: ['tennis', 'laufen'],
+      preferred: mine,
+    ).resolve();
+    expect(arranged.take(2), [SportType.tennis, SportType.laufen]);
+  });
 }
