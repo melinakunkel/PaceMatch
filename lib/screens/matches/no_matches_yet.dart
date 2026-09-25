@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,6 +14,8 @@ import '../../services/open_event_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/push_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/share/share_stub.dart'
+    if (dart.library.js_interop) '../../utils/share/share_web.dart';
 import '../../widgets/push_prompt.dart';
 
 /// Shown instead of an empty match list: nobody fits exactly *yet*, but
@@ -141,21 +144,41 @@ class _NoMatchesYetState extends State<NoMatchesYet> {
     }
   }
 
-  Future<void> _invite() async {
+  String get _inviteText {
     final a = widget.activity;
-    final text = t('noMatches.inviteMessage', {
+    return t('noMatches.inviteMessage', {
       'sport': a.sport.label,
       'day': a.isRecurring ? a.dayLabel : a.specificDateLabel,
       'url': appBaseUrl,
     });
-    final launched = await launchUrl(
-      Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}'),
-      mode: LaunchMode.externalApplication,
-    );
+  }
+
+  Future<void> _openInvite(Uri uri) async {
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(t('circles.inviteFailed'))));
     }
+  }
+
+  void _inviteViaWhatsApp() => _openInvite(
+    Uri.parse('https://wa.me/?text=${Uri.encodeComponent(_inviteText)}'),
+  );
+
+  // "?&body=" works on both iPhone and Android.
+  void _inviteViaSms() =>
+      _openInvite(Uri.parse('sms:?&body=${Uri.encodeComponent(_inviteText)}'));
+
+  /// Signal has no link that pre-fills a message, so this opens the
+  /// phone's share sheet (where Signal is listed) — or copies the text
+  /// where there is none.
+  Future<void> _inviteViaShareSheet() async {
+    final text = _inviteText;
+    if (await shareText(text)) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(t('noMatches.inviteCopied'))));
   }
 
   @override
@@ -366,10 +389,26 @@ class _NoMatchesYetState extends State<NoMatchesYet> {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.share_outlined),
-                label: Text(t('noMatches.inviteButton')),
-                onPressed: _invite,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.chat_outlined),
+                    label: const Text('WhatsApp'),
+                    onPressed: _inviteViaWhatsApp,
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.sms_outlined),
+                    label: const Text('SMS'),
+                    onPressed: _inviteViaSms,
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.ios_share),
+                    label: Text(t('noMatches.inviteMore')),
+                    onPressed: _inviteViaShareSheet,
+                  ),
+                ],
               ),
             ],
           ),

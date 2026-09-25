@@ -25,6 +25,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Noch niemand zur gleichen Zeit'), findsOneWidget);
-    expect(find.text('Per WhatsApp einladen'), findsOneWidget);
+    expect(find.text('WhatsApp'), findsOneWidget);
+    expect(find.text('SMS'), findsOneWidget);
+    expect(find.text('Signal & mehr'), findsOneWidget);
   });
 }

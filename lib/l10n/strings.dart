@@ -453,7 +453,9 @@ const _de = <String, String>{
   'noMatches.inviteTitle': 'Kennst du jemanden, der mitmachen würde?',
   'noMatches.inviteBody':
       'Je mehr Leute dabei sind, desto schneller findest du Sportbuddys.',
-  'noMatches.inviteButton': 'Per WhatsApp einladen',
+  'noMatches.inviteMore': 'Signal & mehr',
+  'noMatches.inviteCopied':
+      'Einladung kopiert – füge sie jetzt in Signal oder eine andere App ein.',
   'noMatches.inviteMessage':
       'Hey! Ich suche über SAMEPACE Leute für {sport} am {day}. Magst du '
       'mitmachen? {url}',
@@ -1264,7 +1266,9 @@ const _en = <String, String>{
   'noMatches.inviteTitle': 'Know someone who\'d join?',
   'noMatches.inviteBody':
       'The more people join, the faster you find Sportbuddys.',
-  'noMatches.inviteButton': 'Invite via WhatsApp',
+  'noMatches.inviteMore': 'Signal & more',
+  'noMatches.inviteCopied':
+      'Invite copied – paste it into Signal or any other app.',
   'noMatches.inviteMessage':
       'Hey! I\'m looking for people for {sport} on {day} on SAMEPACE. Want '
       'to join? {url}',
