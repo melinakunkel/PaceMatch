@@ -4,10 +4,9 @@ import '../../constants/app_info.dart';
 import '../../l10n/strings.dart';
 import 'legal_widgets.dart';
 
-/// Impressum (Anbieterkennzeichnung, §5 ECG / §25 MedienG). The bracketed
-/// [placeholder] values are legally required and must be filled in with the
-/// real operator details before this app is published — see the warning
-/// banner at the top of the page.
+/// Impressum (Anbieterkennzeichnung, §5 ECG / §25 MedienG). The address is
+/// still a [placeholder] and must be filled in before this app is published
+/// — see the warning banner at the top of the page.
 class ImprintScreen extends StatelessWidget {
   const ImprintScreen({super.key});
 
@@ -27,15 +26,13 @@ class ImprintScreen extends StatelessWidget {
           children: [
             const PlaceholderNotice(
               text:
-                  'Noch nicht fertig: Die mit [ ] markierten Angaben sind '
-                  'Platzhalter und müssen durch die echten Daten ersetzt '
-                  'werden, bevor die App öffentlich geht — ein Impressum '
-                  'ist in Österreich/Deutschland gesetzlich vorgeschrieben.',
+                  'Noch nicht fertig: Die Anschrift fehlt noch und wird vor '
+                  'dem öffentlichen Start ergänzt.',
             ),
             LegalSection(
               heading: 'Angaben gemäß § 5 ECG / § 25 Mediengesetz',
               lines: [
-                placeholder('Vor- und Nachname bzw. Firmenname'),
+                AppInfo.operatorName,
                 placeholder('Straße und Hausnummer'),
                 placeholder('PLZ und Ort'),
                 placeholder('Land'),
@@ -55,11 +52,7 @@ class ImprintScreen extends StatelessWidget {
             ),
             LegalSection(
               heading: 'Verantwortlich für den Inhalt',
-              lines: [
-                placeholder(
-                  'Name der verantwortlichen Person gemäß § 25 Mediengesetz',
-                ),
-              ],
+              lines: [AppInfo.operatorName],
             ),
             const LegalSection(
               heading: 'EU-Streitschlichtung',

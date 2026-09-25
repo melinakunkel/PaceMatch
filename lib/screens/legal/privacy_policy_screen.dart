@@ -26,15 +26,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
           children: [
             const PlaceholderNotice(
               text:
-                  'Vorlage: Die mit [ ] markierten Angaben sind Platzhalter. '
-                  'Vor dem öffentlichen Start sollten die echten Angaben '
-                  'eingetragen und der Text idealerweise rechtlich geprüft '
-                  'werden.',
+                  'Noch nicht fertig: Die mit [ ] markierten Angaben werden '
+                  'vor dem öffentlichen Start ergänzt.',
             ),
             LegalSection(
               heading: 'Verantwortlicher',
               lines: [
-                placeholder('Name der verantwortlichen Person/Firma'),
+                AppInfo.operatorName,
                 placeholder('Anschrift'),
                 'E-Mail: ${AppInfo.contactEmail}',
               ],
@@ -46,10 +44,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     'Profilfoto, Kurzbeschreibung, Interessen und Sprachen.',
                 'Trainingsdaten: Sportart, geplante Zeiten, Tempo/Level und '
                     'optionale Treffpunkte inkl. Standortkoordinaten.',
-                'Kommunikationsdaten: Nachrichten in den Gruppen-Chats '
-                    'zwischen gematchten Nutzer:innen.',
-                'Sicherheitsdaten: Blockierungen, Meldungen und der aus '
-                    'Check-ins berechnete Zuverlässigkeits-Score.',
+                'Kommunikationsdaten: Nachrichten in privaten Chats und '
+                    'Gruppen-Chats zwischen Nutzer:innen.',
+                'Sicherheitsdaten: Blockierungen, Meldungen sowie anonyme '
+                    'Bewertungen nach Treffen (erschienen / Angaben haben '
+                    'gestimmt), aus denen deine Zuverlässigkeits-Werte '
+                    'berechnet werden. Wer dich bewertet hat, sieht '
+                    'niemand.',
                 'Kontodaten: E-Mail-Adresse und Anmeldedaten für die '
                     'Registrierung/Anmeldung.',
               ],
@@ -58,9 +59,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
               heading: 'Wofür wir diese Daten nutzen',
               lines: [
                 'Um passende Trainingspartner:innen anhand von Zeitfenster, '
-                    'Tempo und Sportart vorzuschlagen, Gruppen-Chats zu '
-                    'ermöglichen und die App sicher zu betreiben (Blockieren, '
-                    'Melden, Zuverlässigkeits-Score).',
+                    'Tempo und Sportart vorzuschlagen, Chats zu ermöglichen '
+                    'und die App sicher zu betreiben (Blockieren, Melden, '
+                    'Zuverlässigkeits-Werte).',
               ],
             ),
             const LegalSection(
@@ -79,6 +80,20 @@ class PrivacyPolicyScreen extends StatelessWidget {
                     'gespeichert und verarbeitet. Mit Supabase besteht bzw. '
                     'wird ein Auftragsverarbeitungsvertrag abgeschlossen.',
                 placeholder('Serverstandort/Region von Supabase ergänzen'),
+              ],
+            ),
+            const LegalSection(
+              heading: 'Weitere Dienste',
+              lines: [
+                'Die Web-App wird über GitHub Pages (GitHub Inc.) '
+                    'ausgeliefert; dabei wird technisch deine IP-Adresse '
+                    'verarbeitet.',
+                'Karten und die Ortssuche kommen von OpenStreetMap: Beim '
+                    'Anzeigen der Karte bzw. Suchen eines Orts werden deine '
+                    'IP-Adresse und der Suchbegriff bzw. Kartenausschnitt '
+                    'an OpenStreetMap übermittelt.',
+                'Einige Bilder werden von Unsplash geladen; dabei wird '
+                    'deine IP-Adresse an Unsplash übermittelt.',
               ],
             ),
             const LegalSection(
