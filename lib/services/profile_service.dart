@@ -1,12 +1,11 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart' show TimeOfDay;
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/home_layout.dart';
 import '../models/meetup_review.dart';
 import '../models/profile.dart';
+import '../models/quiet_window.dart';
 import '../models/sport_type.dart';
 import '../models/user_sport.dart';
 import 'supabase_service.dart';
@@ -37,6 +36,16 @@ class ProfileService {
         .from('profiles')
         .update(profile.toUpdateMap())
         .eq('id', profile.id);
+  }
+
+  /// Separate from [updateProfile] so saving a profile never depends on
+  /// this newer column. Empty clears it.
+  Future<void> setStravaUrl(String userId, String url) async {
+    await SupabaseService.ensureFreshSession();
+    await _client
+        .from('profiles')
+        .update({'strava_url': url.isEmpty ? null : url})
+        .eq('id', userId);
   }
 
   Future<List<Profile>> getProfilesByIds(List<String> userIds) async {
@@ -262,45 +271,48 @@ class ProfileService {
         .eq('id', userId);
   }
 
-  /// "Ruhezeit" for push notifications, as TimeOfDay (null = off).
-  Future<({TimeOfDay? start, TimeOfDay? end})> getPushQuietHours(
-    String userId,
-  ) async {
+  /// The push "Ruhezeiten" (quiet hours). Falls back to the older single
+  /// window (push_quiet_start/end) while the newer column isn't there yet.
+  Future<List<QuietWindow>> getPushQuietWindows(String userId) async {
+    try {
+      final row = await _client
+          .from('profiles')
+          .select('push_quiet_windows')
+          .eq('id', userId)
+          .maybeSingle();
+      final list = row?['push_quiet_windows'];
+      if (list is List && list.isNotEmpty) {
+        return list.map(QuietWindow.fromJson).whereType<QuietWindow>().toList();
+      }
+    } on PostgrestException {
+      // Column not added yet — read the single window below.
+    }
     final row = await _client
         .from('profiles')
         .select('push_quiet_start, push_quiet_end')
         .eq('id', userId)
         .maybeSingle();
-    TimeOfDay? parse(Object? raw) {
-      if (raw is! String || raw.length < 5) return null;
-      return TimeOfDay(
-        hour: int.parse(raw.substring(0, 2)),
-        minute: int.parse(raw.substring(3, 5)),
-      );
-    }
-
-    return (
-      start: parse(row?['push_quiet_start']),
-      end: parse(row?['push_quiet_end']),
-    );
+    final start = QuietWindow.parse(row?['push_quiet_start']);
+    final end = QuietWindow.parse(row?['push_quiet_end']);
+    return start == null || end == null ? [] : [QuietWindow(start, end)];
   }
 
-  /// Both null turns the quiet hours off.
-  Future<void> setPushQuietHours(
-    String userId, {
-    TimeOfDay? start,
-    TimeOfDay? end,
-  }) async {
-    String? format(TimeOfDay? t) => t == null
-        ? null
-        : '${t.hour.toString().padLeft(2, '0')}:'
-              '${t.minute.toString().padLeft(2, '0')}';
+  /// Empty turns quiet hours off. The first window is also kept in the
+  /// older single-window columns.
+  Future<void> setPushQuietWindows(
+    String userId,
+    List<QuietWindow> windows,
+  ) async {
     await SupabaseService.ensureFreshSession();
+    final first = windows.isEmpty ? null : windows.first;
     await _client
         .from('profiles')
         .update({
-          'push_quiet_start': format(start),
-          'push_quiet_end': format(end),
+          'push_quiet_windows': windows.map((w) => w.toJson()).toList(),
+          'push_quiet_start': first == null
+              ? null
+              : QuietWindow.hhmm(first.start),
+          'push_quiet_end': first == null ? null : QuietWindow.hhmm(first.end),
         })
         .eq('id', userId);
   }

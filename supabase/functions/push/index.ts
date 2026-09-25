@@ -401,14 +401,18 @@ async function deliver(event: any, keys: VapidKeys): Promise<number> {
   );
   if (subs.length === 0) return 0;
   const profiles = await db(
-    `profiles?id=in.${ids}&select=id,ui_language,push_quiet_start,push_quiet_end`,
+    `profiles?id=in.${ids}&select=id,ui_language,push_quiet_start,push_quiet_end,push_quiet_windows`,
   );
   const langOf = new Map<string, string>(
     profiles.map((p: any) => [p.id, p.ui_language ?? "de"]),
   );
   const quiet = new Set<string>(
     profiles
-      .filter((p: any) => inQuietHours(p.push_quiet_start, p.push_quiet_end))
+      .filter((p: any) =>
+        inQuietHours(p.push_quiet_start, p.push_quiet_end) ||
+        (Array.isArray(p.push_quiet_windows) &&
+          p.push_quiet_windows.some((w: any) => inQuietHours(w?.start ?? null, w?.end ?? null)))
+      )
       .map((p: any) => p.id),
   );
 

@@ -117,12 +117,27 @@ const _de = <String, String>{
       'Schalte Push ein, dann meldet sich SAMEPACE auf deinem Handy, wenn '
       'dir jemand schreibt.',
   'push.promptAction': 'Einschalten',
-  'push.quietTitle': 'Ruhezeit',
+  'push.quietTitle': 'Ruhezeiten',
+  'push.quietAdd': 'Ruhezeit hinzufügen',
+  'push.quietRemove': 'Ruhezeit entfernen',
   'push.quietDesc':
-      'In dieser Zeit kommen keine Push-Nachrichten – z. B. nachts oder im '
-      'Nachtdienst.',
-  'group.mute': 'Benachrichtigungen für diesen Chat aus',
-  'group.unmute': 'Benachrichtigungen für diesen Chat an',
+      'In diesen Zeiten kommen keine Push-Nachrichten – z. B. nachts, beim '
+      'Mittagsschlaf oder im Nachtdienst.',
+  'group.menu': 'Mehr',
+  'editProfile.strava': 'Strava-Profil (optional)',
+  'editProfile.stravaHelp':
+      'Andere sehen einen Knopf zu deinem Strava – so ist deine Pace '
+      'nachvollziehbar.',
+  'editProfile.stravaInvalid':
+      'Das ist kein Strava-Link. Kopiere ihn aus Strava: Profil → Teilen.',
+  'profile.stravaButton': 'Strava-Profil ansehen',
+  'week.title': 'Deine Woche',
+  'week.with': 'mit {names}',
+  'week.meetup': 'Treffen aus dem Chat',
+  'group.mute': 'Chat stummschalten',
+  'group.mutedBanner': 'Dieser Chat ist stumm – keine Push-Nachrichten.',
+  'group.unmuteShort': 'Einschalten',
+  'group.unmute': 'Stummschaltung aufheben',
   'group.mutedOn': 'Chat stummgeschaltet – keine Push-Nachrichten mehr.',
   'group.mutedOff': 'Push-Nachrichten für diesen Chat sind wieder an.',
   'settings.permissionDenied':
@@ -324,17 +339,13 @@ const _de = <String, String>{
   'newActivity.everyDay': 'Jeden Tag',
   'newActivity.today': 'Heute',
   'newActivity.tomorrow': 'Morgen',
-  'newActivity.playersWanted': 'Wie viele Mitspieler:innen suchst du?',
-  'team.open': 'Gruppenchat mit deinen Sportbuddys',
-  'team.title': 'Gruppenchat starten',
-  'team.subtitle':
-      'Du suchst {count} Leute. Wähle deine Sportbuddys für diese Sportzeit '
-      'aus – alle landen in einem gemeinsamen Chat.',
-  'team.notEnough':
-      'Sobald du mindestens 2 Sportbuddys für diese Sportzeit hast (beide '
-      'haben sich gegenseitig geliked), kannst du hier einen Gruppenchat '
-      'mit allen starten.',
-  'team.create': 'Gruppenchat starten ({count} Leute)',
+  'newActivity.playersWanted': 'Wie viele Leute fehlen dir noch?',
+  'newActivity.playersHint':
+      'Du hast schon jemanden? Dann zähl nur die, die noch fehlen – z. B. 2 '
+      'für ein Doppel, wenn ihr schon zu zweit seid.',
+  'team.hint':
+      'Du suchst {count} Leute. Sobald ihr euch gegenseitig geliked habt, '
+      'kannst du im Buddys-Tab einen Gruppenchat mit allen starten.',
   'newActivity.playersOne': '1 Person',
   'newActivity.playersMany': '{count} Leute',
   'matches.lookingFor': 'sucht {count} Leute',
@@ -344,7 +355,10 @@ const _de = <String, String>{
       'Dienstplan.',
   'newActivity.where': 'Wo?',
   'newActivity.pickLocation': 'Ort auf der Karte auswählen',
-  'newActivity.radius': 'Umkreis (km)',
+  'newActivity.radius': 'Wie weit würdest du fahren?',
+  'newActivity.radiusHelp':
+      'Vom Treffpunkt aus. Ihr passt zusammen, wenn sich eure beiden '
+      'Umkreise berühren.',
   'newActivity.distance': 'Distanz (km)',
   'newActivity.save': 'Speichern',
   'newActivity.publish': 'Veröffentlichen',
@@ -983,11 +997,25 @@ const _en = <String, String>{
       'writes to you.',
   'push.promptAction': 'Turn on',
   'push.quietTitle': 'Quiet hours',
+  'push.quietAdd': 'Add quiet hours',
+  'push.quietRemove': 'Remove quiet hours',
   'push.quietDesc':
       'No push notifications during this time – e.g. at night or on a '
       'night shift.',
-  'group.mute': 'Turn off notifications for this chat',
-  'group.unmute': 'Turn on notifications for this chat',
+  'group.menu': 'More',
+  'editProfile.strava': 'Strava profile (optional)',
+  'editProfile.stravaHelp':
+      'Others see a button to your Strava – so your pace is easy to check.',
+  'editProfile.stravaInvalid':
+      'That isn\'t a Strava link. Copy it in Strava: Profile → Share.',
+  'profile.stravaButton': 'View Strava profile',
+  'week.title': 'Your week',
+  'week.with': 'with {names}',
+  'week.meetup': 'Meetup from the chat',
+  'group.mute': 'Mute this chat',
+  'group.mutedBanner': 'This chat is muted – no push notifications.',
+  'group.unmuteShort': 'Unmute',
+  'group.unmute': 'Unmute this chat',
   'group.mutedOn': 'Chat muted – no more push notifications.',
   'group.mutedOff': 'Push notifications for this chat are back on.',
   'settings.browserNotifications': 'Browser notifications',
@@ -1174,16 +1202,13 @@ const _en = <String, String>{
   'newActivity.everyDay': 'Every day',
   'newActivity.today': 'Today',
   'newActivity.tomorrow': 'Tomorrow',
-  'newActivity.playersWanted': 'How many players are you looking for?',
-  'team.open': 'Group chat with your Sportbuddys',
-  'team.title': 'Start a group chat',
-  'team.subtitle':
-      'You\'re looking for {count} people. Pick your Sportbuddys for this '
-      'sport time – everyone ends up in one shared chat.',
-  'team.notEnough':
-      'Once you have at least 2 Sportbuddys for this sport time (you liked '
-      'each other), you can start a group chat with all of them here.',
-  'team.create': 'Start group chat ({count} people)',
+  'newActivity.playersWanted': 'How many people are you still missing?',
+  'newActivity.playersHint':
+      'Already have someone? Only count who\'s still missing – e.g. 2 for '
+      'doubles if you\'re already two.',
+  'team.hint':
+      'You\'re looking for {count} people. Once you\'ve liked each other, '
+      'start a group chat with everyone in the Buddys tab.',
   'newActivity.playersOne': '1 person',
   'newActivity.playersMany': '{count} people',
   'matches.lookingFor': 'looking for {count}',
@@ -1192,7 +1217,9 @@ const _en = <String, String>{
       'You can pick several days – e.g. your days off this week.',
   'newActivity.where': 'Where?',
   'newActivity.pickLocation': 'Pick a location on the map',
-  'newActivity.radius': 'Radius (km)',
+  'newActivity.radius': 'How far would you travel?',
+  'newActivity.radiusHelp':
+      'From the meeting point. You match when both of your circles touch.',
   'newActivity.distance': 'Distance (km)',
   'newActivity.save': 'Save',
   'newActivity.publish': 'Publish',

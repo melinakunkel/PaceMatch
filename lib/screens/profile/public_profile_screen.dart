@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/interest.dart';
@@ -243,6 +244,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         if (profile.bio != null && profile.bio!.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(profile.bio!),
+        ],
+        if (profile.stravaUrl != null && profile.stravaUrl!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+            icon: const Icon(Icons.directions_run),
+            label: Text(t('profile.stravaButton')),
+            onPressed: () => launchUrl(
+              Uri.parse(profile.stravaUrl!),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
         ],
         if (profile.prompts.isNotEmpty) ...[
           const SizedBox(height: 16),

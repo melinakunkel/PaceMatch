@@ -7,6 +7,7 @@ import '../../models/prompt.dart';
 import '../../services/profile_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
+import '../../utils/strava.dart';
 import '../../widgets/city_picker_field.dart';
 
 const _minAge = 16.0;
@@ -52,6 +53,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     ),
   );
   late final _bioCtrl = TextEditingController(text: widget.profile.bio ?? '');
+  late final _stravaCtrl = TextEditingController(
+    text: widget.profile.stravaUrl ?? '',
+  );
   final List<String> _interests = [];
   final List<String> _languages = [];
   final List<_PromptEntry> _prompts = [];
@@ -77,6 +81,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     _nameCtrl.dispose();
     _ageCtrl.dispose();
     _bioCtrl.dispose();
+    _stravaCtrl.dispose();
     for (final p in _prompts) {
       p.controller.dispose();
     }
@@ -97,6 +102,11 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
   Future<void> _save() async {
     if (_cityPending) {
       setState(() => _error = t('city.pickFromList'));
+      return;
+    }
+    final strava = normalizeStravaUrl(_stravaCtrl.text);
+    if (strava == null) {
+      setState(() => _error = t('editProfile.stravaInvalid'));
       return;
     }
     setState(() {
@@ -137,6 +147,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               .toList(),
         ),
       );
+      if (strava != (widget.profile.stravaUrl ?? '')) {
+        await _profileService.setStravaUrl(widget.profile.id, strava);
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -195,7 +208,17 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 4),
+            TextField(
+              controller: _stravaCtrl,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: t('editProfile.strava'),
+                hintText: 'strava.com/athletes/…',
+                helperText: t('editProfile.stravaHelp'),
+                prefixIcon: const Icon(Icons.link),
+              ),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _ageCtrl,
               keyboardType: TextInputType.number,

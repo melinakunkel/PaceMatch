@@ -51,8 +51,13 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
 
   final _activityService = ActivityService();
   late final _radiusCtrl = TextEditingController(
-    text: '${widget.existing?.radiusKm ?? 3}',
+    text: _formatKm(
+      widget.existing?.radiusKm ?? widget.initialSport.defaultRadiusKm,
+    ),
   );
+
+  static String _formatKm(double km) =>
+      km == km.roundToDouble() ? '${km.round()}' : '$km';
   late final _distanceMinCtrl = TextEditingController(
     text: widget.existing?.distanceMinKm?.toString() ?? '',
   );
@@ -251,7 +256,8 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
     setState(() => _saving = true);
     try {
       final radiusKm =
-          double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ?? 3;
+          double.tryParse(_radiusCtrl.text.replaceAll(',', '.')) ??
+          _sport.defaultRadiusKm;
       final distanceMinKm = _sport.usesDistance
           ? double.tryParse(_distanceMinCtrl.text.replaceAll(',', '.'))
           : null;
@@ -428,6 +434,12 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                 if (_sport == SportType.sonstige) SportType.sonstige,
               ],
               onChanged: (sport) => setState(() {
+                // Follow the new sport's typical distance unless the user
+                // already typed their own.
+                if (!widget.isEditing &&
+                    _radiusCtrl.text == _formatKm(_sport.defaultRadiusKm)) {
+                  _radiusCtrl.text = _formatKm(sport.defaultRadiusKm);
+                }
                 _sport = sport;
                 if (!widget.isEditing) _applyProfileDefaults(sport);
               }),
@@ -456,6 +468,16 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
             if (_sport.usesPlayerCount) ...[
               const SizedBox(height: 20),
               _SectionLabel(t('newActivity.playersWanted')),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  t('newActivity.playersHint'),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
               Wrap(
                 spacing: 8,
                 children: [
@@ -728,7 +750,10 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
               ),
               decoration: InputDecoration(
                 labelText: t('newActivity.radius'),
+                helperText: t('newActivity.radiusHelp'),
+                helperMaxLines: 3,
                 prefixIcon: const Icon(Icons.social_distance_outlined),
+                suffixText: 'km',
               ),
             ),
             if (_sport.usesDistance) ...[

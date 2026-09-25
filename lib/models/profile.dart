@@ -8,6 +8,10 @@ class Profile {
   final String? city;
   final String? avatarUrl;
   final String? bio;
+
+  /// Link to the person's public Strava profile — so others can see their
+  /// pace is real. Saved separately (see ProfileService.setStravaUrl).
+  final String? stravaUrl;
   final double reliabilityScore;
 
   /// % of meetups this person showed up to, per the others' reviews. Null
@@ -63,6 +67,7 @@ class Profile {
     this.city,
     this.avatarUrl,
     this.bio,
+    this.stravaUrl,
     this.reliabilityScore = 100,
     this.attendanceScore,
     this.accuracyScore,
@@ -87,6 +92,7 @@ class Profile {
     city: map['city'] as String?,
     avatarUrl: map['avatar_url'] as String?,
     bio: map['bio'] as String?,
+    stravaUrl: map['strava_url'] as String?,
     reliabilityScore: (map['reliability_score'] as num?)?.toDouble() ?? 100,
     attendanceScore: (map['attendance_score'] as num?)?.toDouble(),
     accuracyScore: (map['accuracy_score'] as num?)?.toDouble(),
@@ -138,6 +144,7 @@ class Profile {
     city: city ?? this.city,
     avatarUrl: avatarUrl ?? this.avatarUrl,
     bio: bio ?? this.bio,
+    stravaUrl: stravaUrl,
     reliabilityScore: reliabilityScore,
     attendanceScore: attendanceScore,
     accuracyScore: accuracyScore,

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/app_info.dart';
 import '../../l10n/app_language.dart';
 import '../../l10n/strings.dart';
+import '../../models/quiet_window.dart';
 import '../../services/account_feedback_service.dart';
 import '../../services/admin_notifier.dart';
 import '../../services/auth_service.dart';
@@ -36,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool? _autoArchive;
   bool? _browserNotifications;
   bool _pushBusy = false;
-  ({TimeOfDay? start, TimeOfDay? end}) _quiet = (start: null, end: null);
+  List<QuietWindow> _quietWindows = [];
   bool _isAdmin = false;
 
   @override
@@ -50,8 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     });
-    _profileService.getPushQuietHours(SupabaseService.currentUserId!).then((q) {
-      if (mounted) setState(() => _quiet = q);
+    _profileService.getPushQuietWindows(SupabaseService.currentUserId!).then((
+      windows,
+    ) {
+      if (mounted) setState(() => _quietWindows = windows);
     }, onError: (_) {});
     BrowserNotificationService.isEnabled().then((v) {
       if (mounted) setState(() => _browserNotifications = v);
@@ -104,75 +107,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
   ];
 
-  static String _hhmm(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-
-  Future<void> _saveQuiet(TimeOfDay? start, TimeOfDay? end) async {
-    final previous = _quiet;
-    setState(() => _quiet = (start: start, end: end));
+  Future<void> _saveQuiet(List<QuietWindow> windows) async {
+    final previous = _quietWindows;
+    setState(() => _quietWindows = windows);
     try {
-      await _profileService.setPushQuietHours(
+      await _profileService.setPushQuietWindows(
         SupabaseService.currentUserId!,
-        start: start,
-        end: end,
+        windows,
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _quiet = previous);
+      setState(() => _quietWindows = previous);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t('common.saveFailed', {'error': '$e'}))),
       );
     }
   }
 
-  Future<void> _pickQuiet(bool isStart) async {
-    final current = isStart ? _quiet.start : _quiet.end;
+  Future<void> _pickQuiet(int index, bool isStart) async {
+    final window = _quietWindows[index];
     final picked = await showTimePicker(
       context: context,
-      initialTime: current ?? TimeOfDay(hour: isStart ? 22 : 7, minute: 0),
+      initialTime: isStart ? window.start : window.end,
     );
     if (picked == null) return;
-    await _saveQuiet(
-      isStart ? picked : _quiet.start,
-      isStart ? _quiet.end : picked,
-    );
+    final windows = [..._quietWindows];
+    windows[index] = isStart
+        ? window.copyWith(start: picked)
+        : window.copyWith(end: picked);
+    await _saveQuiet(windows);
   }
 
-  /// "Ruhezeit": no push between these times (e.g. night shift, sleep).
+  /// "Ruhezeiten": no push in these windows (night, nap, night shift) —
+  /// up to three.
   Widget _quietHours() {
-    final on = _quiet.start != null && _quiet.end != null;
+    const suggestions = [
+      QuietWindow(
+        TimeOfDay(hour: 22, minute: 0),
+        TimeOfDay(hour: 7, minute: 0),
+      ),
+      QuietWindow(
+        TimeOfDay(hour: 12, minute: 0),
+        TimeOfDay(hour: 14, minute: 0),
+      ),
+      QuietWindow(
+        TimeOfDay(hour: 8, minute: 0),
+        TimeOfDay(hour: 16, minute: 0),
+      ),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(t('push.quietTitle')),
-          subtitle: Text(t('push.quietDesc')),
-          value: on,
-          onChanged: (v) => v
-              ? _saveQuiet(
-                  const TimeOfDay(hour: 22, minute: 0),
-                  const TimeOfDay(hour: 7, minute: 0),
-                )
-              : _saveQuiet(null, null),
+        const SizedBox(height: 8),
+        Text(
+          t('push.quietTitle'),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
-        if (on)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _pickQuiet(true),
-                  child: Text('${t('common.from')} ${_hhmm(_quiet.start!)}'),
+        const SizedBox(height: 2),
+        Text(
+          t('push.quietDesc'),
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < _quietWindows.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _pickQuiet(i, true),
+                    child: Text(
+                      '${t('common.from')} ${QuietWindow.hhmm(_quietWindows[i].start)}',
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _pickQuiet(false),
-                  child: Text('${t('common.to')} ${_hhmm(_quiet.end!)}'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _pickQuiet(i, false),
+                    child: Text(
+                      '${t('common.to')} ${QuietWindow.hhmm(_quietWindows[i].end)}',
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                IconButton(
+                  tooltip: t('push.quietRemove'),
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _saveQuiet([..._quietWindows]..removeAt(i)),
+                ),
+              ],
+            ),
+          ),
+        if (_quietWindows.length < 3)
+          TextButton.icon(
+            icon: const Icon(Icons.add),
+            label: Text(t('push.quietAdd')),
+            onPressed: () => _saveQuiet([
+              ..._quietWindows,
+              suggestions[_quietWindows.length],
+            ]),
           ),
       ],
     );

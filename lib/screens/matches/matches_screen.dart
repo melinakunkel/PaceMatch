@@ -22,7 +22,6 @@ import '../../utils/safe_pop.dart';
 import '../../widgets/venue_status_badge.dart';
 import '../../widgets/verified_badge.dart';
 import 'no_matches_yet.dart';
-import 'team_chat_sheet.dart';
 
 class MatchesScreen extends StatefulWidget {
   const MatchesScreen({super.key, required this.activityId});
@@ -466,22 +465,30 @@ class _MatchesScreenState extends State<MatchesScreen> {
   Widget _buildHeader(Activity activity) {
     final header = _buildInfoRow(activity);
     if (activity.playersWanted < 2) return header;
+    // The group chat itself lives in one place only: the Buddys tab.
     return Column(
       children: [
         header,
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(Icons.groups_outlined),
-              label: Text(t('team.open')),
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => TeamChatSheet(activity: activity),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.groups_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
               ),
-            ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  t('team.hint', {'count': '${activity.playersWanted}'}),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

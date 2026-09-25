@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/activity.dart';
+import '../../models/group.dart';
 import '../../models/profile.dart';
 import '../../models/sport_type.dart';
 import '../../services/activity_service.dart';
@@ -33,9 +34,30 @@ class _ActivityGroup {
   final String? groupId;
 }
 
+/// One line of "Deine Woche".
+class _WeekItem {
+  _WeekItem({
+    required this.date,
+    required this.title,
+    required this.subtitle,
+    required this.route,
+  });
+  final DateTime date;
+  final String title;
+  final String subtitle;
+  final String route;
+}
+
 class _HubData {
-  _HubData({required this.groups, required this.unassignedBuddies});
+  _HubData({
+    required this.groups,
+    required this.unassignedBuddies,
+    this.week = const [],
+  });
   final List<_ActivityGroup> groups;
+
+  /// The next 7 days: sport times with buddies, and meetups set in chats.
+  final List<_WeekItem> week;
 
   /// Confirmed Sportbuddys whose like wasn't tied to one of the user's
   /// current activities (e.g. the activity_id is missing or the activity
@@ -106,6 +128,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
       circleId: CircleController.active.value?.id,
     );
     final activityIds = activities.map((a) => a.id).toSet();
+    final chatsFuture = _groupService
+        .getMyGroups(userId)
+        .catchError((Object _) => <SportGroup>[]);
     // Everyone who fits each sport time (liked or not), who I've liked, and
     // my buddies — all loading at the same time.
     final fitsFuture = _matchService.findMatchesForAll(
@@ -173,7 +198,34 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
     results.sort(
       (x, y) => x.activity.nextOccurrence.compareTo(y.activity.nextOccurrence),
     );
-    return _HubData(groups: results, unassignedBuddies: unassignedBuddies);
+    final now = DateTime.now();
+    final weekEnd = now.add(const Duration(days: 7));
+    bool thisWeek(DateTime d) => d.isAfter(now) && d.isBefore(weekEnd);
+    final week = <_WeekItem>[
+      for (final g in results)
+        if (g.buddies.isNotEmpty && thisWeek(g.activity.nextOccurrence))
+          _WeekItem(
+            date: g.activity.nextOccurrence,
+            title: g.activity.sport.label,
+            subtitle: t('week.with', {
+              'names': g.buddies.map((b) => b.firstName).join(', '),
+            }),
+            route: '/matches/${g.activity.id}',
+          ),
+      for (final chat in await chatsFuture)
+        if (chat.meetingTime != null && thisWeek(chat.meetingTime!.toLocal()))
+          _WeekItem(
+            date: chat.meetingTime!.toLocal(),
+            title: chat.displayName,
+            subtitle: t('week.meetup'),
+            route: '/group/${chat.id}',
+          ),
+    ]..sort((a, b) => a.date.compareTo(b.date));
+    return _HubData(
+      groups: results,
+      unassignedBuddies: unassignedBuddies,
+      week: week,
+    );
   }
 
   Future<void> _refresh() async {
@@ -387,6 +439,8 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                if (snapshot.data!.week.isNotEmpty)
+                  _buildWeekCard(snapshot.data!.week),
                 if (unassignedBuddies.isNotEmpty)
                   _buildUnassignedCard(unassignedBuddies),
                 ...groups.map(_buildActivityCard),
@@ -394,6 +448,50 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildWeekCard(List<_WeekItem> items) {
+    String when(DateTime d) =>
+        '${weekdayLabels[d.weekday - 1]} '
+        '${d.day.toString().padLeft(2, '0')}.'
+        '${d.month.toString().padLeft(2, '0')}. · '
+        '${d.hour.toString().padLeft(2, '0')}:'
+        '${d.minute.toString().padLeft(2, '0')}';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: AppColors.secondaryLight,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.event_available, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  t('week.title'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final item in items)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  '${when(item.date)} · ${item.title}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(item.subtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(item.route),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -629,20 +629,16 @@ class _GroupScreenState extends State<GroupScreen> {
                   ],
                 ),
               ),
+        // One menu with words instead of two bare symbols — a bell and a
+        // flag were too easy to tap by accident and too hard to read.
         actions: [
-          IconButton(
-            icon: Icon(
-              _muted
-                  ? Icons.notifications_off_outlined
-                  : Icons.notifications_none,
-            ),
-            tooltip: _muted ? t('group.unmute') : t('group.mute'),
-            onPressed: _toggleMuted,
-          ),
-          IconButton(
-            icon: const Icon(Icons.flag_outlined),
-            tooltip: t('group.reportUser'),
-            onPressed: () async {
+          PopupMenuButton<String>(
+            tooltip: t('group.menu'),
+            onSelected: (choice) async {
+              if (choice == 'mute') {
+                await _toggleMuted();
+                return;
+              }
               final blocked = await showDialog<bool>(
                 context: context,
                 builder: (_) => ReportUserDialog(
@@ -656,12 +652,65 @@ class _GroupScreenState extends State<GroupScreen> {
                 safeBack(context, '/chat');
               }
             },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'mute',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _muted
+                        ? Icons.notifications_active_outlined
+                        : Icons.notifications_off_outlined,
+                  ),
+                  title: Text(_muted ? t('group.unmute') : t('group.mute')),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'report',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.flag_outlined),
+                  title: Text(t('group.reportUser')),
+                ),
+              ),
+            ],
           ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
+            if (_muted)
+              Material(
+                color: AppColors.secondaryLight,
+                child: InkWell(
+                  onTap: _toggleMuted,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_off_outlined,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(t('group.mutedBanner'))),
+                        Text(
+                          t('group.unmuteShort'),
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             if (!_inputFocus.hasFocus)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
