@@ -91,7 +91,43 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="push_helper.js"></script>
-  <script src="flutter_bootstrap.js" async></script>
+  <!--
+    Home-screen web apps (especially on iPhone) are only woken up, not
+    reloaded, and keep serving files from their cache — so new versions
+    never showed up. tool/stamp_build.py stamps every deploy with an id;
+    this compares it with the live build.json on start and whenever the
+    app comes back after a while, and reloads into the new version.
+  -->
+  <script>
+    window.samepaceBuild = '20260925172019-1be8c23';
+    (function () {
+      var hiddenAt = 0;
+      function checkForUpdate() {
+        if (window.samepaceBuild.indexOf('BUILD_ID') !== -1) return;
+        fetch('build.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d || !d.id || d.id === window.samepaceBuild) return;
+            // Only one try per version, so a stale CDN can't cause a loop.
+            try {
+              if (sessionStorage.getItem('samepace-reload') === d.id) return;
+              sessionStorage.setItem('samepace-reload', d.id);
+            } catch (_) {}
+            location.replace(location.pathname + '?v=' + d.id + location.hash);
+          })
+          .catch(function () {});
+      }
+      checkForUpdate();
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+          hiddenAt = Date.now();
+        } else if (hiddenAt && Date.now() - hiddenAt > 30000) {
+          checkForUpdate();
+        }
+      });
+    })();
+  </script>
+  <script src="push_helper.js?v=20260925172019-1be8c23"></script>
+  <script src="flutter_bootstrap.js?v=20260925172019-1be8c23" async></script>
 </body>
 </html>
