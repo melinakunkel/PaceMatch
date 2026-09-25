@@ -8,12 +8,14 @@ import '../../models/interest.dart';
 import '../../models/meetup_review.dart';
 import '../../models/profile.dart';
 import '../../models/user_sport.dart';
+import '../../services/admin_notifier.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/display_labels.dart';
 import '../../widgets/app_scaffold.dart';
+import '../../widgets/notification_dot.dart';
 import '../../widgets/reliability_scores.dart';
 import '../../widgets/verified_badge.dart';
 import 'edit_profile_sheet.dart';
@@ -137,7 +139,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: t('profile.title'),
       actions: [
         IconButton(
-          icon: const Icon(Icons.settings_outlined),
+          icon: ValueListenableBuilder<bool>(
+            valueListenable: AdminNotifier.hasNew,
+            builder: (context, hasNew, _) => NotificationDot(
+              show: hasNew,
+              child: const Icon(Icons.settings_outlined),
+            ),
+          ),
           tooltip: t('appbar.settings'),
           onPressed: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => const SettingsScreen())),

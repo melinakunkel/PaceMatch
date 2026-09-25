@@ -129,7 +129,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         ),
       );
       if (!mounted) return;
-      setState(() => _savedFuture = _savedLocationService.getSavedLocations());
+      setState(() {
+        _savedFuture = _savedLocationService.getSavedLocations();
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t('locationPicker.favoriteSaved'))),
       );
@@ -151,7 +153,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     try {
       await _savedLocationService.deleteSavedLocation(saved.id);
       if (!mounted) return;
-      setState(() => _savedFuture = _savedLocationService.getSavedLocations());
+      setState(() {
+        _savedFuture = _savedLocationService.getSavedLocations();
+      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

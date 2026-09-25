@@ -154,7 +154,9 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
 
   Future<void> _refresh() async {
     final future = _load();
-    setState(() => _future = future);
+    setState(() {
+      _future = future;
+    });
     await future;
   }
 

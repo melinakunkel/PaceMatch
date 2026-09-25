@@ -6,12 +6,14 @@ import '../../constants/app_info.dart';
 import '../../l10n/app_language.dart';
 import '../../l10n/strings.dart';
 import '../../services/account_feedback_service.dart';
+import '../../services/admin_notifier.dart';
 import '../../services/auth_service.dart';
 import '../../services/browser_notification_service.dart';
 import '../../services/locale_controller.dart';
 import '../../services/profile_service.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/notification_dot.dart';
 import '../legal/faq_screen.dart';
 import '../legal/imprint_screen.dart';
 import '../legal/privacy_policy_screen.dart';
@@ -473,9 +475,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (_isAdmin) ...[
                         const Divider(height: 1),
                         ListTile(
-                          leading: Icon(
-                            Icons.admin_panel_settings_outlined,
-                            color: AppColors.primary,
+                          leading: ValueListenableBuilder<bool>(
+                            valueListenable: AdminNotifier.hasNew,
+                            builder: (context, hasNew, _) => NotificationDot(
+                              show: hasNew,
+                              child: Icon(
+                                Icons.admin_panel_settings_outlined,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                           title: Text(t('admin.title')),
                           subtitle: Text(t('admin.subtitle')),

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/strings.dart';
 import '../../models/admin_items.dart';
+import '../../models/profile.dart';
+import '../../services/admin_notifier.dart';
 import '../../services/feedback_service.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/csv_export.dart';
 
@@ -37,6 +40,8 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     _load();
+    // Clears the red dot on Profil / settings / this entry.
+    if (widget.service == null) AdminNotifier.markSeen();
   }
 
   Future<void> _load() async {
@@ -146,7 +151,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final newReports = _reports.where((r) => !r.done).length;
     final newFeedback = _feedback.where((f) => !f.done).length;
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Builder(
         builder: (context) => Scaffold(
           appBar: AppBar(
@@ -166,7 +171,10 @@ class _AdminScreenState extends State<AdminScreen> {
                 icon: const Icon(Icons.download),
                 onPressed: _loading
                     ? null
-                    : () => _export(DefaultTabController.of(context).index),
+                    : () {
+                        final tab = DefaultTabController.of(context).index;
+                        if (tab < 3) _export(tab);
+                      },
               ),
             ],
             bottom: TabBar(
@@ -176,6 +184,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 Tab(text: '${t('admin.reports')} ($newReports)'),
                 Tab(text: '${t('admin.feedback')} ($newFeedback)'),
                 Tab(text: t('admin.accounts')),
+                Tab(text: t('admin.admins')),
               ],
             ),
           ),
@@ -239,6 +248,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         ),
                       ),
                     ),
+                    _AdminsTab(service: _service),
                   ],
                 ),
         ),
@@ -334,6 +344,213 @@ class _ItemCard extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Who else can see this view: list the admins, appoint someone by name,
+/// or remove an admin (the database keeps at least one).
+class _AdminsTab extends StatefulWidget {
+  const _AdminsTab({required this.service});
+
+  final FeedbackService service;
+
+  @override
+  State<_AdminsTab> createState() => _AdminsTabState();
+}
+
+class _AdminsTabState extends State<_AdminsTab> {
+  late Future<List<Profile>> _admins = widget.service.getAdmins();
+
+  void _reload() {
+    setState(() {
+      _admins = widget.service.getAdmins();
+    });
+  }
+
+  Future<void> _change(Profile p, bool admin) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(admin ? t('admin.addTitle') : t('admin.removeTitle')),
+        content: Text(
+          t(admin ? 'admin.addConfirm' : 'admin.removeConfirm', {
+            'name': p.fullName,
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(t('common.cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(admin ? t('admin.add') : t('admin.remove')),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await widget.service.setAdmin(p.id, admin);
+      _reload();
+    } catch (e) {
+      if (!mounted) return;
+      final last = '$e'.contains('last admin');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            last
+                ? t('admin.lastAdmin')
+                : t('admin.changeFailed', {'error': '$e'}),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickNewAdmin() async {
+    final picked = await showModalBottomSheet<Profile>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _ProfileSearchSheet(service: widget.service),
+    );
+    if (picked != null) await _change(picked, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? myId;
+    try {
+      myId = SupabaseService.currentUserId;
+    } catch (_) {
+      // No Supabase (tests) — just don't mark anyone as "you".
+    }
+    return FutureBuilder<List<Profile>>(
+      future: _admins,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final admins = snapshot.data ?? [];
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              t('admin.adminsHint'),
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            for (final a in admins)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.secondaryLight,
+                    backgroundImage: a.avatarUrl != null
+                        ? NetworkImage(a.avatarUrl!)
+                        : null,
+                    child: a.avatarUrl != null
+                        ? null
+                        : Text(
+                            a.fullName.isNotEmpty
+                                ? a.fullName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                  ),
+                  title: Text(
+                    a.id == myId
+                        ? t('admin.you', {'name': a.fullName})
+                        : a.fullName,
+                  ),
+                  subtitle: a.city == null ? null : Text(a.city!),
+                  trailing: admins.length > 1
+                      ? IconButton(
+                          tooltip: t('admin.remove'),
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: () => _change(a, false),
+                        )
+                      : null,
+                ),
+              ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _pickNewAdmin,
+              icon: const Icon(Icons.person_add_alt),
+              label: Text(t('admin.addButton')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProfileSearchSheet extends StatefulWidget {
+  const _ProfileSearchSheet({required this.service});
+
+  final FeedbackService service;
+
+  @override
+  State<_ProfileSearchSheet> createState() => _ProfileSearchSheetState();
+}
+
+class _ProfileSearchSheetState extends State<_ProfileSearchSheet> {
+  List<Profile> _results = [];
+  int _requestId = 0;
+
+  Future<void> _search(String q) async {
+    final id = ++_requestId;
+    final results = await widget.service.searchProfiles(q);
+    if (!mounted || id != _requestId) return;
+    setState(() => _results = results);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t('admin.addTitle'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: t('admin.searchHint'),
+                prefixIcon: const Icon(Icons.search),
+              ),
+              onChanged: _search,
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                children: [
+                  for (final p in _results)
+                    ListTile(
+                      leading: const Icon(Icons.person_outline),
+                      title: Text(p.fullName),
+                      subtitle: p.city == null ? null : Text(p.city!),
+                      onTap: () => Navigator.of(context).pop(p),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

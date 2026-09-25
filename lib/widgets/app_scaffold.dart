@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/strings.dart';
+import '../services/admin_notifier.dart';
 import '../services/match_notifier.dart';
 import '../services/unread_controller.dart';
 import '../theme/app_theme.dart';
 import 'circle_switcher.dart';
+import 'notification_dot.dart';
 
 /// Shared bottom-nav scaffold for the 5 main tabs (Entdecken, Plan, Matches,
 /// Chat, Profil). Home isn't a tab — tapping the logo next to the title
@@ -152,7 +154,13 @@ class AppScaffold extends StatelessWidget {
               label: t('nav.chat'),
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
+              icon: ValueListenableBuilder<bool>(
+                valueListenable: AdminNotifier.hasNew,
+                builder: (context, hasNew, _) => NotificationDot(
+                  show: hasNew,
+                  child: const Icon(Icons.person_outline),
+                ),
+              ),
               label: t('nav.profile'),
             ),
           ],

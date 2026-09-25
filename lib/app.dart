@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'l10n/app_language.dart';
 import 'router/app_router.dart';
+import 'services/admin_notifier.dart';
 import 'services/circle_controller.dart';
 import 'services/locale_controller.dart';
 import 'services/match_notifier.dart';
@@ -41,12 +42,14 @@ class _SamepaceAppState extends State<SamepaceApp> {
         UnreadController.refresh();
         MatchNotifier.startListening();
         MatchNotifier.refresh();
+        AdminNotifier.startListening();
         _syncThemeFromProfile();
         _syncLanguageFromProfile();
         CircleController.loadSaved();
       } else {
         UnreadController.stopListening();
         MatchNotifier.stopListening();
+        AdminNotifier.stopListening();
         CircleController.reset();
       }
     });
@@ -55,6 +58,7 @@ class _SamepaceAppState extends State<SamepaceApp> {
       UnreadController.refresh();
       MatchNotifier.startListening();
       MatchNotifier.refresh();
+      AdminNotifier.startListening();
       _syncThemeFromProfile();
       _syncLanguageFromProfile();
       CircleController.loadSaved();

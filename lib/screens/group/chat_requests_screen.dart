@@ -61,7 +61,11 @@ class _ChatRequestsScreenState extends State<ChatRequestsScreen> {
     return entries;
   }
 
-  void _reload() => setState(() => _future = _load());
+  void _reload() {
+    setState(() {
+      _future = _load();
+    });
+  }
 
   Future<void> _decline(_RequestEntry entry) async {
     final key = '${entry.profile.id}:${entry.activity.id}';

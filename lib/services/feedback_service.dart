@@ -1,4 +1,5 @@
 import '../models/admin_items.dart';
+import '../models/profile.dart';
 import 'supabase_service.dart';
 
 /// In-app feedback from users, plus the admin's read access to feedback,
@@ -74,5 +75,38 @@ class FeedbackService {
         .from(table)
         .update({'status': done ? 'done' : 'new'})
         .eq('id', id);
+  }
+
+  /// Everyone who is currently an admin.
+  Future<List<Profile>> getAdmins() async {
+    final rows = await _client
+        .from('profiles')
+        .select()
+        .eq('is_admin', true)
+        .order('full_name', ascending: true);
+    return rows.map(Profile.fromMap).toList();
+  }
+
+  /// People to pick a new admin from, by name.
+  Future<List<Profile>> searchProfiles(String query) async {
+    final q = query.trim();
+    if (q.length < 2) return [];
+    final rows = await _client
+        .from('profiles')
+        .select()
+        .ilike('full_name', '%$q%')
+        .eq('is_admin', false)
+        .limit(20);
+    return rows.map(Profile.fromMap).toList();
+  }
+
+  /// Appoint or remove an admin — only works for admins (checked in the
+  /// database), and never removes the last one.
+  Future<void> setAdmin(String userId, bool admin) async {
+    await SupabaseService.ensureFreshSession();
+    await _client.rpc(
+      'set_admin',
+      params: {'target': userId, 'make_admin': admin},
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:samepace/models/admin_items.dart';
+import 'package:samepace/models/profile.dart';
 import 'package:samepace/screens/profile/admin_screen.dart';
 import 'package:samepace/screens/profile/feedback_sheet.dart';
 import 'package:samepace/services/feedback_service.dart';
@@ -54,6 +55,23 @@ class _FakeService implements FeedbackService {
       createdAt: DateTime(2026, 9, 23, 20),
     ),
   ];
+
+  final admins = <Profile>[Profile(id: 'me', fullName: 'Melina', city: 'Wien')];
+  final adminChanges = <(String, bool)>[];
+
+  @override
+  Future<List<Profile>> getAdmins() async => [...admins];
+
+  @override
+  Future<List<Profile>> searchProfiles(String query) async => [
+    Profile(id: 'kai', fullName: 'Kai', city: 'Wien'),
+  ];
+
+  @override
+  Future<void> setAdmin(String userId, bool admin) async {
+    adminChanges.add((userId, admin));
+    if (admin) admins.add(Profile(id: userId, fullName: 'Kai'));
+  }
 
   @override
   Future<void> setStatus({
@@ -140,5 +158,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Zu wenige Leute in meiner Stadt'), findsOneWidget);
     expect(find.text('Gelöschtes Konto'), findsOneWidget);
+  });
+
+  testWidgets('an admin can appoint another admin', (tester) async {
+    final fake = _FakeService();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: AdminScreen(service: fake),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Admins'));
+    await tester.pumpAndSettle();
+    expect(find.text('Melina'), findsOneWidget);
+    // The only admin can't be removed.
+    expect(find.byIcon(Icons.remove_circle_outline), findsNothing);
+
+    await tester.tap(find.text('Admin hinzufügen'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Ka');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kai'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ernennen'));
+    await tester.pumpAndSettle();
+
+    expect(fake.adminChanges, [('kai', true)]);
+    expect(find.text('Kai'), findsOneWidget);
+    expect(find.byIcon(Icons.remove_circle_outline), findsNWidgets(2));
   });
 }
