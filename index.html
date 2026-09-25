@@ -2,15 +2,19 @@
 <html>
 <head>
   <!--
-    Flutter's web build ships with a service worker that can keep serving an
-    older cached version of the app even after a normal reload — self-clean
-    it on every load so updates always take effect without the user having
-    to manually clear site data.
+    Flutter's web build used to ship a service worker that could keep
+    serving an older cached version of the app even after a normal reload —
+    remove any such leftover on every load so updates always take effect.
+    push_sw.js (push notifications only, no caching) is kept.
   -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (regs) {
-        for (var i = 0; i < regs.length; i++) regs[i].unregister();
+        for (var i = 0; i < regs.length; i++) {
+          var worker = regs[i].active || regs[i].waiting || regs[i].installing;
+          if (worker && worker.scriptURL.indexOf('push_sw.js') !== -1) continue;
+          regs[i].unregister();
+        }
       });
     }
     if (window.caches && caches.keys) {
@@ -87,6 +91,7 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script src="push_helper.js"></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
