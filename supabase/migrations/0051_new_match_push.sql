@@ -57,9 +57,12 @@ begin
       )
       -- The recipient's own preferences, as the app applies them when
       -- they open their matches.
-      and not (
-        me.gender is not null and p.gender is not null and me.gender <> p.gender
-        and (me.gender_preference = 'same_only' or p.gender_preference = 'same_only')
+      -- coalesce: with no preference set the comparison is NULL, which
+      -- must count as "allowed", not silently drop the person.
+      and not coalesce(
+        me.gender <> p.gender
+        and (me.gender_preference = 'same_only' or p.gender_preference = 'same_only'),
+        false
       )
       and (me.age is null or p.age_range_min is null or me.age >= p.age_range_min)
       and (me.age is null or p.age_range_max is null or me.age <= p.age_range_max)
@@ -88,6 +91,7 @@ begin
   return new;
 exception when others then
   -- Never block saving a sport time because of a notification.
+  raise warning 'push_on_new_activity failed: %', sqlerrm;
   return new;
 end;
 $$;
