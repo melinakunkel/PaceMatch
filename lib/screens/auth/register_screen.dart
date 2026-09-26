@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/locale_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/stock_photos.dart';
+import '../../utils/safe_pop.dart';
 import '../../widgets/language_toggle.dart';
 import '../../widgets/network_photo.dart';
 
@@ -60,7 +61,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(t('register.title'))),
+      appBar: AppBar(
+        // Reached with go('/register'), so there's nothing to pop — the
+        // arrow leads back to the login explicitly.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: t('register.backToLogin'),
+          onPressed: () => safeBack(context, '/login'),
+        ),
+        title: Text(t('register.title')),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -133,6 +143,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         )
                       : Text(t('register.submit')),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => context.go('/login'),
+                  child: Text(t('register.haveAccount')),
                 ),
               ],
             ),

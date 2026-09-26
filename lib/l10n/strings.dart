@@ -36,6 +36,8 @@ const _de = <String, String>{
       'Willkommen zurück! Dein Konto wurde reaktiviert.',
 
   // Register screen.
+  'register.backToLogin': 'Zurück zum Login',
+  'register.haveAccount': 'Schon ein Konto? Anmelden',
   'register.title': 'Konto erstellen',
   'register.name': 'Name',
   'register.nameRequired': 'Name eingeben',
@@ -960,6 +962,8 @@ const _en = <String, String>{
   'login.accountReactivated':
       'Welcome back! Your account has been reactivated.',
 
+  'register.backToLogin': 'Back to login',
+  'register.haveAccount': 'Already have an account? Log in',
   'register.title': 'Create account',
   'register.name': 'Name',
   'register.nameRequired': 'Enter a name',
