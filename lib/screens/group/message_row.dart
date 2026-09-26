@@ -104,8 +104,10 @@ class _MessageRowState extends State<MessageRow> {
       );
     }
 
+    final isGif =
+        m.gifUrl != null && GiphyService.allowedUrl.hasMatch(m.gifUrl!);
     final Widget body;
-    if (m.gifUrl != null && GiphyService.allowedUrl.hasMatch(m.gifUrl!)) {
+    if (isGif) {
       body = Container(
         margin: const EdgeInsets.only(bottom: 2),
         constraints: const BoxConstraints(
@@ -122,19 +124,47 @@ class _MessageRowState extends State<MessageRow> {
     } else {
       body = Container(
         margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.fromLTRB(12, 8, 10, 6),
         constraints: const BoxConstraints(maxWidth: 280),
         decoration: BoxDecoration(
           color: mine ? AppColors.secondary : AppColors.surface,
           border: mine ? null : Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(16),
+          // The sharp corner points at the sender, like a speech bubble's
+          // tail in WhatsApp/iMessage.
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(mine ? 18 : 4),
+            bottomRight: Radius.circular(mine ? 4 : 18),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.hasReply) quote(),
-            Text(m.content, style: TextStyle(color: textColor)),
+            // Time tucked into the bubble's corner: next to short texts,
+            // on its own line under long ones.
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 8,
+              children: [
+                Text(m.content, style: TextStyle(color: textColor)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    formatMessageTime(m.createdAt),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: mine
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
@@ -212,16 +242,19 @@ class _MessageRowState extends State<MessageRow> {
                         ],
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      formatMessageTime(m.createdAt),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                  // GIFs have no bubble to hold the time.
+                  if (isGif)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        formatMessageTime(m.createdAt),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
-                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),

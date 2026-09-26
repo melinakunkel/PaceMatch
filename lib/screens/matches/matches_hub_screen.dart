@@ -840,9 +840,11 @@ class _MatchesHubScreenState extends State<MatchesHubScreen> with RouteAware {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      t('matchesHub.moreSuggestions', {
-                        'count': '${g.candidateCount}',
-                      }),
+                      g.candidateCount == 1
+                          ? t('matchesHub.moreSuggestionsOne')
+                          : t('matchesHub.moreSuggestions', {
+                              'count': '${g.candidateCount}',
+                            }),
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ),

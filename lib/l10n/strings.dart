@@ -502,6 +502,7 @@ const _de = <String, String>{
   'matchesHub.message': 'Nachricht',
   'matchesHub.groupChatAll': 'Gruppenchat mit allen',
   'matchesHub.moreSuggestions': '{count} weitere Vorschläge',
+  'matchesHub.moreSuggestionsOne': '1 weiterer Vorschlag',
   'matchesHub.view': 'Ansehen',
 
   // Swipe screen (matches_screen).
@@ -1391,6 +1392,7 @@ const _en = <String, String>{
   'matchesHub.message': 'Message',
   'matchesHub.groupChatAll': 'Group chat with everyone',
   'matchesHub.moreSuggestions': '{count} more suggestions',
+  'matchesHub.moreSuggestionsOne': '1 more suggestion',
   'matchesHub.view': 'View',
 
   'matches.loadFailed': 'Couldn\'t load Sportbuddys.',

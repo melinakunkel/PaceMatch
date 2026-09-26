@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -65,107 +66,83 @@ class AppScaffold extends StatelessWidget {
             ),
       body: SafeArea(child: body),
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: Theme(
-        // On Home, currentIndex is null (it isn't one of the 5 tabs) — still
-        // show the bar so navigation stays reachable, just with nothing
-        // highlighted, by making the "selected" and "unselected" colors match.
-        data: currentIndex == null
-            ? Theme.of(context).copyWith(
-                bottomNavigationBarTheme: Theme.of(context)
-                    .bottomNavigationBarTheme
-                    .copyWith(selectedItemColor: AppColors.textSecondary),
-              )
-            : Theme.of(context),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex ?? 0,
-          onTap: (index) {
-            if (index == currentIndex) return;
-            context.go(_routes[index]);
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.explore_outlined),
-              label: t('nav.discover'),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: t('nav.plan'),
-            ),
-            BottomNavigationBarItem(
-              icon: ValueListenableBuilder<bool>(
-                valueListenable: MatchNotifier.hasNewMatch,
-                builder: (context, hasNew, _) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.people_outline),
-                      if (hasNew)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.danger,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.surface,
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              label: t('nav.buddies'),
-            ),
-            BottomNavigationBarItem(
-              icon: ValueListenableBuilder<bool>(
-                valueListenable: UnreadController.hasUnread,
-                builder: (context, unread, _) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.chat_bubble_outline),
-                      if (unread)
-                        Positioned(
-                          right: -2,
-                          top: -2,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.danger,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.surface,
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              label: t('nav.chat'),
-            ),
-            BottomNavigationBarItem(
-              icon: ValueListenableBuilder<bool>(
-                valueListenable: AdminNotifier.hasNew,
-                builder: (context, hasNew, _) => NotificationDot(
-                  show: hasNew,
-                  child: const Icon(Icons.person_outline),
-                ),
-              ),
-              label: t('nav.profile'),
-            ),
-          ],
+      bottomNavigationBar: _NavBar(currentIndex: currentIndex, routes: _routes),
+    );
+  }
+}
+
+/// Material 3 navigation bar: the active tab sits on a soft "pill" — the
+/// look of current Android/iOS apps. Red dots for new buddies, unread chats
+/// and (for admins) new reports.
+class _NavBar extends StatelessWidget {
+  const _NavBar({required this.currentIndex, required this.routes});
+
+  final int? currentIndex;
+  final List<String> routes;
+
+  Widget _dotted(ValueListenable<bool> flag, IconData icon) =>
+      ValueListenableBuilder<bool>(
+        valueListenable: flag,
+        builder: (context, show, _) =>
+            NotificationDot(show: show, child: Icon(icon)),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = NavigationBar(
+      // On Home (not one of the tabs) nothing is highlighted — see the
+      // theme override below.
+      selectedIndex: currentIndex ?? 0,
+      onDestinationSelected: (index) {
+        if (index == currentIndex) return;
+        context.go(routes[index]);
+      },
+      destinations: [
+        NavigationDestination(
+          icon: const Icon(Icons.explore_outlined),
+          selectedIcon: const Icon(Icons.explore),
+          label: t('nav.discover'),
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.calendar_today_outlined),
+          selectedIcon: const Icon(Icons.calendar_today),
+          label: t('nav.plan'),
+        ),
+        NavigationDestination(
+          icon: _dotted(MatchNotifier.hasNewMatch, Icons.people_outline),
+          selectedIcon: _dotted(MatchNotifier.hasNewMatch, Icons.people),
+          label: t('nav.buddies'),
+        ),
+        NavigationDestination(
+          icon: _dotted(UnreadController.hasUnread, Icons.chat_bubble_outline),
+          selectedIcon: _dotted(UnreadController.hasUnread, Icons.chat_bubble),
+          label: t('nav.chat'),
+        ),
+        NavigationDestination(
+          icon: _dotted(AdminNotifier.hasNew, Icons.person_outline),
+          selectedIcon: _dotted(AdminNotifier.hasNew, Icons.person),
+          label: t('nav.profile'),
+        ),
+      ],
+    );
+    final framed = DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: bar,
+    );
+    if (currentIndex != null) return framed;
+    return NavigationBarTheme(
+      data: NavigationBarTheme.of(context).copyWith(
+        indicatorColor: Colors.transparent,
+        iconTheme: WidgetStatePropertyAll(
+          IconThemeData(color: AppColors.textSecondary),
+        ),
+        labelTextStyle: WidgetStatePropertyAll(
+          TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ),
+      child: framed,
     );
   }
 }

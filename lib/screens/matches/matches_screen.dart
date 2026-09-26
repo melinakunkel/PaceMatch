@@ -798,6 +798,68 @@ class _StampBadge extends StatelessWidget {
   }
 }
 
+/// Stand-in for a missing profile photo: a soft gradient with the sport as
+/// a large watermark and the initial in a circle — instead of an empty
+/// flat area.
+class _NoPhotoCover extends StatelessWidget {
+  const _NoPhotoCover({required this.initial, required this.sportIcon});
+
+  final String initial;
+  final IconData sportIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.secondaryLight, AppColors.secondary],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -30,
+            bottom: -30,
+            child: Icon(
+              sportIcon,
+              size: 200,
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+          ),
+          Center(
+            child: Container(
+              width: 112,
+              height: 112,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Text(
+                initial,
+                style: TextStyle(
+                  fontSize: 48,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MatchCard extends StatelessWidget {
   const _MatchCard({required this.candidate, required this.theirSport});
 
@@ -816,22 +878,14 @@ class _MatchCard extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    color: AppColors.secondaryLight,
+                  SizedBox.expand(
                     child: profile.avatarUrl != null
                         ? Image.network(profile.avatarUrl!, fit: BoxFit.cover)
-                        : Center(
-                            child: Text(
-                              profile.fullName.isNotEmpty
-                                  ? profile.fullName[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                fontSize: 64,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                        : _NoPhotoCover(
+                            initial: profile.fullName.isNotEmpty
+                                ? profile.fullName[0].toUpperCase()
+                                : '?',
+                            sportIcon: candidate.theirActivity.sport.icon,
                           ),
                   ),
                   Positioned(

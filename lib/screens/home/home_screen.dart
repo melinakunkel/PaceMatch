@@ -128,22 +128,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  avatar: const Icon(Icons.event_repeat, size: 18),
-                  label: Text(t('home.modePlan')),
-                  selected: !_today,
-                  onSelected: (_) => setState(() => _today = false),
-                ),
-                ChoiceChip(
-                  avatar: const Icon(Icons.bolt, size: 18),
-                  label: Text(t('home.modeToday')),
-                  selected: _today,
-                  onSelected: (_) => setState(() => _today = true),
-                ),
-              ],
+            // One control, two halves — the active one is filled, so
+            // "which mode am I in" is obvious at a glance.
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<bool>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: false,
+                    icon: const Icon(Icons.event_repeat, size: 18),
+                    label: Text(t('home.modePlan')),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: const Icon(Icons.bolt, size: 18),
+                    label: Text(t('home.modeToday')),
+                  ),
+                ],
+                selected: {_today},
+                onSelectionChanged: (v) => setState(() => _today = v.first),
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
