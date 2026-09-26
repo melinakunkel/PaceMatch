@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
@@ -28,6 +29,7 @@ import '../../utils/shared_sport_times.dart';
 import '../../widgets/safety_notice.dart';
 import '../plan/location_picker_screen.dart';
 import 'gif_picker_sheet.dart';
+import 'message_row.dart';
 import 'report_user_dialog.dart';
 import 'review_sheet.dart';
 
@@ -900,7 +902,11 @@ class _GroupScreenState extends State<GroupScreen> {
               ),
             const Divider(height: 1),
             Expanded(
-              child: _ChatView(groupId: widget.groupId, focusNode: _inputFocus),
+              child: _ChatView(
+                groupId: widget.groupId,
+                focusNode: _inputFocus,
+                members: _members,
+              ),
             ),
           ],
         ),
@@ -910,9 +916,16 @@ class _GroupScreenState extends State<GroupScreen> {
 }
 
 class _ChatView extends StatefulWidget {
-  const _ChatView({required this.groupId, required this.focusNode});
+  const _ChatView({
+    required this.groupId,
+    required this.focusNode,
+    required this.members,
+  });
   final String groupId;
   final FocusNode focusNode;
+
+  /// For names in replies ("Antwort an Anna").
+  final List<Profile> members;
 
   @override
   State<_ChatView> createState() => _ChatViewState();
@@ -931,8 +944,115 @@ class _ChatViewState extends State<_ChatView> {
   late Stream<List<ChatMessage>> _messages = _messageService.streamMessages(
     widget.groupId,
   );
+  late Stream<List<MessageReaction>> _reactions = _messageService
+      .streamReactions(widget.groupId);
   late final AppLifecycleListener _lifecycle;
   Timer? _retryTimer;
+
+  /// The message I'm answering (shown above the input), if any.
+  ChatMessage? _replyTo;
+
+  static const _quickReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+  String _nameOf(String userId) {
+    if (userId == SupabaseService.currentUserId) return t('group.you');
+    for (final m in widget.members) {
+      if (m.id == userId) return m.firstName;
+    }
+    return '…';
+  }
+
+  void _startReply(ChatMessage m) {
+    setState(() => _replyTo = m);
+    widget.focusNode.requestFocus();
+  }
+
+  Future<void> _react(ChatMessage m, String? emoji) async {
+    final myId = SupabaseService.currentUserId;
+    if (myId == null) return;
+    try {
+      await _messageService.setReaction(
+        messageId: m.id,
+        groupId: widget.groupId,
+        userId: myId,
+        emoji: emoji,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('group.reactFailed'))));
+    }
+  }
+
+  /// Long press: emoji bar, reply, copy — like WhatsApp.
+  Future<void> _showMessageActions(ChatMessage m, String? myEmoji) async {
+    widget.focusNode.unfocus();
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  for (final e in _quickReactions)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () => Navigator.of(context).pop('react:$e'),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: e == myEmoji
+                              ? AppColors.secondaryLight
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(e, style: const TextStyle(fontSize: 28)),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.reply),
+                title: Text(t('group.reply')),
+                onTap: () => Navigator.of(context).pop('reply'),
+              ),
+              if (m.gifUrl == null)
+                ListTile(
+                  leading: const Icon(Icons.copy),
+                  title: Text(t('group.copy')),
+                  onTap: () => Navigator.of(context).pop('copy'),
+                ),
+              if (myEmoji != null)
+                ListTile(
+                  leading: const Icon(Icons.remove_circle_outline),
+                  title: Text(t('group.removeReaction')),
+                  onTap: () => Navigator.of(context).pop('unreact'),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'reply') {
+      _startReply(m);
+    } else if (choice == 'copy') {
+      await Clipboard.setData(ClipboardData(text: m.content));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('group.copied'))));
+    } else if (choice == 'unreact') {
+      await _react(m, null);
+    } else if (choice.startsWith('react:')) {
+      final emoji = choice.substring(6);
+      await _react(m, emoji == myEmoji ? null : emoji);
+    }
+  }
 
   @override
   void initState() {
@@ -959,13 +1079,16 @@ class _ChatViewState extends State<_ChatView> {
     if (!mounted) return;
     setState(() {
       _messages = _messageService.streamMessages(widget.groupId);
+      _reactions = _messageService.streamReactions(widget.groupId);
     });
   }
 
   Future<void> _send() async {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
+    final replyTo = _replyTo;
     _textCtrl.clear();
+    setState(() => _replyTo = null);
     // Scrolled up to read older messages? Jump back down to my new one.
     if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(0);
     try {
@@ -973,11 +1096,13 @@ class _ChatViewState extends State<_ChatView> {
         groupId: widget.groupId,
         senderId: SupabaseService.currentUserId!,
         content: text,
+        replyTo: replyTo?.id,
       );
     } catch (_) {
       if (!mounted) return;
-      // Give the text back instead of silently losing it.
+      // Give the text (and the reply) back instead of silently losing it.
       if (_textCtrl.text.isEmpty) _textCtrl.text = text;
+      setState(() => _replyTo ??= replyTo);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(t('group.sendFailed'))));
     }
@@ -1040,101 +1165,81 @@ class _ChatViewState extends State<_ChatView> {
                       .then((_) => UnreadController.refresh());
                 }
               }
+              final byId = {for (final m in messages) m.id: m};
               // Like WhatsApp: newest message at the bottom, right above the
               // input. A reversed list starts there by itself and stays
               // there as new messages arrive.
-              return ListView.builder(
-                controller: _scrollCtrl,
-                reverse: true,
-                // Swiping the messages closes the keyboard, which also
-                // brings the header back.
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.all(16),
-                itemCount: messages.length,
-                itemBuilder: (context, reversedIndex) {
-                  final index = messages.length - 1 - reversedIndex;
-                  final m = messages[index];
-                  final mine = m.senderId == myId;
-                  final showDateDivider =
-                      index == 0 ||
-                      !_isSameDay(messages[index - 1].createdAt, m.createdAt);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (showDateDivider) _DateDivider(date: m.createdAt),
-                      Align(
-                        alignment: mine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Column(
-                          crossAxisAlignment: mine
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          children: [
-                            if (m.gifUrl != null &&
-                                GiphyService.allowedUrl.hasMatch(m.gifUrl!))
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 2),
-                                constraints: const BoxConstraints(
-                                  maxWidth: 220,
-                                  maxHeight: 260,
-                                  minWidth: 80,
-                                  minHeight: 80,
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: GifImage(url: m.gifUrl!),
-                                ),
-                              )
-                            else
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 2),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                constraints: const BoxConstraints(
-                                  maxWidth: 280,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: mine
-                                      ? AppColors.secondary
-                                      : AppColors.surface,
-                                  border: mine
-                                      ? null
-                                      : Border.all(color: AppColors.border),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  m.content,
-                                  style: TextStyle(
-                                    color: mine
-                                        ? Colors.white
-                                        : AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Text(
-                                _formatMessageTime(m.createdAt),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              return StreamBuilder<List<MessageReaction>>(
+                stream: _reactions,
+                builder: (context, reactionSnapshot) {
+                  // Before the reactions table exists (or on a hiccup) the
+                  // chat simply shows no reactions.
+                  final reactionsByMessage = <String, List<MessageReaction>>{};
+                  for (final r
+                      in reactionSnapshot.data ?? <MessageReaction>[]) {
+                    (reactionsByMessage[r.messageId] ??= []).add(r);
+                  }
+                  return ListView.builder(
+                    controller: _scrollCtrl,
+                    reverse: true,
+                    // Swiping the messages closes the keyboard, which also
+                    // brings the header back.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, reversedIndex) {
+                      final index = messages.length - 1 - reversedIndex;
+                      final m = messages[index];
+                      final showDateDivider =
+                          index == 0 ||
+                          !_isSameDay(
+                            messages[index - 1].createdAt,
+                            m.createdAt,
+                          );
+                      final reactions = reactionsByMessage[m.id] ?? const [];
+                      final myEmoji = reactions
+                          .where((r) => r.userId == myId)
+                          .map((r) => r.emoji)
+                          .firstOrNull;
+                      final quoted = m.replyTo == null ? null : byId[m.replyTo];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (showDateDivider) _DateDivider(date: m.createdAt),
+                          MessageRow(
+                            message: m,
+                            mine: m.senderId == myId,
+                            hasReply: m.replyTo != null,
+                            quoted: quoted,
+                            quotedName: quoted == null
+                                ? null
+                                : _nameOf(quoted.senderId),
+                            reactions: reactions,
+                            myEmoji: myEmoji,
+                            onReply: () => _startReply(m),
+                            onLongPress: () => _showMessageActions(m, myEmoji),
+                            // Double tap: quick ❤️ (again removes it).
+                            onDoubleTap: () =>
+                                _react(m, myEmoji == '❤️' ? null : '❤️'),
+                            onReactionTap: (emoji) =>
+                                _react(m, myEmoji == emoji ? null : emoji),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
               );
             },
           ),
         ),
+        if (_replyTo != null)
+          ReplyComposerBar(
+            name: _nameOf(_replyTo!.senderId),
+            text: _replyTo!.gifUrl != null ? 'GIF' : _replyTo!.content,
+            onClose: () => setState(() => _replyTo = null),
+          ),
         SafeArea(
           top: false,
           child: Padding(
@@ -1185,11 +1290,6 @@ bool _isSameDay(DateTime a, DateTime b) {
   final la = a.toLocal();
   final lb = b.toLocal();
   return la.year == lb.year && la.month == lb.month && la.day == lb.day;
-}
-
-String _formatMessageTime(DateTime dt) {
-  final local = dt.toLocal();
-  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }
 
 String _formatDateDividerLabel(DateTime dt) {
